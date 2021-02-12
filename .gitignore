@@ -1,4 +1,5 @@
 $ cat .gitignore
 
 # exclude build folders
-build/*
+**/build/**
+!**/build/buildinfo.md
