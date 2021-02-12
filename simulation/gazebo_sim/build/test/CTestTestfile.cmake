@@ -1,9 +1,0 @@
-# CMake generated Testfile for 
-# Source directory: /home/pascal/dev_ws/src/ros2-sgd4.0/simulation/gazebo_sim/test
-# Build directory: /home/pascal/dev_ws/src/ros2-sgd4.0/simulation/gazebo_sim/build/test
-# 
-# This file includes the relevant testing commands required for 
-# testing this directory and lists subdirectories to be tested as well.
-add_test(test_gazebo_ros_diff_drive "/usr/bin/python3" "-u" "/home/pascal/ros2_foxy/install/ament_cmake_test/share/ament_cmake_test/cmake/run_test.py" "/home/pascal/dev_ws/src/ros2-sgd4.0/simulation/gazebo_sim/build/test_results/sgd_gazebo_sim/test_gazebo_ros_diff_drive.gtest.xml" "--package-name" "sgd_gazebo_sim" "--output-file" "/home/pascal/dev_ws/src/ros2-sgd4.0/simulation/gazebo_sim/build/ament_cmake_gtest/test_gazebo_ros_diff_drive.txt" "--command" "/home/pascal/dev_ws/src/ros2-sgd4.0/simulation/gazebo_sim/build/test/test_gazebo_ros_diff_drive" "--gtest_output=xml:/home/pascal/dev_ws/src/ros2-sgd4.0/simulation/gazebo_sim/build/test_results/sgd_gazebo_sim/test_gazebo_ros_diff_drive.gtest.xml")
-set_tests_properties(test_gazebo_ros_diff_drive PROPERTIES  LABELS "gtest" REQUIRED_FILES "/home/pascal/dev_ws/src/ros2-sgd4.0/simulation/gazebo_sim/build/test/test_gazebo_ros_diff_drive" TIMEOUT "120" WORKING_DIRECTORY "/home/pascal/dev_ws/src/ros2-sgd4.0/simulation/gazebo_sim/build/test" _BACKTRACE_TRIPLES "/home/pascal/ros2_foxy/install/ament_cmake_test/share/ament_cmake_test/cmake/ament_add_test.cmake;118;add_test;/home/pascal/ros2_foxy/install/ament_cmake_gtest/share/ament_cmake_gtest/cmake/ament_add_gtest_test.cmake;86;ament_add_test;/home/pascal/ros2_foxy/install/ament_cmake_gtest/share/ament_cmake_gtest/cmake/ament_add_gtest.cmake;93;ament_add_gtest_test;/home/pascal/dev_ws/src/ros2-sgd4.0/simulation/gazebo_sim/test/CMakeLists.txt;19;ament_add_gtest;/home/pascal/dev_ws/src/ros2-sgd4.0/simulation/gazebo_sim/test/CMakeLists.txt;0;")
-subdirs("../gtest")
