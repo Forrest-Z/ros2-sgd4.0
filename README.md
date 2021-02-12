@@ -19,6 +19,11 @@ Usage: `git commit -m "[commit message]"`
 
 Record or snapshot staged files permanently in the version history.
 
+**git push**
+Usage: `git push`
+
+Send committed changes to repository.
+
 **git status**
 Usage: `git status`
 
