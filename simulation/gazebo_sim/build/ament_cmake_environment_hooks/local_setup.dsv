@@ -1,0 +1,4 @@
+source;share/sgd_gazebo_sim/environment/ament_prefix_path.sh
+source;share/sgd_gazebo_sim/environment/gazebo_plugins.sh
+source;share/sgd_gazebo_sim/environment/library_path.sh
+source;share/sgd_gazebo_sim/environment/path.sh
