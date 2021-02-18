@@ -25,6 +25,8 @@
 
     <include>
       <uri>model://ground_plane</uri>
+      <color>1 1 1</color>
+      <textureFile>model://ground_plane/ground_plane.png</textureFile>
     </include>
 
     <include>
