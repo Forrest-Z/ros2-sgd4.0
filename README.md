@@ -4,7 +4,7 @@ Im Rahmen des Forschungsvorhabens "Blindenhund 4.0" wird an der HAW Hamburg in i
 
 # ROS2 Installation
 
-Installationsanleitung für die Verwendung von ROS2 Projekt *Shared Guide Dog 4.0*.
+Installationsanleitung für die Verwendung von ROS2 im Projekt *Shared Guide Dog 4.0*.
 
 ## Requirements
 
@@ -18,8 +18,8 @@ Paket | Link | required
 ------|------|---------
 ROS2 Foxy | - | required
 Navigation 2 | - | required
-Gazebo 11 | [Gazebo](http://gazebosim.org/tutorials?tut=ros2_installing&cat=connect_ros) | optional
 sick_scan2 | [sick_scan2](https://github.com/SICKAG/sick_scan2) | required
+Gazebo 11 | [Gazebo](http://gazebosim.org/tutorials?tut=ros2_installing&cat=connect_ros) | optional
 
 ## Installation ROS2 Foxy
 
@@ -31,6 +31,24 @@ Um ROS bei jedem neuen Terminalfenster automatisch zu sourcen, kann an das Ende 
 if [ -f /opt/ros/foxy/setup.bash ]; then
   . /opt/ros/foxy/setup.bash
 fi
+```
+
+## Installation Navigation 2
+
+Es gibt zwei Möglichkeiten Navigation 2 zu installieren. Entweder in einem separaten Workspace oder im dev_ws (angelegt im vorigen Kapitel).
+
+Installation wie [hier](https://navigation.ros.org/build_instructions/index.html#build-nav2-for-released-distribution)
+beschrieben.
+
+Oder mit folgenden Commands:
+
+```
+mkdir -p ~/nav2_ws/src
+cd ~/nav2_ws/src
+git clone https://github.com/ros-planning/navigation2.git --branch foxy-devel
+cd ~/nav2_ws
+rosdep install -y -r -q --from-paths src --ignore-src --rosdistro foxy
+colcon build --symlink-install
 ```
 
 ## Installation ROS2 for Blindenhund
@@ -55,47 +73,7 @@ make
 source ~/dev_ws/install/setup.bash
 ```
 
-## Installation Navigation 2
-
-Es gibt zwei Möglichkeiten Navigation 2 zu installieren. Entweder in einem separaten Workspace oder im dev_ws (angelegt im vorigen Kapitel).
-
-Installation wie [hier](https://navigation.ros.org/build_instructions/index.html#build-nav2-for-released-distribution)
-beschrieben.
-
-Oder mit folgenden Commands:
-
-```
-mkdir -p ~/nav2_ws/src
-cd ~/nav2_ws/src
-git clone https://github.com/ros-planning/navigation2.git --branch foxy-devel
-cd ~/nav2_ws
-rosdep install -y -r -q --from-paths src --ignore-src --rosdistro foxy
-colcon build --symlink-install
-```
-
-## Installation Gazebo 11
-Gazebo wird für die Arbeit mit dem Blindenhund nicht benötigt, ist jedoch sinnvoll, um neue Funktionen zuerst simulieren zu können und sie erst bei erfolgreicher Simulation auf dem Blindenhund zu testen.
-
-Installation wie [hier](http://gazebosim.org/tutorials?tut=install_ubuntu&cat=install) beschrieben.
-
-Dann noch benötigte Packages zur Kommunikation mit ROS2. Es ist sinnvoll den neuen Workspace nicht *ws* zu nennen, sondern *gazebo_ws*.
-[install gazebo ros2](http://gazebosim.org/tutorials?tut=ros2_installing&cat=connect_ros)
-
-Die Testing Section sollte durchgeführt werden, um sicher zu stellen, dass alle Packages installiert sind. Beim Testen sollte sowohl der Pfad aus der Anleitung wie auch der Pfad zum Workspace funktionieren.
-
-```
-Gazebo --verbose  ~/gazebo_ws/src/gazebo_ros_pkgs/gazebo_plugins/worlds/gazebo_diff_drive_demo.world
-```
-
-Die bereitgestellte Simulationsumgebung enthält auch das Modell des Blindenhunds. Damit es von Gazebo gefunden werden kann, muss die Variable $GAZEBO_MODEL_PATH angepasst werden. 
-
-```
-export GAZEBO_MODEL_PATH=~/dev_ws/src/ros2-sgd4.0/sgd_gazebo_sim/models:$GAZEBO_MODEL_PATH
-```
-
-Um den Pfad automatisch bei jedem neuen Terminalfenster zu setzen, kann der Befehl auch an das Ende der .bashrc gesetzt werden.
-
-## Installation sick_scan_base
+## Installation sick_scan2
 Installation der packages wie [hier](https://github.com/SICKAG/sick_scan2) beschrieben. ldmrs Support ist nicht erforderlich.
 
 Nach der Installation muss die Datei config/sick_tim5xx.yaml mit den folgenden Werten angepasst werden.
@@ -121,6 +99,28 @@ In den Ubuntu Einstellungen muss nun noch eine neue Kabelgebundene Netzwerkverbi
 ![ip config 1](/doc/ip_config1.png)
 
 ![ip config 2](/doc/ip_config2.png)
+
+## Installation Gazebo 11
+Gazebo wird für die Arbeit mit dem Blindenhund nicht benötigt, ist jedoch sinnvoll, um neue Funktionen zuerst simulieren zu können und sie erst bei erfolgreicher Simulation auf dem Blindenhund zu testen.
+
+Installation wie [hier](http://gazebosim.org/tutorials?tut=install_ubuntu&cat=install) beschrieben.
+
+Dann noch benötigte Packages zur Kommunikation mit ROS2. Es ist sinnvoll den neuen Workspace nicht *ws* zu nennen, sondern *gazebo_ws*.
+[install gazebo ros2](http://gazebosim.org/tutorials?tut=ros2_installing&cat=connect_ros)
+
+Die Testing Section sollte durchgeführt werden, um sicher zu stellen, dass alle Packages installiert sind. Beim Testen sollte sowohl der Pfad aus der Anleitung wie auch der Pfad zum Workspace funktionieren.
+
+```
+Gazebo --verbose  ~/gazebo_ws/src/gazebo_ros_pkgs/gazebo_plugins/worlds/gazebo_diff_drive_demo.world
+```
+
+Die bereitgestellte Simulationsumgebung enthält auch das Modell des Blindenhunds. Damit es von Gazebo gefunden werden kann, muss die Variable $GAZEBO_MODEL_PATH angepasst werden. 
+
+```
+export GAZEBO_MODEL_PATH=~/dev_ws/src/ros2-sgd4.0/sgd_gazebo_sim/models:$GAZEBO_MODEL_PATH
+```
+
+Um den Pfad automatisch bei jedem neuen Terminalfenster zu setzen, kann der Befehl auch an das Ende der .bashrc gesetzt werden.
 
 
 # Useful git commands
