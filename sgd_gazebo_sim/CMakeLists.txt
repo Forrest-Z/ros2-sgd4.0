@@ -106,6 +106,22 @@ if(ENABLE_PROFILER)
   target_link_libraries(gazebo_ros_ray_sensor ${ignition-common3_LIBRARIES})
 endif()
 
+# gazebo_ros_gps_sensor
+add_library(gazebo_ros_gps_sensor SHARED
+  src/gazebo_ros_gps_sensor.cpp
+)
+target_include_directories(gazebo_ros_gps_sensor PUBLIC include)
+ament_target_dependencies(gazebo_ros_gps_sensor
+  "gazebo_ros"
+  "sensor_msgs"
+  "gazebo_dev"
+)
+ament_export_libraries(gazebo_ros_gps_sensor)
+if(ENABLE_PROFILER)
+  target_include_directories(gazebo_ros_gps_sensor PUBLIC ${ignition-common3_INCLUDE_DIRS})
+  target_link_libraries(gazebo_ros_gps_sensor ${ignition-common3_LIBRARIES})
+endif()
+
 add_library(gazebo_ros_p3d SHARED
   src/gazebo_ros_p3d.cpp
 )

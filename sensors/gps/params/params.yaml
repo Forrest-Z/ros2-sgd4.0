@@ -1,0 +1,8 @@
+sensor_gps:
+  ros__parameters:
+    my_string: "ros"
+    orig_lat: 10.021944
+    orig_lon: 53.123456
+    coeff_a: -110623.2362476
+    coeff_b: -109632.4399804
+

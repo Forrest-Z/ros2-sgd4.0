@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(gps)
+project(localizer)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -17,16 +17,26 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(nav2_common REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
+find_package(message_filters REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(nav2_util REQUIRED)
+find_package(nav2_msgs REQUIRED)
 
-# add executable
-add_executable(gps_transform src/sensor_gps_transform.cpp)
-ament_target_dependencies(gps_transform rclcpp sensor_msgs)
+include_directories(
+  include
+)
 
 install(TARGETS
-  gps_transform
+  simple_gps_localizer
   DESTINATION lib/${PROJECT_NAME})
   
 install(DIRECTORY
@@ -36,6 +46,28 @@ install(DIRECTORY
 install(DIRECTORY
   params
   DESTINATION share/${PROJECT_NAME})
+
+# add executable
+add_executable(simple_gps_localizer src/simple_gps_localizer.cpp)
+
+set(dependencies
+  rclcpp
+  rclcpp_lifecycle
+  message_filters
+  tf2_geometry_msgs
+  geometry_msgs
+  nav_msgs
+  sensor_msgs
+  std_srvs
+  tf2_ros
+  tf2
+  nav2_util
+  nav2_msgs
+)
+
+ament_target_dependencies(${executable_name}
+  ${dependencies}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

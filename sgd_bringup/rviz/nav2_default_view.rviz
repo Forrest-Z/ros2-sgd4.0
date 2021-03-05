@@ -154,7 +154,7 @@ Visualization Manager:
       Name: LaserScan
       Position Transformer: XYZ
       Selectable: true
-      Size (Pixels): 3
+      Size (Pixels): 15
       Size (m): 0.009999999776482582
       Style: Flat Squares
       Topic:
@@ -537,7 +537,7 @@ Visualization Manager:
   Views:
     Current:
       Angle: -1.6150002479553223
-      Class: rviz_default_plugins/TopDownOrtho
+      Class: rviz_default_plugins/Orbit
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -545,10 +545,10 @@ Visualization Manager:
         Value: false
       Invert Z Axis: false
       Name: Current View
-      Near Clip Distance: 0.009999999776482582
+      Near Clip Distance: 0.01
       Scale: 127.88431549072266
       Target Frame: <Fixed Frame>
-      Value: TopDownOrtho (rviz_default_plugins)
+      Value: Orbit (rviz_default_plugins)
       X: -0.044467076659202576
       Y: -0.38726311922073364
     Saved: ~
