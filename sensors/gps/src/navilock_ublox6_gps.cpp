@@ -23,28 +23,26 @@
 using std::placeholders::_1;
 using namespace std::chrono_literals;
 
-namespace sensor_gps
-{
+//namespace sensor_gps
+//{
 
 Navilock_UBlox6_GPS::Navilock_UBlox6_GPS():
-        baud_rate_(9600),port_("/dev/ttyACM0"),Node("navilock_ublox6_gps")
+        Node("navilock_ublox6_gps"),baud_rate_(9600),port_("/dev/ttyACM0")
 {
     init();
     
-    if (isPortOpen_)
-    {
-      auto default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-    
-      publisher_ = this->create_publisher<std_msgs::msg::String>("gps", default_qos);
-      timer_ = this->create_wall_timer(1000ms, std::bind(&Navilock_UBlox6_GPS::readLine, this));
-    } else {
-      RCLCPP_ERROR(this->get_logger(), "Could not open port %s. Check connections and user rights.", port_);
-    }
+    RCLCPP_DEBUG(this->get_logger(), "Publishing GPS messages on topic /gpspos");
+    auto default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
+  
+    publisher_ = this->create_publisher<std_msgs::msg::String>("gpspos", default_qos);
+    RCLCPP_DEBUG(this->get_logger(), "creating timer");
+    timer_ = this->create_wall_timer(1000ms, std::bind(&Navilock_UBlox6_GPS::readLine, this));
 }
 
 Navilock_UBlox6_GPS::~Navilock_UBlox6_GPS()
 {
   RCLCPP_INFO(this->get_logger(), "Destroying");
+  close(serial_port_);
 }
 
 void
@@ -94,9 +92,9 @@ Navilock_UBlox6_GPS::init() {
     tty_.c_cflag &= ~PARENB;     // clear parity bit
     tty_.c_cflag &= ~CSTOPB;
     tty_.c_cflag &= ~CSIZE;
-    tty_.c_cflag != CS8;
+    //tty_.c_cflag != CS8;    // Compiler warning: statement has no effect
     tty_.c_cflag &= ~CRTSCTS;
-    tty_.c_cflag != (CREAD | CLOCAL);
+    //tty_.c_cflag != (CREAD | CLOCAL);   // Compiler warning: statement has no effect
 
     tty_.c_lflag &= ~ICANON;
     tty_.c_lflag &= ~ECHO;
@@ -119,12 +117,12 @@ Navilock_UBlox6_GPS::init() {
     return 0;
 }
 
-}   // namespace sensor_gps
+//}   // namespace sensor_gps
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<sensor_gps::Navilock_UBlox6_GPS>());
+  rclcpp::spin(std::make_shared<Navilock_UBlox6_GPS>());
   rclcpp::shutdown();
   return 0;
 }
