@@ -23,8 +23,8 @@
 using std::placeholders::_1;
 using namespace std::chrono_literals;
 
-//namespace sensor_gps
-//{
+namespace sensor_gps
+{
 
 class Navilock_UBlox6_GPS : public rclcpp::Node
 {
@@ -54,9 +54,9 @@ protected:
 
   int init();
   void readLine();
-  
+  void timerCallback();
 };
 
-//}   // namespace sensor_gps
+}   // namespace sensor_gps
 
 #endif // NAVILOCK_UBLOX6_GPS_HPP_

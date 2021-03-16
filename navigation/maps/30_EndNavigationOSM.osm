@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version='0.6' generator='JOSM'>
+  <bounds minlat='53.5536114' minlon='10.0196922' maxlat='53.5571359' maxlon='10.0245738' origin='CGImap 0.8.3 (439651 spike-07.openstreetmap.org)' />
+  <node id='5126614363' action='modify' timestamp='2020-02-26T23:24:57Z' uid='1431737' user='ma-rt-in' visible='true' version='3' changeset='81524159' lat='53.5548152' lon='10.0227661'>
+    <tag k='barrier' v='bollard' />
+    <tag k='bicycle' v='yes' />
+    <tag k='bollard' v='removable' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='foot' v='yes' />
+    <tag k='material' v='metal' />
+  </node>
+  <node id='257693049' timestamp='2017-08-06T19:00:00Z' uid='561067' user='flor!an' visible='true' version='7' changeset='50893872' lat='53.5551516' lon='10.022122' />
+  <node id='393959318' timestamp='2017-09-24T15:46:51Z' uid='161619' user='FvGordon' visible='true' version='4' changeset='52332006' lat='53.5548064' lon='10.0228089' />
+  <node id='801398443' timestamp='2017-08-06T19:00:00Z' uid='561067' user='flor!an' visible='true' version='4' changeset='50893872' lat='53.5551805' lon='10.0221865' />
+  <node id='3691017003' timestamp='2017-09-24T15:46:51Z' uid='161619' user='FvGordon' visible='true' version='3' changeset='52332006' lat='53.5549267' lon='10.0231417' />
+  <node id='3691017004' timestamp='2017-09-24T15:46:51Z' uid='161619' user='FvGordon' visible='true' version='3' changeset='52332006' lat='53.5550816' lon='10.0230709' />
+  <node id='3693899495' timestamp='2017-09-24T15:46:53Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5553038' lon='10.022909' />
+  <node id='5126613807' timestamp='2018-11-07T10:44:42Z' uid='506379' user='hamdroid' visible='true' version='2' changeset='64257994' lat='53.5549729' lon='10.0223945' />
+  <node id='5126614367' timestamp='2017-09-24T15:46:51Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52332006' lat='53.5549096' lon='10.0230879' />
+  <node id='5126614368' timestamp='2017-09-24T15:46:51Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52332006' lat='53.5548518' lon='10.0229792' />
+  <node id='5126614370' timestamp='2018-11-07T10:44:42Z' uid='506379' user='hamdroid' visible='true' version='2' changeset='64257994' lat='53.5548844' lon='10.0225647' />
+  <node id='6043686597' timestamp='2018-11-07T10:44:41Z' uid='506379' user='hamdroid' visible='true' version='1' changeset='64257994' lat='53.5548439' lon='10.0226721' />
+  <node id='7246371343' timestamp='2020-02-26T23:24:57Z' uid='1431737' user='ma-rt-in' visible='true' version='1' changeset='81524159' lat='53.5549007' lon='10.0230711' />
+  <way id='10000000' action='modify' timestamp='2020-12-13T11:31:12Z' uid='10000000' user='1' visible='true' version='2' changeset='1'>
+    <nd ref='257693049' />
+    <nd ref='801398443' />
+    <nd ref='5126613807' />
+    <nd ref='5126614370' />
+    <nd ref='6043686597' />
+    <nd ref='5126614363' />
+    <nd ref='393959318' />
+    <nd ref='5126614368' />
+    <nd ref='7246371343' />
+    <nd ref='5126614367' />
+    <nd ref='3691017003' />
+    <nd ref='3691017004' />
+    <nd ref='3693899495' />
+  </way>
+</osm>
