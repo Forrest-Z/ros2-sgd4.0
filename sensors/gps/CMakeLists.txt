@@ -21,21 +21,29 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
+include_directories(
+  include
+)
+
 # add executable
 add_executable(gps_transform src/sensor_gps_transform.cpp)
 ament_target_dependencies(gps_transform rclcpp sensor_msgs)
+add_executable(navilock_ublox6_gps src/navilock_ublox6_gps.cpp)
+ament_target_dependencies(navilock_ublox6_gps rclcpp std_msgs)
 
 install(TARGETS
   gps_transform
+  navilock_ublox6_gps
   DESTINATION lib/${PROJECT_NAME})
   
-install(DIRECTORY
-  launch
+install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
   
-install(DIRECTORY
-  params
+install(DIRECTORY params
   DESTINATION share/${PROJECT_NAME})
+
+install(DIRECTORY include/
+  DESTINATION include/)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
