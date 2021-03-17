@@ -9,7 +9,7 @@
 #include <string>
 #include <math.h>
 
-#include "aStern.h"
+#include "aStern.hpp"
 
 using namespace std;
 
@@ -344,19 +344,19 @@ void erstellenNavigationsDatei(string navigationDat, string endDateiNavigation, 
 	
 	fstream f;
 
-	f.open(endDateiNavigation, f.out | f.trunc);                        // öffne die Zieldatei und lösche alles in dieser
-	f.close();                                                          // schließe die Zieldatei
+	f.open(endDateiNavigation, f.out | f.trunc);                        // ï¿½ffne die Zieldatei und lï¿½sche alles in dieser
+	f.close();                                                          // schlieï¿½e die Zieldatei
 
 	ifstream sourceDat(navigationDat);
 
 	string zeile;
 	int zeilennr = 0;
 
-	while (getline(sourceDat, zeile)) {                      // Läuft solange wie in der Quelldatei Zeilen sind, bewegt sich pro Aufruf von getline() eine Zeile weiter und speichert die aktuelle Zeile in "zeile"
+	while (getline(sourceDat, zeile)) {                      // Lï¿½uft solange wie in der Quelldatei Zeilen sind, bewegt sich pro Aufruf von getline() eine Zeile weiter und speichert die aktuelle Zeile in "zeile"
 		if (zeilennr == 0) {									// wenn die Zeilennummer = 0 entspricht dann
-			f.open(endDateiNavigation, f.app);                      // öffne und gehe zum letzten Punkt der Zieldatei
+			f.open(endDateiNavigation, f.app);                      // ï¿½ffne und gehe zum letzten Punkt der Zieldatei
 			f << zeile << "\n";                                     // schreibe die aktuelle Zeile in die Zieldatei und beende die Zeile
-			f.close();                                              // schließe die Zieldatei
+			f.close();                                              // schlieï¿½e die Zieldatei
 			zeilennr++;                                             // setzt die Zeilenanzahl um 1 hoch
 		}
 		else if (zeile.find("<node ") != string::npos) {     // sonst wenn "<node " gefunden wird dann
@@ -364,44 +364,44 @@ void erstellenNavigationsDatei(string navigationDat, string endDateiNavigation, 
 				if (zeile.find(nodes[finalerWeg[i]]) != string::npos) {
 					while (zeile.find("</node>") == string::npos) {
 						if (zeile.find("<node ") != string::npos) {
-							f.open(endDateiNavigation, f.app);                                 // öffne und gehe zum letzten Punkt der Zieldatei
+							f.open(endDateiNavigation, f.app);                                 // ï¿½ffne und gehe zum letzten Punkt der Zieldatei
 							f << zeile << "\n";                                     // schreibe die aktuelle Zeile in die Zieldatei und beende die Zeile
-							f.close();                                              // schließe die Zieldatei
+							f.close();                                              // schlieï¿½e die Zieldatei
 						}
 						else if (zeile.find("<nd ") != string::npos) {
 							for (int k = 0; finalerWeg[k] != -1; k++) {      // solange k das Ende des Rahmens nicht erreicht hat
 								if (zeile.find(nodes[finalerWeg[k]]) != string::npos) {
-									f.open(endDateiNavigation, f.app);                                 // öffne und gehe zum letzten Punkt der Zieldatei
+									f.open(endDateiNavigation, f.app);                                 // ï¿½ffne und gehe zum letzten Punkt der Zieldatei
 									f << zeile << "\n";                                     // schreibe die aktuelle Zeile in die Zieldatei und beende die Zeile
-									f.close();                                              // schließe die Zieldatei
+									f.close();                                              // schlieï¿½e die Zieldatei
 								}
 							}
 						}
 						else {
-							f.open(endDateiNavigation, f.app);                      // öffne und gehe zum letzten Punkt der Zieldatei
+							f.open(endDateiNavigation, f.app);                      // ï¿½ffne und gehe zum letzten Punkt der Zieldatei
 							f << zeile << "\n";                                     // schreibe die aktuelle Zeile in die Zieldatei und beende die Zeile
-							f.close();                                              // schließe die Zieldatei
+							f.close();                                              // schlieï¿½e die Zieldatei
 						}
 						getline(sourceDat, zeile);                              // gehe eine Zeile weiter
 					}
-					f.open(endDateiNavigation, f.app);                                 // öffne und gehe zum letzten Punkt der Zieldatei
+					f.open(endDateiNavigation, f.app);                                 // ï¿½ffne und gehe zum letzten Punkt der Zieldatei
 					f << zeile << "\n";                                     // schreibe die aktuelle Zeile in die Zieldatei und beende die Zeile
-					f.close();                                              // schließe die 
+					f.close();                                              // schlieï¿½e die 
 				}
 			}
 		}
 	}
-	f.open(endDateiNavigation, f.app);                                             // öffne und gehe zum letzten Punkt der Zieldatei
+	f.open(endDateiNavigation, f.app);                                             // ï¿½ffne und gehe zum letzten Punkt der Zieldatei
 	f << "</nodelist>";                                                       // schreibe das Dokumentende in die Zieldatei
-	f.close();                                                          // schließe die Zieldatei
+	f.close();                                                          // schlieï¿½e die Zieldatei
 }
 
 void erstellenOSMDatei(string ursprungsDatei, string endDateiOSM, string nodes[], int finalerWeg[]) {
 
 	fstream f;
 
-	f.open(endDateiOSM, f.out | f.trunc);                               // öffne die Zieldatei und lösche alles in dieser
-	f.close();                                                          // schließe die Zieldatei
+	f.open(endDateiOSM, f.out | f.trunc);                               // ï¿½ffne die Zieldatei und lï¿½sche alles in dieser
+	f.close();                                                          // schlieï¿½e die Zieldatei
 
 	ifstream sourceDat(ursprungsDatei);
 
@@ -409,55 +409,55 @@ void erstellenOSMDatei(string ursprungsDatei, string endDateiOSM, string nodes[]
 
 	int zeilennr = 0;
 
-	while (getline(sourceDat, zeile)) {                      // Läuft solange wie in der Quelldatei Zeilen sind, bewegt sich pro Aufruf von getline() eine Zeile weiter und speichert die aktuelle Zeile in "zeile"
+	while (getline(sourceDat, zeile)) {                      // Lï¿½uft solange wie in der Quelldatei Zeilen sind, bewegt sich pro Aufruf von getline() eine Zeile weiter und speichert die aktuelle Zeile in "zeile"
 		if (zeilennr == 0 || zeilennr == 1 || zeilennr == 2) {    // wenn die Zeilennummer = 1, 2 oder 3 entspricht dann
-			f.open(endDateiOSM, f.app);                                 // öffne und gehe zum letzten Punkt der Zieldatei
+			f.open(endDateiOSM, f.app);                                 // ï¿½ffne und gehe zum letzten Punkt der Zieldatei
 			f << zeile << "\n";                                     // schreibe die aktuelle Zeile in die Zieldatei und beende die Zeile
-			f.close();                                              // schließe die Zieldatei
+			f.close();                                              // schlieï¿½e die Zieldatei
 			zeilennr++;                                             // setzt die Zeilenanzahl um 1 hoch
 		}
 		else if (zeile.find("<node ") != string::npos) {                  // sonst wenn der Anfang der gefundenen Nodes und Ways der aktuellen Zeilennummer entrspricht dann
 			for (int i = 0; finalerWeg[i] != -1; i++) {      // solange i das Ende des Rahmens nicht erreicht hat
 				if (zeile.find(nodes[finalerWeg[i]]) != string::npos) {
 					if (zeile.find("<node ") != string::npos && zeile.find(" />") != string::npos) {
-						f.open(endDateiOSM, f.app);                                 // öffne und gehe zum letzten Punkt der Zieldatei
+						f.open(endDateiOSM, f.app);                                 // ï¿½ffne und gehe zum letzten Punkt der Zieldatei
 						f << zeile << "\n";                                     // schreibe die aktuelle Zeile in die Zieldatei und beende die Zeile
-						f.close();                                              // schließe die Zieldatei
+						f.close();                                              // schlieï¿½e die Zieldatei
 						break;
 					}
 					else {
 						while (zeile.find("</node>") == string::npos) {
-							f.open(endDateiOSM, f.app);                                 // öffne und gehe zum letzten Punkt der Zieldatei
+							f.open(endDateiOSM, f.app);                                 // ï¿½ffne und gehe zum letzten Punkt der Zieldatei
 							f << zeile << "\n";                                     // schreibe die aktuelle Zeile in die Zieldatei und beende die Zeile
-							f.close();                                              // schließe die Zieldatei
+							f.close();                                              // schlieï¿½e die Zieldatei
 							getline(sourceDat, zeile);                              // gehe eine Zeile weiter
 						}
-						f.open(endDateiOSM, f.app);                                 // öffne und gehe zum letzten Punkt der Zieldatei
+						f.open(endDateiOSM, f.app);                                 // ï¿½ffne und gehe zum letzten Punkt der Zieldatei
 						f << zeile << "\n";                                     // schreibe die aktuelle Zeile in die Zieldatei und beende die Zeile
-						f.close();                                              // schließe die Zieldatei
+						f.close();                                              // schlieï¿½e die Zieldatei
 					}
 				}
 			}
 		}
 	}
-	f.open(endDateiOSM, f.app);                                             // öffne und gehe zum letzten Punkt der Zieldatei
+	f.open(endDateiOSM, f.app);                                             // ï¿½ffne und gehe zum letzten Punkt der Zieldatei
 	f << "  <way id='10000000' action='modify' timestamp='2020-12-13T11:31:12Z' uid='10000000' user='1' visible='true' version='2' changeset='1'>" << "\n";   // schreibe einen Way in die Zieldatei
-	f.close();                                                          // schließe die Zieldatei
+	f.close();                                                          // schlieï¿½e die Zieldatei
 
 	int k = 0;
 
 	while (finalerWeg[k] != -1) {
-		f.open(endDateiOSM, f.app);                                         // öffne und gehe zum letzten Punkt der Zieldatei
+		f.open(endDateiOSM, f.app);                                         // ï¿½ffne und gehe zum letzten Punkt der Zieldatei
 		f << "    <nd ref='" << nodes[finalerWeg[k]] << "' />" << "\n";     // schreibe Nodereferenzen in die Zieldatei
-		f.close();                                                          // schließe die Zieldatei
+		f.close();                                                          // schlieï¿½e die Zieldatei
 		k++;
 	}
 
-	f.open(endDateiOSM, f.app);                                         // öffne und gehe zum letzten Punkt der Zieldatei
+	f.open(endDateiOSM, f.app);                                         // ï¿½ffne und gehe zum letzten Punkt der Zieldatei
 	f << "  </way>" << "\n";                                            // schreibe das Dokumentende in die Zieldatei
-	f.close();                                                          // schließe die Zieldatei
+	f.close();                                                          // schlieï¿½e die Zieldatei
 
-	f.open(endDateiOSM, f.app);                                         // öffne und gehe zum letzten Punkt der Zieldatei
+	f.open(endDateiOSM, f.app);                                         // ï¿½ffne und gehe zum letzten Punkt der Zieldatei
 	f << "</osm>";                                                      // schreibe das Dokumentende in die Zieldatei
-	f.close();                                                          // schließe die Zieldatei
+	f.close();                                                          // schlieï¿½e die Zieldatei
 }

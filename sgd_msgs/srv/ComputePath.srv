@@ -1,0 +1,6 @@
+float64 lata
+float64 lona
+float64 latb
+float64 lonb
+---
+int64 routeid

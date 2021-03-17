@@ -5,6 +5,7 @@
 #include <string>
 
 #include "rclcpp/rclcpp.hpp"
+#include "sgd_msgs/srv/compute_path.hpp"
 
 namespace nav_sgd
 {
@@ -15,8 +16,11 @@ public:
     Global_Planner_OSM();
     ~Global_Planner_OSM();
 
-protected:
+    void computePath(const std::shared_ptr<sgd_msgs::srv::ComputePath::Request> request,
+            std::shared_ptr<sgd_msgs::srv::ComputePath::Response> response);
 
+protected:
+    
 
 };
 
