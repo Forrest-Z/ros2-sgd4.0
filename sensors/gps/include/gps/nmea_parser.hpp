@@ -8,7 +8,7 @@
 #include <vector>
 #include <sstream>
 
-#include "rapidxml/"
+#include "rapidxml/rapidxml.hpp"
 
 namespace sensor_gps
 {

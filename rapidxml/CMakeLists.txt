@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(navigation)
+project(rapidxml)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -13,24 +13,32 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(visualization_msgs REQUIRED)
-find_package(sgd_msgs REQUIRED)
-find_package(rapidxml REQUIRED)
 
-include_directories(include)
+add_library(rapidxml SHARED src/rapidxml.cpp)
+ament_target_dependencies(rapidxml rclcpp)
 
-# add executable
-add_executable(global_planner src/global_planner.cpp)
-ament_target_dependencies(global_planner rclcpp sgd_msgs visualization_msgs rapidxml)
+target_include_directories(rapidxml
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
 
+ament_export_targets(export_rapidxml HAS_LIBRARY_TARGET)
+ament_export_dependencies(rclcpp)
 
-install(
-  TARGETS global_planner
-  DESTINATION lib/${PROJECT_NAME})
-  
 install(
   DIRECTORY include/
   DESTINATION include/)
+
+install(
+  TARGETS rapidxml
+  EXPORT export_rapidxml
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+)
+
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -43,4 +51,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+#ament_export_include_directories(include)
+#ament_export_libraries(rapidxml_lib)
+#ament_export_dependencies(rclcpp)
 ament_package()
