@@ -20,8 +20,12 @@
 #include <list>
 
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
+#include "nav2_util/geometry_utils.hpp"
 #include "visualization_msgs/msg/marker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "nav2_msgs/action/follow_waypoints.hpp"
 #include "sgd_msgs/srv/compute_path.hpp"
 #include "rapidxml/rapidxml.hpp"
 
@@ -31,17 +35,24 @@ namespace nav_sgd
 
 class Global_Planner_OSM : public rclcpp::Node
 {
+
+//! \brief Struct to hold node id, latitude and longitude
+struct NODE
+{
+    rapidxml::xml_node<char> *xml_node;
+    rapidxml::xml_node<char> *parent_xml_node;
+    double f,g,h;
+};
+
+//! \brief Struct to hold position information latitude, longitude and angle around z in radians.
+struct POSE
+{
+    double lat, lon, angle;
+};
+
 public:
     Global_Planner_OSM();
     ~Global_Planner_OSM();
-
-    //! Store waypoints from start to destination
-    std::vector<std::pair<double, double>> waypoints;
-
-    //! Store map data
-    std::vector<std::pair<double, double>> map_data;
-
-    
 
     void CreateService();
 
@@ -54,13 +65,26 @@ public:
     void computePath(const std::shared_ptr<sgd_msgs::srv::ComputePath::Request> request,
            std::shared_ptr<sgd_msgs::srv::ComputePath::Response> response);
 
-protected: 
+protected:
+    
+
     std::string map_file_;
     std::vector<char> buffer;
     rapidxml::xml_document<> osm;
     rapidxml::xml_node<> * root;
 
+    //! Store waypoints from start to destination
+    std::vector<POSE> waypoints;
+
+    //! Store map data
+    std::vector<POSE> map_data;
+
+    std::chrono::milliseconds server_timeout_;
+    rclcpp::Node::SharedPtr client_node_;
     rclcpp::Service<sgd_msgs::srv::ComputePath>::SharedPtr compute_path_srv;
+    rclcpp_action::Client<nav2_msgs::action::FollowWaypoints>::SharedPtr waypoint_follower_action_client_;
+    nav2_msgs::action::FollowWaypoints::Goal waypoint_follower_goal_;
+    rclcpp_action::ClientGoalHandle<nav2_msgs::action::FollowWaypoints>::SharedPtr waypoint_follower_goal_handle_;
 
     rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_map_data_;
@@ -73,14 +97,6 @@ protected:
 
     //! \brief Publish waypoints after path computation
     void publish_waypoints();
-
-    //! Store node id, latitude and longitude
-    struct NODE
-    {
-        rapidxml::xml_node<char> *xml_node;
-        rapidxml::xml_node<char> *parent_xml_node;
-        double f,g,h;
-    };
 
     //! \brief Read xml file and parse it
     void parseXml();
@@ -119,12 +135,17 @@ protected:
     //! \param g color channel green, default value 0.8
     //! \param b color channel blue, default value 0.0
     //! \param a color channel alpha, default value 1.0
-    void publish_marker_array(std::vector<std::pair<double, double>> * data,
+    void publish_marker_array(std::vector<POSE> * data,
         std::shared_ptr<rclcpp::Publisher<visualization_msgs::msg::MarkerArray>> publisher,
         float size=0.5f, float r=0.0f, float g=0.8f, float b=0.0f, float a=1.0f);
 
     //! \brief clear all markers published by the specified publisher
     void clear_marker_array(std::shared_ptr<rclcpp::Publisher<visualization_msgs::msg::MarkerArray>> publisher);
+
+    //! \brief Start waypoint following
+    //! \param poses vector of waypoints
+    void start_waypoint_following(std::vector<POSE> * waypoints);
+
 };
 
 }   // namespace nav_sgd

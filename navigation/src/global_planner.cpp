@@ -22,10 +22,22 @@ Global_Planner_OSM::Global_Planner_OSM():
     publisher_map_data_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("mapdata", default_qos);
     timer_map_data_ = this->create_wall_timer(5000ms, std::bind(&Global_Planner_OSM::publish_map_data, this));
 
-    waypoints.push_back(std::make_pair(53.555833,10.021944));
+    //waypoints.push_back(std::make_pair(53.555833,10.021944));
     publisher_waypoints_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("waypoints", default_qos);
     //publish_waypoints();
-    timer_waypoints_ = this->create_wall_timer(1000ms, std::bind(&Global_Planner_OSM::publish_waypoints, this));
+    //timer_waypoints_ = this->create_wall_timer(1000ms, std::bind(&Global_Planner_OSM::publish_waypoints, this));
+
+    auto options = rclcpp::NodeOptions().arguments(
+        {"--ros-args --remap __node:=navigation_dialog_action_client"});
+    client_node_ = std::make_shared<rclcpp::Node>("_follow", options);
+    waypoint_follower_action_client_ = 
+        rclcpp_action::create_client<nav2_msgs::action::FollowWaypoints>(
+        client_node_,
+        "FollowWaypoints");
+    waypoint_follower_goal_ = nav2_msgs::action::FollowWaypoints::Goal();
+
+    server_timeout_ = std::chrono::milliseconds(10);
+
 }
 
 Global_Planner_OSM::~Global_Planner_OSM()
@@ -39,6 +51,8 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::ComputePath
 {   
     RCLCPP_INFO(this->get_logger(), "Compute path from %.7f, %.7f to %.7f, %.7f.",
             request->lata, request->lona, request->latb, request->lonb);
+
+    clear_marker_array(publisher_waypoints_);
 
     rapidxml::xml_node<char> *start_node = get_id(request->lata, request->lona);
     rapidxml::xml_node<char> *dest_node = get_id(request->latb, request->lonb);
@@ -118,9 +132,8 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::ComputePath
         RCLCPP_ERROR(this->get_logger(), "Failed to compute path to destination.");
     }
 
-    clear_marker_array(publisher_waypoints_);
-
-    //publish_waypoints();
+    start_waypoint_following(&waypoints);
+    publish_waypoints();
 
     RCLCPP_DEBUG(this->get_logger(), "Path computation successful.");
     response->routeid = 123456;
@@ -141,11 +154,11 @@ Global_Planner_OSM::publish_waypoints()
 
 void
 Global_Planner_OSM::publish_marker_array(
-    std::vector<std::pair<double, double>> * data,
+    std::vector<POSE> * data,
     std::shared_ptr<rclcpp::Publisher<visualization_msgs::msg::MarkerArray>> publisher,
     float size, float r, float g, float b, float a)
 {
-    std::vector<std::pair<double, double>>::iterator it;
+    std::vector<POSE>::iterator it;
     visualization_msgs::msg::MarkerArray marker_array;
 
     //map_data.push_back(std::make_pair(1.23456, 2.34567));
@@ -163,8 +176,8 @@ Global_Planner_OSM::publish_marker_array(
 
         auto p = *it;
 
-        marker.pose.position.x = (p.second - 10.021944) * -110623.2362476;
-        marker.pose.position.y = (p.first - 53.555833) * -109632.4399804;
+        marker.pose.position.x = (p.lon - 10.021944) * 110623.2362476;
+        marker.pose.position.y = (p.lat - 53.555833) * 109632.4399804;
         marker.pose.position.z = 0.0;
         marker.pose.orientation.x = 0.0;
         marker.pose.orientation.y = 0.0;
@@ -226,6 +239,65 @@ Global_Planner_OSM::clear_marker_array(std::shared_ptr<rclcpp::Publisher<visuali
 }
 
 void
+Global_Planner_OSM::start_waypoint_following(std::vector<POSE> * waypoints)
+{
+    auto is_action_server_ready = 
+        waypoint_follower_action_client_->wait_for_action_server(std::chrono::seconds(5));
+    if (!is_action_server_ready)
+    {
+        RCLCPP_ERROR(this->get_logger(), "FollowWaypoints action server is not available.");
+        return;
+    }
+
+    std::vector<POSE>::iterator it;
+    std::vector<geometry_msgs::msg::PoseStamped> poses;
+    geometry_msgs::msg::PoseStamped ps;
+
+    for (it = waypoints->begin(); it != waypoints->end(); ++it)
+    {
+        ps = geometry_msgs::msg::PoseStamped();
+
+        auto p = *it;
+
+        ps.header.stamp = rclcpp::Clock().now();
+        ps.header.frame_id = "0";
+        ps.pose.position.x = (p.lon - 10.021944) * 110623.2362476;
+        ps.pose.position.y = (p.lat - 53.555833) * 109632.4399804;
+        ps.pose.position.z = 0.0;
+        ps.pose.orientation = nav2_util::geometry_utils::orientationAroundZAxis(p.angle);
+
+        poses.push_back(ps);
+    }
+
+    waypoint_follower_goal_.poses = poses;
+    
+    RCLCPP_INFO(this->get_logger(), "Sending a path of %zu waypoints:", waypoint_follower_goal_.poses.size());
+    for (auto waypoint : waypoint_follower_goal_.poses)
+    {
+        RCLCPP_DEBUG(this->get_logger(), "\t(%lf, %lf)", waypoint.pose.position.x, waypoint.pose.position.y);
+    }
+
+    auto send_goal_options = rclcpp_action::Client<nav2_msgs::action::FollowWaypoints>::SendGoalOptions();
+    send_goal_options.result_callback = [](auto) {};
+
+    auto future_goal_handle = waypoint_follower_action_client_->async_send_goal(waypoint_follower_goal_, send_goal_options);
+    if (rclcpp::spin_until_future_complete(client_node_, future_goal_handle, server_timeout_) != rclcpp::FutureReturnCode::SUCCESS)
+    {
+        RCLCPP_ERROR(this->get_logger(), "Send goal call failed.");
+        return;
+    }
+
+    waypoint_follower_goal_handle_ = future_goal_handle.get();
+    if (!waypoint_follower_goal_handle_)
+    {
+        RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server.");
+        return;
+    }
+
+    //QBasicTimer timer.start(200, this);
+}
+
+void
 Global_Planner_OSM::parseXml()
 {   
     RCLCPP_DEBUG(this->get_logger(), "Parse xml");
@@ -238,12 +310,14 @@ Global_Planner_OSM::parseXml()
     root = osm.first_node("nodelist");
     map_data.clear();
 
+    POSE p;
     for (rapidxml::xml_node<> *node = root->first_node("node"); node; node = node->next_sibling())
     {
-        map_data.push_back(std::make_pair(
-                strtod(node->first_attribute("lat")->value(), NULL),
-                strtod(node->first_attribute("lon")->value(), NULL)
-        ));
+        p.lat = strtod(node->first_attribute("lat")->value(), NULL);
+        p.lon = strtod(node->first_attribute("lon")->value(), NULL);
+        p.angle = 0.0;      // angle is not used
+
+        map_data.push_back(p);
     }
 
     RCLCPP_INFO(this->get_logger(), "Parsed nodelist with id = %s", root->first_attribute(0)->value());
@@ -317,8 +391,6 @@ Global_Planner_OSM::trace_path(std::unordered_map<rapidxml::xml_node<char> *, ra
     std::stack<rapidxml::xml_node<char> *> path;
     pid = dest;
 
-    double lat, lon;
-
     while (pid != NULL)
     {
         id = pid;
@@ -327,17 +399,41 @@ Global_Planner_OSM::trace_path(std::unordered_map<rapidxml::xml_node<char> *, ra
     }
 
     RCLCPP_INFO(this->get_logger(), "Computed path:");
-    while (!path.empty())
-    {
-        rapidxml::xml_node<char> *p = path.top();
-        lat = strtod(p->first_attribute("lat")->value(), NULL);
-        lon = strtod(p->first_attribute("lon")->value(), NULL);
 
+    double lat_, lon_;
+    POSE pose;
+    rapidxml::xml_node<char> *nextnode = path.top();
+    pose.lat = strtod(nextnode->first_attribute("lat")->value(), NULL);
+    pose.lon = strtod(nextnode->first_attribute("lon")->value(), NULL);
+    path.pop();
+
+    while (!path.empty())
+    {   
+        rapidxml::xml_node<char> *p = path.top();
+        lat_ = strtod(p->first_attribute("lat")->value(), NULL);
+        lon_ = strtod(p->first_attribute("lon")->value(), NULL);
         path.pop();
-        waypoints.push_back(std::make_pair(lat, lon));
-        RCLCPP_INFO(this->get_logger(), "Waypoint id: %s, lat: %.8f, lon: %.8f.",
-               p->first_attribute("id")->value(), lat, lon);
+        // Calculate angle from nextnode to p
+        // tan = G/A = y/x = lat/lon
+        // tan 
+
+        if (pose.lon == 0 && pose.lat == 0 )
+        {
+            pose.angle = 0.0;   // undefined
+        } else {
+            pose.angle = atan2(lat_ - pose.lat, lon_ - pose.lon);
+        }
+
+        RCLCPP_INFO(this->get_logger(), "Waypoint id: %s, lat: %.8f, lon: %.8f, angle: %f.",
+               nextnode->first_attribute("id")->value(), pose.lat, pose.lon, pose.angle);
+        waypoints.push_back(pose);
+
+        pose.lat = lat_;
+        pose.lon = lon_;
     }
+
+    waypoints.push_back(pose);
+
 }
 
 }   // namespace nav_sgd

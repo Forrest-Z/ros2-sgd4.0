@@ -13,7 +13,11 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav2_msgs REQUIRED)
+find_package(nav2_util REQUIRED)
 find_package(sgd_msgs REQUIRED)
 find_package(rapidxml REQUIRED)
 
@@ -21,7 +25,15 @@ include_directories(include)
 
 # add executable
 add_executable(global_planner src/global_planner.cpp)
-ament_target_dependencies(global_planner rclcpp sgd_msgs visualization_msgs rapidxml)
+ament_target_dependencies(global_planner
+  rclcpp
+  rclcpp_action
+  visualization_msgs
+  geometry_msgs
+  nav2_msgs
+  nav2_util
+  sgd_msgs
+  rapidxml)
 
 
 install(
