@@ -17,7 +17,7 @@ Betriebssystem | Ubuntu 20.04 LTS 64 bit
 Paket | Link | required
 ------|------|---------
 ROS2 Foxy | - | required
-Navigation 2 | - | required
+Navigation 2 | - | included in ROS 2
 sick_scan2 | [sick_scan2](https://github.com/SICKAG/sick_scan2) | required
 Gazebo 11 | [Gazebo](http://gazebosim.org/tutorials?tut=ros2_installing&cat=connect_ros) | optional
 
