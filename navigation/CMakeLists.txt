@@ -16,6 +16,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(sgd_msgs REQUIRED)
@@ -33,11 +34,19 @@ ament_target_dependencies(global_planner
   nav2_msgs
   nav2_util
   sgd_msgs
-  rapidxml)
+  rapidxml
+)
 
+add_executable(navigator src/navigator.cpp)
+ament_target_dependencies(navigator
+  rclcpp
+  geometry_msgs
+  sensor_msgs
+  sgd_msgs
+)
 
 install(
-  TARGETS global_planner
+  TARGETS global_planner navigator
   DESTINATION lib/${PROJECT_NAME})
   
 install(

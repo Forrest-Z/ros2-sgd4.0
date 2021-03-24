@@ -176,8 +176,8 @@ Global_Planner_OSM::publish_marker_array(
 
         auto p = *it;
 
-        marker.pose.position.x = (p.lon - 10.021944) * 110623.2362476;
-        marker.pose.position.y = (p.lat - 53.555833) * 109632.4399804;
+        marker.pose.position.x = (p.lon - 10.021944) * 66269.83554449;
+        marker.pose.position.y = (p.lat - 53.555833) * 111293.78937166;
         marker.pose.position.z = 0.0;
         marker.pose.orientation.x = 0.0;
         marker.pose.orientation.y = 0.0;
@@ -261,8 +261,8 @@ Global_Planner_OSM::start_waypoint_following(std::vector<POSE> * waypoints)
 
         ps.header.stamp = rclcpp::Clock().now();
         ps.header.frame_id = "0";
-        ps.pose.position.x = (p.lon - 10.021944) * 110623.2362476;
-        ps.pose.position.y = (p.lat - 53.555833) * 109632.4399804;
+        ps.pose.position.x = (p.lon - 10.021944) * 66269.83554449;
+        ps.pose.position.y = (p.lat - 53.555833) * 111293.78937166;
         ps.pose.position.z = 0.0;
         ps.pose.orientation = nav2_util::geometry_utils::orientationAroundZAxis(p.angle);
 
@@ -315,7 +315,7 @@ Global_Planner_OSM::parseXml()
     {
         p.lat = strtod(node->first_attribute("lat")->value(), NULL);
         p.lon = strtod(node->first_attribute("lon")->value(), NULL);
-        p.angle = 0.0;      // angle is not used
+        p.angle = 0.0;      // angle is not needed
 
         map_data.push_back(p);
     }
@@ -424,8 +424,8 @@ Global_Planner_OSM::trace_path(std::unordered_map<rapidxml::xml_node<char> *, ra
             pose.angle = atan2(lat_ - pose.lat, lon_ - pose.lon);
         }
 
-        RCLCPP_INFO(this->get_logger(), "Waypoint id: %s, lat: %.8f, lon: %.8f, angle: %f.",
-               nextnode->first_attribute("id")->value(), pose.lat, pose.lon, pose.angle);
+        RCLCPP_INFO(this->get_logger(), "Added waypoint with lat: %.8f, lon: %.8f, angle: %f.",
+               pose.lat, pose.lon, pose.angle);
         waypoints.push_back(pose);
 
         pose.lat = lat_;
@@ -442,9 +442,6 @@ int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
     std::shared_ptr<rclcpp::Node> node = std::make_shared<nav_sgd::Global_Planner_OSM>();
-
-    //rclcpp::Service<sgd_msgs::srv::ComputePath>::SharedPtr service = 
-    //    node->create_service<sgd_msgs::srv::ComputePath>("compute_path", &nav_sgd::Global_Planner_OSM::computePath);
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Ready to compute path");
 

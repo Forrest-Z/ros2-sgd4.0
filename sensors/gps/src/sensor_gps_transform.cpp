@@ -8,10 +8,10 @@
 #include "geometry_msgs/msg/point.hpp"
 using std::placeholders::_1;
 
-#define DEFAULT_orig_lat 10.021944
-#define DEFAULT_orig_lon 53.555833
-#define DEFAULT_coeff_a -110623.2362476
-#define DEFAULT_coeff_b -109632.4399804
+#define DEFAULT_orig_lat 53.555833
+#define DEFAULT_orig_lon 10.021944
+#define DEFAULT_coeff_a 111293.78937166
+#define DEFAULT_coeff_b 66269.83554449
 
 using namespace std;
 using namespace std::chrono_literals;

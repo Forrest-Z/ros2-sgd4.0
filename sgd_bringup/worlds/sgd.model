@@ -36,9 +36,11 @@
     
     <spherical_coordinates>
       <surface_model>EARTH_WGS84</surface_model>
-      <latitude_deg>10.021944</latitude_deg>
-      <longitude_deg>53.555833</longitude_deg>
-      <elevation>6.0</elevation>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>53.555833</latitude_deg>
+      <longitude_deg>10.021944</longitude_deg>
+      <elevation>1.0</elevation>
+      <heading_deg>-180</heading_deg>
     </spherical_coordinates>
 
     
