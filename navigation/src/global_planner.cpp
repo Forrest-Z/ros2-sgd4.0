@@ -12,7 +12,7 @@ Global_Planner_OSM::Global_Planner_OSM():
 {
     RCLCPP_INFO(this->get_logger(), "Global planner initialization.");
     // TODO: read path to map file from params
-    map_file_ = "/home/ipp/dev_ws/src/ros2-sgd4.0/navigation/maps/20_NavigationsFaehigeDaten.osm";
+    map_file_ = "/home/pascal/dev_ws/src/ros2-sgd4.0/navigation/maps/20_NavigationsFaehigeDaten.osm";
     parseXml();
     // Create publisher for map_data
     
@@ -175,9 +175,10 @@ Global_Planner_OSM::publish_marker_array(
         marker.action = visualization_msgs::msg::Marker::ADD;
 
         auto p = *it;
+        auto xy = sgd_util::WGS84_to_local(p.lat, p.lon);
 
-        marker.pose.position.x = (p.lon - 10.021944) * 66269.83554449;
-        marker.pose.position.y = (p.lat - 53.555833) * 111293.78937166;
+        marker.pose.position.x = xy.first;
+        marker.pose.position.y = xy.second;
         marker.pose.position.z = 0.0;
         marker.pose.orientation.x = 0.0;
         marker.pose.orientation.y = 0.0;
@@ -258,13 +259,14 @@ Global_Planner_OSM::start_waypoint_following(std::vector<POSE> * waypoints)
         ps = geometry_msgs::msg::PoseStamped();
 
         auto p = *it;
+        auto xy = sgd_util::WGS84_to_local(p.lat, p.lon);
 
         ps.header.stamp = rclcpp::Clock().now();
         ps.header.frame_id = "0";
-        ps.pose.position.x = (p.lon - 10.021944) * 66269.83554449;
-        ps.pose.position.y = (p.lat - 53.555833) * 111293.78937166;
+        ps.pose.position.x = xy.first;
+        ps.pose.position.y = xy.second;
         ps.pose.position.z = 0.0;
-        ps.pose.orientation = nav2_util::geometry_utils::orientationAroundZAxis(p.angle);
+        ps.pose.orientation = sgd_util::rotation_around_z(p.angle);
 
         poses.push_back(ps);
     }

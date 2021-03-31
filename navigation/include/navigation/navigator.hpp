@@ -5,6 +5,7 @@
 #include "geometry_msgs/msg/point_stamped.hpp"
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include "sgd_msgs/srv/compute_path.hpp"
+#include "sgd_util/sgd_util.hpp"
 
 namespace nav_sgd
 {

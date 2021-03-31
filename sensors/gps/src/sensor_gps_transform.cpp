@@ -6,12 +6,8 @@
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include "geometry_msgs/msg/point_stamped.hpp"
 #include "geometry_msgs/msg/point.hpp"
+#include "sgd_util/sgd_util.hpp"
 using std::placeholders::_1;
-
-#define DEFAULT_orig_lat 53.555833
-#define DEFAULT_orig_lon 10.021944
-#define DEFAULT_coeff_a 111293.78937166
-#define DEFAULT_coeff_b 66269.83554449
 
 using namespace std;
 using namespace std::chrono_literals;
@@ -21,17 +17,6 @@ class GPS_Transform : public rclcpp::Node
 public:
   GPS_Transform() : Node("gps_transform")
   {
-    this->declare_parameter("orig_lat", DEFAULT_orig_lat);
-    this->declare_parameter("orig_lon", DEFAULT_orig_lon);
-    this->declare_parameter("coeff_a", DEFAULT_coeff_a);
-    this->declare_parameter("coeff_b", DEFAULT_coeff_b);
-
-    this->get_parameter("orig_lat", orig_lat);
-    this->get_parameter("orig_lon", orig_lon);
-    this->get_parameter("coeff_a", coeff_a);
-    this->get_parameter("coeff_b", coeff_b);
-
-    RCLCPP_INFO(get_logger(), "Declared parameter %f, %f, %f, %f", orig_lat, orig_lon, coeff_a, coeff_b);
 
     auto default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
     subscription_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(
@@ -41,16 +26,13 @@ public:
   }
 
 private:
-  double orig_lat;
-  double orig_lon;
-  double coeff_a;
-  double coeff_b;
 
   void OnMsgReceived(const sensor_msgs::msg::NavSatFix::SharedPtr msg_) const
   {    
     auto pnt = geometry_msgs::msg::Point();
-    pnt.y = (msg_->latitude - orig_lat) * coeff_a;
-    pnt.x = (msg_->longitude - orig_lon) * coeff_b;
+    auto xy = sgd_util::WGS84_to_local(msg_->latitude, msg_->longitude);
+    pnt.x = xy.first;
+    pnt.y = xy.second;
     pnt.z = msg_->altitude;
 
     auto pntst = geometry_msgs::msg::PointStamped();

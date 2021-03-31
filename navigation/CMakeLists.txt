@@ -21,6 +21,7 @@ find_package(nav2_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(sgd_msgs REQUIRED)
 find_package(rapidxml REQUIRED)
+find_package(sgd_util REQUIRED)
 
 include_directories(include)
 
@@ -35,6 +36,7 @@ ament_target_dependencies(global_planner
   nav2_util
   sgd_msgs
   rapidxml
+  sgd_util
 )
 
 add_executable(navigator src/navigator.cpp)
@@ -43,6 +45,7 @@ ament_target_dependencies(navigator
   geometry_msgs
   sensor_msgs
   sgd_msgs
+  sgd_util
 )
 
 install(

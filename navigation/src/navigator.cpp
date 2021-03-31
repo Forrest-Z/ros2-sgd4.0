@@ -46,8 +46,9 @@ Navigator::sub_gps_handler(const sensor_msgs::msg::NavSatFix::SharedPtr msg_)
 void
 Navigator::sub_clicked_point_handler(const geometry_msgs::msg::PointStamped::SharedPtr msg_)
 {
-    clicked_point_lat_ = msg_->point.y / 111293.78937166 + 53.555833;
-    clicked_point_lon_ = msg_->point.x / 66269.83554449 + 10.021944;
+    auto latlon = sgd_util::local_to_WGS84(msg_->point.x, msg_->point.y);
+    clicked_point_lat_ = latlon.first;
+    clicked_point_lon_ = latlon.second;
 
     if (gps_lon_ == 0.0 || gps_lat_ == 0.0)
     {
