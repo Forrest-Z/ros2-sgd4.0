@@ -1,122 +1,100 @@
 
-
-
 #include "gps/navilock_ublox6_gps.hpp"
-
-#include <functional>
-#include <memory>
-#include <stdio.h>
-#include <string>
-#include <iostream>
-#include <fcntl.h>
-#include <cerrno>
-#include <cstring>
-#include <termios.h>
-#include <unistd.h>
-
-#include "rclcpp/rclcpp.hpp"
-//#include "sensor_msgs/msg/nav_sat_fix.hpp"
-//#include "geometry_msgs/msg/point_stamped.hpp"
-//#include "geometry_msgs/msg/point.hpp"
-#include "std_msgs/msg/string.hpp"
 
 using std::placeholders::_1;
 using namespace std::chrono_literals;
 
-namespace sensor_gps
+namespace sgd_sensors
 {
 
-Navilock_UBlox6_GPS::Navilock_UBlox6_GPS():
-        Node("navilock_ublox6_gps"),baud_rate_(9600),port_("/dev/ttyACM0")
+Navilock_UBlox6_GPS::Navilock_UBlox6_GPS()
+    :Node("navilock_ublox6_gps")
 {
-    init();
-    
-    RCLCPP_INFO(this->get_logger(), "Publishing GPS messages on topic /gpspos");
-    auto default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
+
+  std::string map_file_ = "/home/pascal/dev_ws/src/ros2-sgd4.0/sensors/gps/data/nmea.xml";
+  nmea_parser_ = std::shared_ptr<Nmea_Parser>(new Nmea_Parser(map_file_));
   
-    publisher_ = this->create_publisher<std_msgs::msg::String>("gpspos", default_qos);
-    timer_ = this->create_wall_timer(1000ms, std::bind(&Navilock_UBlox6_GPS::readLine, this));
+  RCLCPP_INFO(this->get_logger(), "Publishing GPS messages on topic /gps");
+  publisher_ = this->create_publisher<sensor_msgs::msg::NavSatFix>("gps", default_qos);
+  timer_ = this->create_wall_timer(100ms, std::bind(&Navilock_UBlox6_GPS::read_msg, this));
 }
 
 Navilock_UBlox6_GPS::~Navilock_UBlox6_GPS()
 {
-  RCLCPP_INFO(this->get_logger(), "Destroying");
-  close(serial_port_);
+  RCLCPP_DEBUG(this->get_logger(), "Destroying");
 }
 
 void
-Navilock_UBlox6_GPS::timerCallback() {
+Navilock_UBlox6_GPS::read_msg() {
+  std::string path = fs::temp_directory_path().string() + "/serial";
+  long last_time = 0;
+  try
+  {
+    for (const auto & entry : fs::directory_iterator(path))
+    {
+      if (entry.path() == last_file_ || entry.path().extension() == ".lck")
+      {
+        continue;
+      }
 
-}
+      std::string fname = entry.path().filename();
+      std::string time = fname.substr(0,fname.find("."));
 
-void
-Navilock_UBlox6_GPS::readLine() {
-  char read_buf [256];
-
-  std::memset(&read_buf, '\0', sizeof(read_buf));
-  int num_bytes = read(serial_port_, &read_buf, sizeof(read_buf));
-
-  if (num_bytes < 0) {
-    RCLCPP_ERROR(this->get_logger(), "Error reading %s", strerror(errno));
+      try
+      {
+          long ft = std::stol(time);
+          if (ft > last_time)
+          {
+              last_time = ft;
+              last_file_ = entry.path();
+          }
+      }
+      catch(const std::invalid_argument& e)
+      {
+          RCLCPP_WARN(get_logger(), "Could not parse string %s",time);
+      }
+    }
+  } catch (const fs::filesystem_error& e)
+  {
+    RCLCPP_WARN(get_logger(), "Could not read any gps data.");
+    return;
+  }
+  
+  if (last_time <= 0)
+  {
     return;
   }
 
-  if (num_bytes <= 1) {return;}     // filter '\0' messages
+  nmea_parser_->clear();
+  std::string line;
+  std::ifstream myfile(last_file_);
 
-  RCLCPP_INFO(this->get_logger(), "Read %i bytes. Received message: %s", num_bytes, read_buf);
-
-  auto msg_ = std_msgs::msg::String();
-  std::string s(read_buf);
-  msg_.data = s;
-  publisher_->publish(msg_);
-}
-
-int
-Navilock_UBlox6_GPS::init() {
-  serial_port_ = open(port_, O_RDWR);
-    isPortOpen_ = serial_port_ > 0 ? false : true;
-
-    if (tcgetattr(serial_port_, &tty_) != 0)
+  if (myfile.is_open())
+  {
+    while (getline(myfile, line))
     {
-        RCLCPP_ERROR(this->get_logger(), "Error %i from togetattr %s", errno, strerror(errno));
-        isPortOpen_ = false;
-        return 1;       // TODO: Error handling
+      nmea_parser_->parse_line(line);
     }
-
-    tty_.c_cflag &= ~PARENB;     // clear parity bit
-    tty_.c_cflag &= ~CSTOPB;
-    tty_.c_cflag &= ~CSIZE;
-    //tty_.c_cflag != CS8;    // Compiler warning: statement has no effect
-    tty_.c_cflag &= ~CRTSCTS;
-    //tty_.c_cflag != (CREAD | CLOCAL);   // Compiler warning: statement has no effect
-
-    tty_.c_lflag &= ~ICANON;
-    tty_.c_lflag &= ~ECHO;
-    tty_.c_lflag &= ~ECHOE;
-    tty_.c_lflag &= ~ECHONL;
-    tty_.c_lflag &= ~ISIG;
-
-    tty_.c_iflag &= ~(IXON | IXOFF | IXANY);
-    tty_.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);
-
-    tty_.c_oflag &= ~OPOST;
-    tty_.c_oflag &= ~ONLCR;
-
-    tty_.c_cc[VTIME] = 10;
-    tty_.c_cc[VMIN] = 0;
-
-    cfsetispeed(&tty_, B9600);      // TODO: use user defined baud-rate
-    cfsetospeed(&tty_, B9600);
-
-    return 0;
+    myfile.close();
+  }
+  // Alle Daten sind da und können gepublished werden.
+  sensor_msgs::msg::NavSatFix nsf;
+  nsf.latitude = nmea_parser_->latitude();
+  nsf.longitude = nmea_parser_->longitude();
+  nsf.header.stamp.sec = nmea_parser_->time();
+  
+  nsf.status.status = nmea_parser_->fix() > 1 ? sensor_msgs::msg::NavSatStatus::STATUS_FIX
+              : sensor_msgs::msg::NavSatStatus::STATUS_NO_FIX;
+  
+  publisher_->publish(nsf);
 }
 
-}   // namespace sensor_gps
+}   // namespace sgd_sensors
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<sensor_gps::Navilock_UBlox6_GPS>());
+  rclcpp::spin(std::make_shared<sgd_sensors::Navilock_UBlox6_GPS>());
   rclcpp::shutdown();
   return 0;
 }
