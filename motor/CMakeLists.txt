@@ -1,10 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(wh_f-cruiser)
-
-# Default to C99
-if(NOT CMAKE_C_STANDARD)
-  set(CMAKE_C_STANDARD 99)
-endif()
+project(motor)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -17,9 +12,25 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(sgd_msgs REQUIRED)
+
+include_directories(include)
+
+# add executable
+add_executable(wh_fcruiser src/wh_f-cruiser.cpp)
+ament_target_dependencies(wh_fcruiser
+  rclcpp
+  sgd_msgs
+)
+
+install(
+  TARGETS wh_fcruiser
+  DESTINATION lib/${PROJECT_NAME})
+  
+install(
+  DIRECTORY include/
+  DESTINATION include/)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -78,7 +78,7 @@ protected:
 
     //! Store map data
     std::vector<POSE> map_data;
-
+ 
     std::chrono::milliseconds server_timeout_;
     rclcpp::Node::SharedPtr client_node_;
     rclcpp::Service<sgd_msgs::srv::ComputePath>::SharedPtr compute_path_srv;

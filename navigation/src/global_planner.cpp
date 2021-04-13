@@ -15,7 +15,7 @@ Global_Planner_OSM::Global_Planner_OSM():
     map_file_ = "/home/pascal/dev_ws/src/ros2-sgd4.0/navigation/maps/20_NavigationsFaehigeDaten.osm";
     parseXml();
     // Create publisher for map_data
-    
+     
     compute_path_srv = this->create_service<sgd_msgs::srv::ComputePath>("/compute_path",
         std::bind(&Global_Planner_OSM::computePath, this, std::placeholders::_1, std::placeholders::_2));
 

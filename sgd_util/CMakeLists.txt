@@ -12,9 +12,13 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(sgd_msgs REQUIRED)
+
+include_directories(include)
 
 add_library(sgd_util SHARED src/sgd_util.cpp)
 ament_target_dependencies(sgd_util
@@ -22,10 +26,19 @@ ament_target_dependencies(sgd_util
   tf2
   tf2_geometry_msgs)
 
+add_executable(serial src/serial.cpp)
+ament_target_dependencies(serial
+  rclcpp
+  sgd_msgs)
+
 target_include_directories(sgd_util
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
+
+install(
+  TARGETS serial
+  DESTINATION lib/${PROJECT_NAME})
 
 ament_export_targets(export_sgd_util HAS_LIBRARY_TARGET)
 ament_export_dependencies(geometry_msgs tf2 tf2_geometry_msgs)
@@ -33,6 +46,11 @@ ament_export_dependencies(geometry_msgs tf2 tf2_geometry_msgs)
 install(
   DIRECTORY include/
   DESTINATION include/)
+
+install(
+  DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
 
 install(
   TARGETS sgd_util

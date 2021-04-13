@@ -73,6 +73,12 @@ make
 source ~/dev_ws/install/setup.bash
 ```
 
+Um USB Ports ohne root Rechte nutzen zu können, müssen die folgenden Befehle ausgeführt werden.
+```
+sudo apt remove modemmanager
+sudo adduser $USER dialout
+```
+
 ## Installation sick_scan2
 Installation der packages wie [hier](https://github.com/SICKAG/sick_scan2) beschrieben. ldmrs Support ist nicht erforderlich.
 
