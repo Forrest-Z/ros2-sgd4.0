@@ -21,8 +21,14 @@ Serial::Serial()
 
     std::string port = this->get_parameter("port").as_string();
     std::string topic_out = "serial_" + port.substr(port.find_last_of("/")+1);
-    
+
     pub_serial = create_publisher<sgd_msgs::msg::Serial>(topic_out, default_qos);
+
+    // TODO send time to serial out, wait for response
+    // compute response and compare to received response
+    // if response != rec_response terminate serial and print error msg
+
+
     timer_ = this->create_wall_timer(10ms, std::bind(&Serial::read_serial, this));
 
     if (this->get_parameter("read_write").as_string() == "rw")
@@ -161,8 +167,8 @@ Serial::init_serial(const char *port, const int baud)
 
     if (baud > 0)
     {
-        cfsetispeed(&tty_, B9600);      // TODO: use user defined baud-rate
-        cfsetospeed(&tty_, B9600);
+        cfsetispeed(&tty_, B115200);      // TODO: use user defined baud-rate
+        cfsetospeed(&tty_, B115200);
     }
 
     if (tcsetattr(serial_port_, TCSANOW, &tty_) != 0)

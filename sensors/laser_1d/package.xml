@@ -1,18 +1,16 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>gps</name>
+  <name>laser1d</name>
   <version>0.0.1</version>
-  <description>GPS sensor package</description>
+  <description>Package for one dimensional laser scanner.</description>
   <maintainer email="pascal.stahr@haw-hamburg.de">Pascal Stahr</maintainer>
   <license>Apache License 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>rclcpp</depend>
-  <depend>sensor_msgs</depend>
-  <depend>sgd_util</depend>
   <depend>sgd_msgs</depend>
-  <depend>rapidxml</depend>
+  <depend>sensor_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

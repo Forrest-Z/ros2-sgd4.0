@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(motor)
+project(sgd_lc)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -14,18 +14,20 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sgd_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 include_directories(include)
 
 # add executable
-add_executable(wh_fcruiser src/wh_f-cruiser.cpp)
-ament_target_dependencies(wh_fcruiser
+add_executable(local_controller src/local_controller.cpp)
+ament_target_dependencies(local_controller
   rclcpp
   sgd_msgs
+  sensor_msgs
 )
 
 install(
-  TARGETS wh_fcruiser
+  TARGETS local_controller
   DESTINATION lib/${PROJECT_NAME})
   
 install(

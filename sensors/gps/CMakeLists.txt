@@ -15,6 +15,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(sgd_util REQUIRED)
+find_package(sgd_msgs REQUIRED)
 find_package(rapidxml REQUIRED)
 
 include_directories(include)
@@ -52,6 +53,7 @@ ament_target_dependencies(navilock_ublox6_gps
     rclcpp
     rapidxml
     sensor_msgs
+    sgd_msgs
 )
 target_link_libraries(navilock_ublox6_gps ${library_name})
 

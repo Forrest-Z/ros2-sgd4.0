@@ -1,5 +1,5 @@
 
-#include "../include/gps/nmea_parser.hpp"
+#include "gps/nmea_parser.hpp"
 #include <memory>
 
 namespace sgd_sensors
@@ -26,11 +26,10 @@ Nmea_Parser::Nmea_Parser(std::string xml_file)
                 NMEA_PARAM p(get_attribute_value(n, "name"), get_attribute_value(n, "type"), s);
                 v.push_back(p);
             }
-            sentence_ids_.insert(std::make_pair(get_attribute_value(node, "name"), v));
-            
+            sentence_ids_.insert(std::make_pair(get_attribute_value(node, "name"), v));       
         }
-    }
-    
+    }  
+    msg_counter_ = 0;  
 }
 
 Nmea_Parser::~Nmea_Parser() {
@@ -40,13 +39,6 @@ Nmea_Parser::~Nmea_Parser() {
 int
 Nmea_Parser::parse_line(std::string line)
 {
-    /*
-    1. check if line starts with '$' and ends with '\0'
-    2. get sentence ID and check if it has to be parsed
-    3. parse message according to message type
-    4. 
-    */
-
     if (line.front() != '$') // || line.back() != '\0')
     {
         std::cout << "Badly formatted string." << std::endl;
@@ -61,20 +53,16 @@ Nmea_Parser::parse_line(std::string line)
     if (sid_ != sentence_ids_.end())
     {
         msg.erase(msg.begin());
-        std::cout << "Parse line" << std::endl;
+        msg_counter_++;
         
         //int i = 0;
         std::vector<NMEA_PARAM> v = sid_->second;
         for (uint i = 0; i < v.size(); i++)
-        //for (auto it = v.begin(); it != v.end(); ++it)
         {
             // Parse param
             add_param(v[i].name(), v[i].param(msg[i]));
-            //it->param(msg[i]);
-            
         }
     }
-
     return 0;
 }
 
@@ -84,6 +72,7 @@ Nmea_Parser::clear()
     data_string_.clear();
     data_int_.clear();
     data_double_.clear();
+    msg_counter_ = 0;
 }
 
 template<class T>
@@ -135,6 +124,12 @@ Nmea_Parser::fix()
     return get_data<int>("fix");
 }
 
+bool
+Nmea_Parser::msg_complete()
+{
+    return msg_counter_ == sentence_ids_.size();
+}
+
 
 // ##########
 // private methods
@@ -175,17 +170,14 @@ Nmea_Parser::add_param(std::string name, std::variant<std::string, int, double> 
     
     if (std::holds_alternative<std::string>(value))
     {
-        std::cout << "Add string " << std::get<std::string>(value) << " to param " << name << std::endl;
         data_string_.insert(std::make_pair(name, std::get<std::string>(value)));
     }
     else if (std::holds_alternative<int>(value))
     {
-        std::cout << "Add int " << std::get<int>(value) << " to param " << name << std::endl;
         data_int_.insert(std::make_pair(name, std::get<int>(value)));
     }
     else
     {
-        std::cout << "Add double " << std::get<double>(value) << " to param " << name << std::endl;
         data_double_.insert(std::make_pair(name, std::get<double>(value)));
     }
 }

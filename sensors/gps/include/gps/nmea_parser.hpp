@@ -45,6 +45,9 @@ public:
     //! \brief Returns true if gps signal is fixed.
     int fix();
 
+    //! \brief Returns the number of messages to parse.
+    bool msg_complete();
+
     //! \brief Get additional data from last valid gps message.
     //! \param param_name Parameter to search for
     //! \returns Requested data as string or NULL if requested parameter is not valid.
@@ -55,6 +58,8 @@ public:
     void clear();
 
 protected:
+    uint8_t msg_counter_;
+
     std::unordered_map<std::string, std::string> data_string_;
     std::unordered_map<std::string, double> data_double_;
     std::unordered_map<std::string, int> data_int_;

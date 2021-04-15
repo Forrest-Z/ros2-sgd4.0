@@ -3,6 +3,7 @@
 #ifndef NAVILOCK_UBLOX6_GPS_HPP_
 #define NAVILOCK_UBLOX6_GPS_HPP_
 
+#include <chrono>
 #include <functional>
 #include <filesystem>
 #include <memory>
@@ -20,6 +21,7 @@
 
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include "sensor_msgs/msg/nav_sat_status.hpp"
+#include "sgd_msgs/msg/serial.hpp"
 #include "gps/nmea_parser.hpp"
 
 using std::placeholders::_1;
@@ -39,7 +41,6 @@ public:
   ~Navilock_UBlox6_GPS();
 
 protected:
-
   // Implement the lifecycle interface -> TODO
   //nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
   //nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
@@ -49,6 +50,7 @@ protected:
 
   // Publisher 
   rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr publisher_;
+  rclcpp::Subscription<sgd_msgs::msg::Serial>::SharedPtr subscriber_;
   rclcpp::TimerBase::SharedPtr timer_;
 
   rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
@@ -57,8 +59,8 @@ protected:
 
   std::shared_ptr<Nmea_Parser> nmea_parser_;
   
-
-  void read_msg();
+  void read_msg(const sgd_msgs::msg::Serial::SharedPtr msg);
+  void publish_msg();
   void timerCallback();
 };
 

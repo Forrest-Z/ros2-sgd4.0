@@ -10,83 +10,49 @@ namespace sgd_sensors
 Navilock_UBlox6_GPS::Navilock_UBlox6_GPS()
     :Node("navilock_ublox6_gps")
 {
+  // Declare and read parameters from launch file
+  this->declare_parameter("port", "/dev/novalue");
+  this->declare_parameter("xml_file", "/home/ipp/dev_ws/src/ros2-sgd4.0/sensors/gps/data/nmea.xml");
 
-  std::string map_file_ = "/home/pascal/dev_ws/src/ros2-sgd4.0/sensors/gps/data/nmea.xml";
+  std::string serial_topic = this->get_parameter("port").as_string();
+  serial_topic = "serial_" + serial_topic.substr(serial_topic.find_last_of("/")+1);
+
+  std::string map_file_ = this->get_parameter("xml_file").as_string();
   nmea_parser_ = std::shared_ptr<Nmea_Parser>(new Nmea_Parser(map_file_));
   
+  // Create publisher and subscriber
   RCLCPP_INFO(this->get_logger(), "Publishing GPS messages on topic /gps");
   publisher_ = this->create_publisher<sensor_msgs::msg::NavSatFix>("gps", default_qos);
-  timer_ = this->create_wall_timer(100ms, std::bind(&Navilock_UBlox6_GPS::read_msg, this));
+  subscriber_ = this->create_subscription<sgd_msgs::msg::Serial>(
+    serial_topic, default_qos, std::bind(&Navilock_UBlox6_GPS::read_msg, this, _1));
 }
 
 Navilock_UBlox6_GPS::~Navilock_UBlox6_GPS()
 {
-  RCLCPP_DEBUG(this->get_logger(), "Destroying");
+  RCLCPP_INFO(this->get_logger(), "Destroying");
 }
 
 void
-Navilock_UBlox6_GPS::read_msg() {
-  std::string path = fs::temp_directory_path().string() + "/serial";
-  long last_time = 0;
-  try
-  {
-    for (const auto & entry : fs::directory_iterator(path))
-    {
-      if (entry.path() == last_file_ || entry.path().extension() == ".lck")
-      {
-        continue;
-      }
-
-      std::string fname = entry.path().filename();
-      std::string time = fname.substr(0,fname.find("."));
-
-      try
-      {
-          long ft = std::stol(time);
-          if (ft > last_time)
-          {
-              last_time = ft;
-              last_file_ = entry.path();
-          }
-      }
-      catch(const std::invalid_argument& e)
-      {
-          RCLCPP_WARN(get_logger(), "Could not parse string %s",time);
-      }
-    }
-  } catch (const fs::filesystem_error& e)
-  {
-    RCLCPP_WARN(get_logger(), "Could not read any gps data.");
-    return;
-  }
+Navilock_UBlox6_GPS::read_msg(const sgd_msgs::msg::Serial::SharedPtr msg) {
+  std::string line = msg->msg;
+  nmea_parser_->parse_line(line);
   
-  if (last_time <= 0)
+  if (nmea_parser_->msg_complete())
   {
-    return;
-  }
+    // Alle Daten sind da und können gepublished werden.
+    sensor_msgs::msg::NavSatFix nsf;
+    nsf.latitude = nmea_parser_->latitude();
+    nsf.longitude = nmea_parser_->longitude();
+    nsf.header.stamp.sec = nmea_parser_->time();
+    
+    nsf.status.status = nmea_parser_->fix() > 1 ? sensor_msgs::msg::NavSatStatus::STATUS_FIX
+                : sensor_msgs::msg::NavSatStatus::STATUS_NO_FIX;
+    
+    publisher_->publish(nsf);
 
-  nmea_parser_->clear();
-  std::string line;
-  std::ifstream myfile(last_file_);
-
-  if (myfile.is_open())
-  {
-    while (getline(myfile, line))
-    {
-      nmea_parser_->parse_line(line);
-    }
-    myfile.close();
+    // Clear old message 
+    nmea_parser_->clear();
   }
-  // Alle Daten sind da und können gepublished werden.
-  sensor_msgs::msg::NavSatFix nsf;
-  nsf.latitude = nmea_parser_->latitude();
-  nsf.longitude = nmea_parser_->longitude();
-  nsf.header.stamp.sec = nmea_parser_->time();
-  
-  nsf.status.status = nmea_parser_->fix() > 1 ? sensor_msgs::msg::NavSatStatus::STATUS_FIX
-              : sensor_msgs::msg::NavSatStatus::STATUS_NO_FIX;
-  
-  publisher_->publish(nsf);
 }
 
 }   // namespace sgd_sensors
@@ -95,6 +61,9 @@ int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<sgd_sensors::Navilock_UBlox6_GPS>());
+
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "GPS node startup complete");
+
   rclcpp::shutdown();
   return 0;
 }

@@ -17,7 +17,8 @@ find_package(builtin_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
 
 set(msg_files
-  "msg/Serial.msg"  
+  "msg/Serial.msg"
+  "msg/Touch.msg"
 )
 
 set(srv_files
