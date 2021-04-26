@@ -28,7 +28,7 @@ def generate_launch_description():
 
     declare_feather_port_cmd = DeclareLaunchArgument(
         'feather_port',
-        default_value='/dev/ttyACM1',
+        default_value='/dev/ttyACM0',
         description='Port to communicate with feather M0')
 
     declare_motor_port_cmd = DeclareLaunchArgument(
@@ -37,29 +37,29 @@ def generate_launch_description():
         description='Port to communicate with motors')
 
     # Create nodes for gps
-    #start_serial0_cmd = Node(
-    #    package="sgd_util",
-    #    executable="serial",
-    #    name="gps_serial",
-    #    output="screen",
-    #    emulate_tty=True,
-    #    parameters=[
-    #        {"port": gps_port,
-    #         "baud_rate": 115200,
-    #         "read_write": "ro"}     # one of ro,rw
-    #    ])
+    start_serial0_cmd = Node(
+        package="sgd_util",
+        executable="serial",
+        name="gps_serial",
+        output="screen",
+        emulate_tty=True,
+        parameters=[
+            {"port": gps_port,
+             "baud_rate": 9600,
+             "read_write": "ro"}     # one of ro,rw
+        ])
 
-    #start_gps_cmd = Node(
-    #    package="gps",
-    #    executable="navilock_ublox6_gps",
-    #    name="gps_sensor",
-    #    output="screen",
-    #    emulate_tty=True,
-    #    parameters=[
-    #        {"port": gps_port,
-    #         "xml_file": os.path.join(gps_dir,'data','nmea.xml')}
-    #    ]
-    #)
+    start_gps_cmd = Node(
+        package="gps",
+        executable="navilock_ublox6_gps",
+        name="gps_sensor",
+        output="screen",
+        emulate_tty=True,
+        parameters=[
+            {"port": gps_port,
+             "xml_file": os.path.join(gps_dir,'data','nmea.xml')}
+        ]
+    )
 
     # Create nodes for capacitive touch and laser 1D
     start_serial1_cmd = Node(
@@ -72,7 +72,8 @@ def generate_launch_description():
             {"port": feather_port,
              "baud_rate": 115200,
              "read_write": "ro"}
-        ])
+        ]
+    )
 
     start_cap_touch_cmd = Node(
         package="cap_touch",
@@ -109,8 +110,22 @@ def generate_launch_description():
             {"port": motor_port,
              "baud_rate": 115200,
              "read_write": "rw"}
-        ])
+        ]
+    )
     
+    start_motor_driver_cmd = Node(
+        package="sgd_lc",
+        executable="wheel_driver",
+        name="wheel_driver",
+        output="screen",
+        emulate_tty=True,
+        parameters=[
+            {"port": motor_port,
+             "motor_kp": 0.3,
+             "max_speed": 140}
+        ]
+    )
+
     start_motor_cmd = Node(
         package="sgd_lc",
         executable="local_controller",
@@ -118,7 +133,9 @@ def generate_launch_description():
         output="screen",
         emulate_tty=True,
         parameters=[
-            {"port": motor_port}
+            {"filter_i": 5,
+             "speed_kp": 0.4,
+             "turn_kp": 0.4}
         ]
     )
 
@@ -130,14 +147,15 @@ def generate_launch_description():
     ld.add_action(declare_motor_port_cmd)
 
     # Add nodes
-    #ld.add_action(start_serial0_cmd)
-    #ld.add_action(start_gps_cmd)
+    ld.add_action(start_serial0_cmd)
+    ld.add_action(start_gps_cmd)
 
     ld.add_action(start_serial1_cmd)
     ld.add_action(start_cap_touch_cmd)
     ld.add_action(start_laser1d_cmd)
 
     ld.add_action(start_serial2_cmd)
+    ld.add_action(start_motor_driver_cmd)
     ld.add_action(start_motor_cmd)
 
     return ld

@@ -15,6 +15,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sgd_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 include_directories(include)
 
@@ -24,10 +25,19 @@ ament_target_dependencies(local_controller
   rclcpp
   sgd_msgs
   sensor_msgs
+  geometry_msgs
+)
+
+# add executable
+add_executable(wheel_driver src/wh_f-cruiser.cpp)
+ament_target_dependencies(wheel_driver
+  rclcpp
+  sgd_msgs
+  geometry_msgs
 )
 
 install(
-  TARGETS local_controller
+  TARGETS local_controller wheel_driver
   DESTINATION lib/${PROJECT_NAME})
   
 install(

@@ -10,7 +10,9 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
             parameters=[
-                {"port": "/dev/ttyUSB0"}
+                {"port": "/dev/ttyACM0",
+                 "baud_rate": 9600,
+                 "read_write": "ro"}     # one of ro,rw}
             ]
         )
     ])

@@ -14,7 +14,7 @@ Capacitive_Touch::Capacitive_Touch() : Node("capacitive_touch")
     std::string serial_topic = this->get_parameter("port").as_string();
     serial_topic = "serial_" + serial_topic.substr(serial_topic.find_last_of("/")+1);
 
-    thresh = this->get_parameter("thresh").as_int();
+    thresh = this->get_parameter("thresh").as_int(); 
     filter_i_ = this->get_parameter("filter_i").as_int() - 1;   // 0 bis filter_i-1
     for (int i = 0; i < filter_i_; i++)
     {

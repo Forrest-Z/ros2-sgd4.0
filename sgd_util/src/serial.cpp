@@ -48,7 +48,7 @@ void
 Serial::read_serial()
 {
     // read serial port
-    char b [256];
+    char b [512];
     std::memset(&b, '\0', sizeof(b));
 
     // read one char per read
@@ -59,39 +59,34 @@ Serial::read_serial()
     {
         b[i] = c;
         i++;
+
+        if (c == '\n')
+        {
+            read_buf_.append(b);
+            sgd_msgs::msg::Serial ser_msg;
+            ser_msg.header.stamp = now();
+            ser_msg.port = get_parameter("port").as_string();
+            ser_msg.msg = read_buf_;
+
+            pub_serial->publish(ser_msg);
+            read_buf_.clear();
+            c = '\0';
+            return;
+        }
+
     }
 
     if (num_bytes < 0) {
         RCLCPP_WARN(get_logger(), "Error reading %s", strerror(errno));
         return;
     }
-
-    //if (num_bytes <= 1) {return;}     // filter '\0' messages
-    
-    // append b to read_buf
-    read_buf_.append(b);
-    if (c == '\n')     // find end of line
-    {
-        //RCLCPP_INFO(get_logger(), "Publish message from serial");
-        sgd_msgs::msg::Serial ser_msg;
-        ser_msg.header.stamp = now();
-        ser_msg.port = get_parameter("port").as_string();
-        ser_msg.msg = read_buf_;
-
-        pub_serial->publish(ser_msg);
-        read_buf_.clear();
-        c = '\0';
-    }
 }
 
 void
 Serial::write_serial(const sgd_msgs::msg::Serial::SharedPtr msg_)
 {
-    // Do something
-    char* char_arr = &msg_->msg[0];
-
     std::string s = msg_->msg;
-    unsigned char c[256];
+    unsigned char c[512];
     std::memset(&c, '\0', sizeof(c));
 
     uint16_t i;
@@ -165,10 +160,13 @@ Serial::init_serial(const char *port, const int baud)
     tty_.c_cc[VTIME] = 0;
     tty_.c_cc[VMIN] = 0;
 
-    if (baud > 0)
+    if (baud > 9600)
     {
         cfsetispeed(&tty_, B115200);      // TODO: use user defined baud-rate
         cfsetospeed(&tty_, B115200);
+    } else {
+        cfsetispeed(&tty_, B9600);      // TODO: use user defined baud-rate
+        cfsetospeed(&tty_, B9600);
     }
 
     if (tcsetattr(serial_port_, TCSANOW, &tty_) != 0)
