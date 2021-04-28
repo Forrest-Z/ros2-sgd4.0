@@ -27,7 +27,7 @@ Local_Controller::Local_Controller() : Node("local_controller")
     curr_x_ = 0.0;
     curr_y_ = 0.0;
     curr_w_ = 0.0;
-
+ 
     pub_motor_ = this->create_publisher<geometry_msgs::msg::TwistStamped>("set_motor", default_qos); 
     sub_motor_ = this->create_subscription<geometry_msgs::msg::TwistStamped>("motordata", default_qos,
         std::bind(&Local_Controller::on_motor_received, this, _1));

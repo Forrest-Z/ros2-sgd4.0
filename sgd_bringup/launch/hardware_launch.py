@@ -33,9 +33,16 @@ def generate_launch_description():
     params_file = LaunchConfiguration('params_file')
     
     gps_port = LaunchConfiguration('gps_port')
+    feather_port = LaunchConfiguration('feather_port')
+    esp_port = LaunchConfiguration('esp_port')
 
     lifecycle_nodes = ['gps_serial',
-                       'gps_sensor']
+                       'gps_sensor',
+                       'feather_serial',
+                       'capacitive_touch',
+                       'laser_1d',
+                       'esp_serial',
+                       'wheel_driver']
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
@@ -46,7 +53,20 @@ def generate_launch_description():
     remappings = [('/tf', 'tf'),
                   ('/tf_static', 'tf_static')]
 
-    
+    # Create our own temporary YAML files that include substitutions
+    param_substitutions = {
+        'use_sim_time': use_sim_time,
+        'autostart': autostart,
+        'gps_port': '/dev/ttyACM0',
+        'esp_port': '/dev/ttyUSB0',
+        'feather_port': '/dev/ttyACM1'}
+
+    configured_params = RewrittenYaml(
+            source_file=params_file,
+            root_key=namespace,
+            param_rewrites=param_substitutions,
+            convert_types=True)
+
     return LaunchDescription([
         # Set env var to print messages to stdout immediately
         SetEnvironmentVariable('RCUTILS_LOGGING_BUFFERED_STREAM', '1'),
@@ -73,6 +93,16 @@ def generate_launch_description():
 	        default_value='/dev/ttyACM0',
 	        description='Port to communication with gps sensor'),
 
+    	DeclareLaunchArgument(
+	        'feather_port',
+	        default_value='/dev/ttyACM1',
+	        description='Port to communicate with feather M0'),
+
+        DeclareLaunchArgument(
+	        'esp_port',
+	        default_value='/dev/ttyUSB0',
+	        description='Port to communicate with ESP8266'),
+
         Node(
             package="sgd_util",
             executable="serial",
@@ -93,6 +123,58 @@ def generate_launch_description():
             parameters=[
                 {"port": gps_port,
                  "xml_file": '/home/ipp/dev_ws/src/ros2-sgd4.0/sensors/gps/data/nmea.xml'}]),
+
+        # Create nodes for capacitive touch and laser 1D
+        Node(
+            package="sgd_util",
+            executable="serial",
+            name="feather_serial",
+            output="screen",
+            emulate_tty=True,
+            parameters=[
+                {"port": feather_port,
+                "baud_rate": 115200,
+                "read_write": "ro"}]),
+
+        Node(
+            package="cap_touch",
+            executable="capacitive_touch",
+            name="capacitive_touch",
+            output="screen",
+            emulate_tty=True,
+            parameters=[
+                {"port": feather_port,
+                "thresh": 2000,
+                "filter_i": 4}]),
+
+        Node(
+            package="laser1d",
+            executable="laser_1d",
+            name="laser_1d",
+            output="screen",
+            emulate_tty=True,
+            parameters=[
+                {"port": feather_port}]),
+
+        # Create nodes for motor and TODO: IMU
+        Node(
+            package='sgd_util',
+            executable='serial',
+            name='esp_serial',
+            output='screen',
+            parameters=[{'port': esp_port},
+            		 {'baud_rate': 115200},
+            		 {'read_write': 'rw'}]),
+                
+        Node(
+            package='sgd_lc',
+            executable='wheel_driver',
+            name='wheel_driver',
+            output='screen',
+            parameters=[{'port': esp_port},
+            		 {'motor_kp': 0.1},
+            		 {'max_speed': 200.0},
+            		 {'use_sim_time': use_sim_time}]),
 
         # TODO: Create nodes for lidar
 

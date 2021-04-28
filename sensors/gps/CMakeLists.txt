@@ -17,6 +17,8 @@ find_package(sensor_msgs REQUIRED)
 find_package(sgd_util REQUIRED)
 find_package(sgd_msgs REQUIRED)
 find_package(rapidxml REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
+find_package(nav2_util REQUIRED)
 
 include_directories(include)
 
@@ -54,6 +56,8 @@ ament_target_dependencies(navilock_ublox6_gps
     rapidxml
     sensor_msgs
     sgd_msgs
+    rclcpp_lifecycle
+    nav2_util
 )
 target_link_libraries(navilock_ublox6_gps ${library_name})
 
@@ -64,8 +68,8 @@ install(TARGETS
   #nmea_parser
   RUNTIME DESTINATION lib/${PROJECT_NAME})
   
-#install(DIRECTORY launch
-#  DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME})
   
 #install(DIRECTORY params
 #  DESTINATION share/${PROJECT_NAME})

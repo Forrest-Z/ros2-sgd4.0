@@ -2,6 +2,7 @@
 #define PID_CONTROLLER_HPP_
 
 #include <limits>
+#include "rclcpp/rclcpp.hpp"
 
 namespace sgd_lc
 {
@@ -15,6 +16,9 @@ private:
     double ref_value_;
     double max_, min_;
     double integral;
+    double last_val_;
+
+    rclcpp::Time last_t_;
 
     void init();
 public:
@@ -26,6 +30,7 @@ public:
     void set_max(double max);
     void set_min(double min);
     double next(double actual_value);
+    double next(double actual_value, rclcpp::Time time);
 };
 
 PID_Controller::PID_Controller(double kp)
@@ -57,11 +62,25 @@ PID_Controller::set_min(double min) {min_ = min;}
 double
 PID_Controller::next(double actual_value)
 {
-    //integral += (ref_value_ - actual_value) * 0.01;     // TODO Zeitschritt
-    double r = (ref_value_ - actual_value) * kp_;
+    return next(actual_value, rclcpp::Time(0));
+}
+
+double
+PID_Controller::next(double actual_value, rclcpp::Time time)
+{   
+    if (ref_value_ == 0.0 && actual_value == 0.0)
+    {
+        return 0;
+    }
+
+    integral += (ref_value_ - actual_value) * rclcpp::Duration(time - last_t_).seconds();
+    double r = last_val_ + (ref_value_ - actual_value) * kp_ + integral * ki_;
+    last_t_ = time;
+
+    if (r > max_) r = max_;
+    if (r < min_) r = min_;
     
-    if (r > max_) return max_;
-    if (r < min_) return min_;
+    last_val_ = r;
     return r;
 }
 
@@ -70,6 +89,7 @@ PID_Controller::init()
 {
     ref_value_ = 0.0;
     integral = 0.0;
+    last_val_ = 0.0;
     max_ = std::numeric_limits<double>::max();
     min_ = -max_;
 }

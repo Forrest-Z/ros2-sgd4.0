@@ -1,4 +1,3 @@
-
 #ifndef SERIAL_TO_ROS_HPP_
 #define SERIAL_TO_ROS_HPP_
 
@@ -17,53 +16,62 @@
 
 #include <memory>
 
+#include "nav2_util/lifecycle_node.hpp"
+
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
+
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <stack>
 
-#include "rclcpp/rclcpp.hpp"
 #include <termios.h>
 
 #include <unistd.h>
 
 #include "sgd_msgs/msg/serial.hpp"
-#include "sgd_msgs/srv/serial_write.hpp"
 
 namespace sgd_util
 {
 
-class Serial : public rclcpp::Node
+class Serial : public nav2_util::LifecycleNode
 {
+public:
+    Serial();
+    ~Serial();
 
-private:
-    int serial_port_;
-    std::string read_buf_;
+protected:
+    // Implement the lifecycle interface
+    nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
+    nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
+    nav2_util::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
+    nav2_util::CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
+    nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
 
+    //! \brief Init parameters
+    void init_parameters();
+    std::string port_;
+    int baud_rate_;
+    std::string read_write_;
+
+    //! \brief Init Publisher and subscriber
+    void init_pub_sub();
     rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
     rclcpp::Subscription<sgd_msgs::msg::Serial>::SharedPtr sub_serial;
-    rclcpp::Publisher<sgd_msgs::msg::Serial>::SharedPtr pub_serial;
+    rclcpp_lifecycle::LifecyclePublisher<sgd_msgs::msg::Serial>::SharedPtr pub_serial;
     rclcpp::TimerBase::SharedPtr timer_;
 
-    //rclcpp::Service<sgd_msgs::srv::SerialWrite>::SharedPtr ser_write_srv_;
+    int serial_port_;
+    std::string read_buf_;
 
     //! \brief Open serial port and configure for further operations.
     //! \param port port specifier
     //! \param baud baud-rate
     int init_serial(const char *port, const int baud);
-
-    //! \brief Read line
-    char read_line();
-
-bool isPortOpen_;
-public:
-    Serial();
-    ~Serial();
-
     void read_serial();
     void write_serial(const sgd_msgs::msg::Serial::SharedPtr msg_);
-
 };
 
 }

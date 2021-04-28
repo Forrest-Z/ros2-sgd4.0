@@ -14,6 +14,8 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sgd_msgs REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
+find_package(nav2_util REQUIRED)
 
 include_directories(include)
 
@@ -21,6 +23,8 @@ add_executable(capacitive_touch src/capacitive_touch.cpp)
 ament_target_dependencies(capacitive_touch
     rclcpp
     sgd_msgs
+    rclcpp_lifecycle
+    nav2_util
 )
 
 install(TARGETS

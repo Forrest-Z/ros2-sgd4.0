@@ -38,7 +38,7 @@ protected:
     nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
     
     //! \brief Init parameters
-    void init_paramters();
+    void init_parameters();
     std::string target_frame_;
     std::string source_frame_;
     std::string gps_topic_;

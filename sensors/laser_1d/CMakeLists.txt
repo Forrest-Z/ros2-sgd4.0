@@ -15,6 +15,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sgd_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
+find_package(nav2_util REQUIRED)
 
 include_directories(include)
 
@@ -23,6 +25,8 @@ ament_target_dependencies(laser_1d
     rclcpp
     sgd_msgs
     sensor_msgs
+    rclcpp_lifecycle
+    nav2_util
 )
 
 install(TARGETS

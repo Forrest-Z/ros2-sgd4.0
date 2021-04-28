@@ -1,106 +1,98 @@
-
 #include "sgd_util/serial.hpp"
 
 namespace sgd_util
 {
 
-using std::placeholders::_1;
-using namespace std::chrono_literals;
+using namespace std::chrono_literals;   // if a timer is used
 
-Serial::Serial()
-    : Node("serial")
+Serial::Serial():
+    nav2_util::LifecycleNode("example_node", "", true)
 {
-    this->declare_parameter<std::string>("port", "/dev/ttyACM0");
-    this->declare_parameter<int>("baud_rate", 9600);
-    this->declare_parameter<std::string>("read_write", "rw");
+    RCLCPP_DEBUG(get_logger(), "Creating");
 
-    RCLCPP_INFO(get_logger(), "Start serial node with port %s and baud rate %i",
-        this->get_parameter("port").as_string().c_str(), this->get_parameter("baud_rate").as_int());
+    add_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
+    add_parameter("baud_rate", rclcpp::ParameterValue(9600));
+    add_parameter("read_write", rclcpp::ParameterValue("rw"));
+}
 
-    init_serial(this->get_parameter("port").as_string().c_str(), this->get_parameter("baud_rate").as_int());
+Serial::~Serial()
+{
+    // Destroy
+}
 
-    std::string port = this->get_parameter("port").as_string();
-    std::string topic_out = "serial_" + port.substr(port.find_last_of("/")+1);
+nav2_util::CallbackReturn
+Serial::on_configure(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Configuring");
 
+    // Initialize parameters, pub/sub, services, etc.
+    init_parameters();
+    init_pub_sub();
+
+    init_serial(port_.c_str(), baud_rate_);
+
+    return nav2_util::CallbackReturn::SUCCESS;
+}
+
+nav2_util::CallbackReturn
+Serial::on_activate(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Activating");
+
+    pub_serial->on_activate();
+
+    return nav2_util::CallbackReturn::SUCCESS;
+}
+
+nav2_util::CallbackReturn
+Serial::on_deactivate(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Deactivating");
+
+    pub_serial->on_deactivate();
+
+    return nav2_util::CallbackReturn::SUCCESS;
+}
+
+nav2_util::CallbackReturn
+Serial::on_cleanup(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Cleanup");
+    pub_serial.reset();
+    return nav2_util::CallbackReturn::SUCCESS;
+}
+
+nav2_util::CallbackReturn
+Serial::on_shutdown(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Shutdown");
+    return nav2_util::CallbackReturn::SUCCESS;
+}
+
+void
+Serial::init_parameters()
+{
+    get_parameter("port", port_);
+    get_parameter("baud_rate", baud_rate_);
+    get_parameter("read_write", read_write_);
+}
+
+void
+Serial::init_pub_sub()
+{
+    RCLCPP_DEBUG(get_logger(), "Init publisher and subscriber");
+    
+    std::string topic_out = "serial_" + port_.substr(port_.find_last_of("/")+1);
     pub_serial = create_publisher<sgd_msgs::msg::Serial>(topic_out, default_qos);
-
-    // TODO send time to serial out, wait for response
-    // compute response and compare to received response
-    // if response != rec_response terminate serial and print error msg
-
 
     timer_ = this->create_wall_timer(10ms, std::bind(&Serial::read_serial, this));
 
     if (this->get_parameter("read_write").as_string() == "rw")
     {
         // Create subscription
-        std::string subsc_name = "write_" + port.substr(port.find_last_of("/")+1);
-        sub_serial = this->create_subscription<sgd_msgs::msg::Serial>(subsc_name,default_qos,std::bind(&Serial::write_serial, this, _1));
-    }
-}
-
-Serial::~Serial()
-{
-    close(serial_port_);
-}
-
-void
-Serial::read_serial()
-{
-    // read serial port
-    char b [512];
-    std::memset(&b, '\0', sizeof(b));
-
-    // read one char per read
-    int num_bytes;
-    char c;
-    int i = 0;
-    while ((num_bytes = read(serial_port_, &c, 1)) > 0)
-    {
-        b[i] = c;
-        i++;
-
-        if (c == '\n')
-        {
-            read_buf_.append(b);
-            sgd_msgs::msg::Serial ser_msg;
-            ser_msg.header.stamp = now();
-            ser_msg.port = get_parameter("port").as_string();
-            ser_msg.msg = read_buf_;
-
-            pub_serial->publish(ser_msg);
-            read_buf_.clear();
-            c = '\0';
-            return;
-        }
-
-    }
-
-    if (num_bytes < 0) {
-        RCLCPP_WARN(get_logger(), "Error reading %s", strerror(errno));
-        return;
-    }
-}
-
-void
-Serial::write_serial(const sgd_msgs::msg::Serial::SharedPtr msg_)
-{
-    std::string s = msg_->msg;
-    unsigned char c[512];
-    std::memset(&c, '\0', sizeof(c));
-
-    uint16_t i;
-    for (i = 0; i < s.length(); i++)
-    {
-        c[i] = s[i];
-    }
-    c[i++] = '\r';
-    c[i++] = '\n';
-    int num_bytes = write(serial_port_, c , i);
-
-    if (num_bytes < 0)
-    {
-        RCLCPP_WARN(get_logger(), "No data written to serial");
+        std::string subsc_name = "write_" + port_.substr(port_.find_last_of("/")+1);
+        sub_serial = this->create_subscription<sgd_msgs::msg::Serial>(subsc_name,default_qos,
+                std::bind(&Serial::write_serial, this, std::placeholders::_1));
     }
 }
 
@@ -178,15 +170,74 @@ Serial::init_serial(const char *port, const int baud)
     return 0;
 }
 
+void
+Serial::read_serial()
+{
+    // read serial port
+    char b [512];
+    std::memset(&b, '\0', sizeof(b));
+
+    // read one char per read
+    int num_bytes;
+    char c;
+    int i = 0;
+    while ((num_bytes = read(serial_port_, &c, 1)) > 0)
+    {
+        b[i] = c;
+        i++;
+
+        if (c == '\n')
+        {
+            read_buf_.append(b);
+            sgd_msgs::msg::Serial ser_msg;
+            ser_msg.header.stamp = now();
+            ser_msg.port = get_parameter("port").as_string();
+            ser_msg.msg = read_buf_;
+
+            pub_serial->publish(ser_msg);
+            read_buf_.clear();
+            c = '\0';
+            return;
+        }
+
+    }
+
+    if (num_bytes < 0) {
+        RCLCPP_WARN(get_logger(), "Error reading %s", strerror(errno));
+        return;
+    }
 }
 
-int main(int argc, char *argv[])
+void
+Serial::write_serial(const sgd_msgs::msg::Serial::SharedPtr msg_)
+{
+    std::string s = msg_->msg;
+    unsigned char c[512];
+    std::memset(&c, '\0', sizeof(c));
+
+    uint16_t i;
+    for (i = 0; i < s.length(); i++)
+    {
+        c[i] = s[i];
+    }
+    c[i++] = '\r';
+    c[i++] = '\n';
+    int num_bytes = write(serial_port_, c , i);
+
+    if (num_bytes < 0)
+    {
+        RCLCPP_WARN(get_logger(), "No data written to serial");
+    }
+}
+
+
+
+}   // namespace
+
+int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    std::shared_ptr<rclcpp::Node> node = std::make_shared<sgd_util::Serial>();
-
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Serial startup completed.");
-
-    rclcpp::spin(node);
+    auto node = std::make_shared<sgd_util::Serial>();
+    rclcpp::spin(node->get_node_base_interface());
     rclcpp::shutdown();
 }

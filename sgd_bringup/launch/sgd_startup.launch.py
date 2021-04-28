@@ -1,18 +1,4 @@
-# Copyright (c) 2018 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""This is all-in-one launch script intended for use by nav2 developers."""
+"""This is all-in-one launch script to run the shared guide dog."""
 
 import os
 
@@ -29,6 +15,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     # Get the launch directory
     bringup_dir = get_package_share_directory('sgd_bringup')
+    sim_dir = get_package_share_directory('sgd_gazebo_sim')
     launch_dir = os.path.join(bringup_dir, 'launch')
 
     # Create the launch configuration variables
@@ -76,17 +63,17 @@ def generate_launch_description():
 
     declare_map_yaml_cmd = DeclareLaunchArgument(
         'map',
-        default_value=os.path.join(bringup_dir, 'maps', 'turtlebot3_world.yaml'),
+        default_value=os.path.join(bringup_dir, 'maps', 'sgd_world.yaml'),
         description='Full path to map file to load')
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
-        default_value='true',
+        default_value='false',
         description='Use simulation (Gazebo) clock if true')
 
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
-        default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
+        default_value=os.path.join(bringup_dir, 'params', 'simulation_params.yaml'),
         description='Full path to the ROS2 parameters file to use for all launched nodes')
 
     declare_bt_xml_cmd = DeclareLaunchArgument(
@@ -107,7 +94,7 @@ def generate_launch_description():
 
     declare_use_simulator_cmd = DeclareLaunchArgument(
         'use_simulator',
-        default_value='True',
+        default_value='False',
         description='Whether to start the simulator')
 
     declare_use_robot_state_pub_cmd = DeclareLaunchArgument(
@@ -122,7 +109,7 @@ def generate_launch_description():
 
     declare_simulator_cmd = DeclareLaunchArgument(
         'headless',
-        default_value='False',
+        default_value='True',
         description='Whether to execute gzclient)')
 
     declare_world_cmd = DeclareLaunchArgument(
@@ -131,21 +118,12 @@ def generate_launch_description():
         #              https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/91
         # default_value=os.path.join(get_package_share_directory('turtlebot3_gazebo'),
         #                            'worlds/turtlebot3_worlds/waffle.model'),
-        default_value=os.path.join(bringup_dir, 'worlds', 'waffle.model'),
+        default_value=os.path.join(bringup_dir, 'worlds', 'sgd.model'),
+        #default_value=os.path.join(bringup_dir, 'worlds', 'blindenhund_simulation.world'),
         description='Full path to world model file to load')
 
     # Specify the actions
-    start_gazebo_server_cmd = ExecuteProcess(
-        condition=IfCondition(use_simulator),
-        cmd=['gzserver', '-s', 'libgazebo_ros_init.so', world],
-        cwd=[launch_dir], output='screen')
-
-    start_gazebo_client_cmd = ExecuteProcess(
-        condition=IfCondition(PythonExpression([use_simulator, ' and not ', headless])),
-        cmd=['gzclient'],
-        cwd=[launch_dir], output='screen')
-
-    urdf = os.path.join(bringup_dir, 'urdf', 'turtlebot3_waffle.urdf')
+    urdf = os.path.join(bringup_dir, 'urdf', 'sgd_model.urdf')
 
     start_robot_state_publisher_cmd = Node(
         condition=IfCondition(use_robot_state_pub),
@@ -176,6 +154,13 @@ def generate_launch_description():
                           'default_bt_xml_filename': default_bt_xml_filename,
                           'autostart': autostart}.items())
 
+    hardware_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(launch_dir, 'hardware_launch.py')),
+        launch_arguments={'namespace': namespace,
+                          'map': map_yaml_file,
+                          'use_sim_time': use_sim_time,
+                          'params_file': params_file}.items())
+    
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -196,13 +181,10 @@ def generate_launch_description():
     ld.add_action(declare_simulator_cmd)
     ld.add_action(declare_world_cmd)
 
-    # Add any conditioned actions
-    ld.add_action(start_gazebo_server_cmd)
-    ld.add_action(start_gazebo_client_cmd)
-
     # Add the actions to launch all of the navigation nodes
     ld.add_action(start_robot_state_publisher_cmd)
     ld.add_action(rviz_cmd)
     ld.add_action(bringup_cmd)
+    ld.add_action(hardware_cmd)
 
     return ld

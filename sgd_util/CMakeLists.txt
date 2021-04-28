@@ -13,6 +13,8 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
+find_package(nav2_util REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
@@ -29,6 +31,8 @@ ament_target_dependencies(sgd_util
 add_executable(serial src/serial.cpp)
 ament_target_dependencies(serial
   rclcpp
+  rclcpp_lifecycle
+  nav2_util
   sgd_msgs)
 
 target_include_directories(sgd_util

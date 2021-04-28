@@ -88,14 +88,17 @@ def generate_launch_description():
             parameters=[configured_params],
             remappings=remappings),
 
-	Node(
-	    package='localizer',
-	    executable='simple_gps_localizer',
-	    name='simple_gps_localizer',
-	    output='screen',
-	    parameters=[configured_params],
-            remappings=remappings),
-
+        Node(
+            package='localizer',
+            executable='simple_gps_localizer',
+            name='simple_gps_localizer',
+            output='screen',
+            parameters=[
+                {"source_frame": "map",
+                 "target_frame": "odom",
+                 "gps_topic": "gps",
+                 "odom_topic": "odom"}]),
+        
         #Node(
         #    package='nav2_amcl',
         #    executable='amcl',

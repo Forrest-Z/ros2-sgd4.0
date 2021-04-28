@@ -10,7 +10,7 @@ using std::placeholders::_1;
 Simple_Gps_Localizer::Simple_Gps_Localizer():
     nav2_util::LifecycleNode("simple_gps_localizer", "", true)
 {   
-    RCLCPP_INFO(get_logger(), "Creating");
+    RCLCPP_DEBUG(get_logger(), "Creating"); 
 
     // Add parameters
     add_parameter("source_frame", rclcpp::ParameterValue("map"));
@@ -39,10 +39,10 @@ Simple_Gps_Localizer::~Simple_Gps_Localizer()
 nav2_util::CallbackReturn
 Simple_Gps_Localizer::on_configure(const rclcpp_lifecycle::State & state)
 {
-    RCLCPP_INFO(get_logger(), "Configuring");
+    RCLCPP_DEBUG(get_logger(), "Configuring");
 
     // Initialize parameters, pub/sub, services, etc.
-    init_paramters();
+    init_parameters();
     init_pub_sub();
     init_transforms();
 
@@ -52,7 +52,7 @@ Simple_Gps_Localizer::on_configure(const rclcpp_lifecycle::State & state)
 nav2_util::CallbackReturn
 Simple_Gps_Localizer::on_activate(const rclcpp_lifecycle::State & state)
 {
-    RCLCPP_INFO(get_logger(), "Activating");
+    RCLCPP_DEBUG(get_logger(), "Activating");
 
     return wait_for_transform();
 }
@@ -60,14 +60,14 @@ Simple_Gps_Localizer::on_activate(const rclcpp_lifecycle::State & state)
 nav2_util::CallbackReturn
 Simple_Gps_Localizer::on_deactivate(const rclcpp_lifecycle::State & state)
 {
-    RCLCPP_INFO(get_logger(), "Deactivating");
+    RCLCPP_DEBUG(get_logger(), "Deactivating");
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
 nav2_util::CallbackReturn
 Simple_Gps_Localizer::on_cleanup(const rclcpp_lifecycle::State & state)
 {
-    RCLCPP_INFO(get_logger(), "Cleanup");
+    RCLCPP_DEBUG(get_logger(), "Cleanup");
 
       // Transforms
     tf_broadcaster_.reset();
@@ -80,7 +80,7 @@ Simple_Gps_Localizer::on_cleanup(const rclcpp_lifecycle::State & state)
 nav2_util::CallbackReturn
 Simple_Gps_Localizer::on_shutdown(const rclcpp_lifecycle::State & state)
 {
-    RCLCPP_INFO(get_logger(), "Shutdown");
+    RCLCPP_DEBUG(get_logger(), "Shutdown");
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
@@ -96,7 +96,7 @@ Simple_Gps_Localizer::gps_sub_callback(const sensor_msgs::msg::NavSatFix::Shared
     }
 
     auto transform_tolerance_ = tf2::durationFromSec(1.0);
-    tf2::TimePoint transform_expiration = tf2_ros::fromMsg(msg_->header.stamp) +
+    tf2::TimePoint transform_expiration = tf2_ros::fromMsg(now()) +
         transform_tolerance_;
     tf_map_odom_.header.stamp = tf2_ros::toMsg(transform_expiration);
     tf_map_odom_.header.frame_id = source_frame_;
@@ -107,11 +107,11 @@ Simple_Gps_Localizer::gps_sub_callback(const sensor_msgs::msg::NavSatFix::Shared
 
     double dx = xy.first - (-cos(angle_odom_) * x_base_gps_ - sin(angle_odom_) * y_base_gps_ + x_odom_);
     double dy = xy.second - (-sin(angle_odom_) * x_base_gps_ + cos(angle_odom_) * y_base_gps_ + y_odom_);
-
+    
     tf_map_odom_.transform.translation.x = dx;
     tf_map_odom_.transform.translation.y = dy;
     tf_map_odom_.transform.translation.z = 0;
-    tf_map_odom_.transform.rotation = angleZ_to_Quaternion(0);
+    tf_map_odom_.transform.rotation = angleZ_to_Quaternion(0);  // use IMU data??
     tf_broadcaster_->sendTransform(tf_map_odom_);
 
 }
@@ -133,7 +133,7 @@ Simple_Gps_Localizer::odom_sub_callback(const nav_msgs::msg::Odometry::SharedPtr
 }
 
 void
-Simple_Gps_Localizer::init_paramters()
+Simple_Gps_Localizer::init_parameters()
 {
     get_parameter("target_frame", target_frame_);
     get_parameter("source_frame", source_frame_);
@@ -144,11 +144,13 @@ Simple_Gps_Localizer::init_paramters()
 void
 Simple_Gps_Localizer::init_pub_sub()
 {
-    RCLCPP_DEBUG(get_logger(), "Init publisher and subscriber");
     subscriber_gps_ = create_subscription<sensor_msgs::msg::NavSatFix>(
         gps_topic_, default_qos, std::bind(&Simple_Gps_Localizer::gps_sub_callback, this, _1));
     subscriber_odom_ = create_subscription<nav_msgs::msg::Odometry>(
         odom_topic_, default_qos, std::bind(&Simple_Gps_Localizer::odom_sub_callback, this, _1));
+
+    RCLCPP_DEBUG(get_logger(), "Initialised publisher on topic %s and subscriber on topic %s.",
+            gps_topic_.c_str(), odom_topic_.c_str());
 }
 
 void
@@ -187,7 +189,7 @@ Simple_Gps_Localizer::wait_for_transform()
         geometry_msgs::msg::TransformStamped tf_base_gps_ = tf_buffer_->lookupTransform("gps_link", "base_footprint", rclcpp::Time(0), rclcpp::Duration(5,0));
         x_base_gps_ = tf_base_gps_.transform.translation.x;
         y_base_gps_ = tf_base_gps_.transform.translation.y;
-        RCLCPP_INFO(this->get_logger(), "Transform base_footprint -> base_link z: %f", tf_base_gps_.transform.translation.z);
+        RCLCPP_DEBUG(this->get_logger(), "Transform base_footprint -> base_link z: %f", tf_base_gps_.transform.translation.z);
     } catch (tf2::TransformException &ex)
     {
         RCLCPP_WARN(this->get_logger(), "%s", ex.what());

@@ -10,6 +10,7 @@
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "sgd_msgs/msg/touch.hpp"
 #include "sensor_msgs/msg/range.hpp"
+#include "sensor_msgs/msg/nav_sat_fix.hpp"
 
 #include "sgd_lc/pid_controller.hpp"
 
@@ -47,6 +48,7 @@ private:
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr pub_motor_;
     rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr sub_motor_;
     rclcpp::Subscription<sensor_msgs::msg::Range>::SharedPtr sub_laser_;
+    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr sub_gps_;
     rclcpp::Subscription<sgd_msgs::msg::Touch>::SharedPtr sub_touch_;
     rclcpp::TimerBase::SharedPtr timer_;
 

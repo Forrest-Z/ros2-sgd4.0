@@ -122,7 +122,7 @@ def generate_launch_description():
         parameters=[
             {"port": motor_port,
              "motor_kp": 0.3,
-             "max_speed": 140}
+             "max_speed": 200}
         ]
     )
 
@@ -147,15 +147,15 @@ def generate_launch_description():
     ld.add_action(declare_motor_port_cmd)
 
     # Add nodes
-    ld.add_action(start_serial0_cmd)
-    ld.add_action(start_gps_cmd)
+    #ld.add_action(start_serial0_cmd)
+    #ld.add_action(start_gps_cmd)
 
-    ld.add_action(start_serial1_cmd)
-    ld.add_action(start_cap_touch_cmd)
-    ld.add_action(start_laser1d_cmd)
+    #ld.add_action(start_serial1_cmd)
+    #ld.add_action(start_cap_touch_cmd)
+    #ld.add_action(start_laser1d_cmd)
 
     ld.add_action(start_serial2_cmd)
     ld.add_action(start_motor_driver_cmd)
-    ld.add_action(start_motor_cmd)
+    #ld.add_action(start_motor_cmd)
 
     return ld
