@@ -9,10 +9,15 @@ Serial::Serial():
     nav2_util::LifecycleNode("example_node", "", true)
 {
     RCLCPP_DEBUG(get_logger(), "Creating");
+    rec_state_ = RECEIVER_STATUS::INITIAL;
 
     add_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
+    add_parameter("logfile", rclcpp::ParameterValue("serial.log"));
     add_parameter("baud_rate", rclcpp::ParameterValue(9600));
     add_parameter("read_write", rclcpp::ParameterValue("rw"));
+    add_parameter("raw", rclcpp::ParameterValue(false));
+    add_parameter("sframe", rclcpp::ParameterValue("$"));
+    add_parameter("log", rclcpp::ParameterValue(false));
 }
 
 Serial::~Serial()
@@ -25,11 +30,18 @@ Serial::on_configure(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Configuring");
 
+    time_at_start_ = round(now().seconds() * 1000);
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
     init_pub_sub();
 
-    init_serial(port_.c_str(), baud_rate_);
+    if (log_)
+    {
+        file_.open(logfile_, std::ios::out | std::ios::trunc);
+    }
+    
+    rec_state_ = open_port(port_.c_str(), baud_rate_);
+    rec_state_ = set_config();
 
     return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -40,6 +52,8 @@ Serial::on_activate(const rclcpp_lifecycle::State & state)
     RCLCPP_DEBUG(get_logger(), "Activating");
 
     pub_serial->on_activate();
+    // TODO authentification if requested
+    rec_state_ = raw_ ? IN_MSG : WAIT_HEADER;
 
     return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -51,6 +65,13 @@ Serial::on_deactivate(const rclcpp_lifecycle::State & state)
 
     pub_serial->on_deactivate();
 
+    // TODO terminate connection
+    rec_state_ = close_port();
+    if (file_.is_open())
+    {
+        file_.close();
+    }
+    
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
@@ -73,8 +94,14 @@ void
 Serial::init_parameters()
 {
     get_parameter("port", port_);
+    get_parameter("logfile", logfile_);
     get_parameter("baud_rate", baud_rate_);
     get_parameter("read_write", read_write_);
+    get_parameter("raw", raw_);
+    std::string s;
+    get_parameter("sframe", s);
+    sframe_ = s.front();
+    get_parameter("log", log_);
 }
 
 void
@@ -96,8 +123,8 @@ Serial::init_pub_sub()
     }
 }
 
-int
-Serial::init_serial(const char *port, const int baud)
+Serial::RECEIVER_STATUS
+Serial::open_port(const char *port, const int baud)
 {
     struct termios tty_;
 
@@ -106,14 +133,14 @@ Serial::init_serial(const char *port, const int baud)
     if (serial_port_ < 0)
     {
         RCLCPP_ERROR(get_logger(), "Error %i from open: %s", errno, strerror(errno));
-        return 1;
+        return RECEIVER_STATUS::STOPPED;
     }
 
     if (tcgetattr(serial_port_, &tty_) != 0)
     {
         RCLCPP_ERROR(get_logger(), "Error %i from tcgetattr: %s", errno, strerror(errno));
         RCLCPP_ERROR(get_logger(), "Check all connections and try again.");
-        return 1;       // TODO: Error handling
+        return RECEIVER_STATUS::STOPPED;       // TODO: Error handling
     }
 
 // Control settings
@@ -164,15 +191,21 @@ Serial::init_serial(const char *port, const int baud)
     if (tcsetattr(serial_port_, TCSANOW, &tty_) != 0)
     {
         RCLCPP_ERROR(get_logger(), "Error %i from tcsetattr: %s", errno, strerror(errno));
-        return 1;
+        return RECEIVER_STATUS::STOPPED;
     }
  
-    return 0;
+    return RECEIVER_STATUS::ESTABLISH;
 }
 
 void
 Serial::read_serial()
 {
+    if (rec_state_ < RECEIVER_STATUS::WAIT_HEADER)
+    {
+        RCLCPP_ERROR(get_logger(), "Serial communication is not configured");
+        return;
+    }
+    
     // read serial port
     char b [512];
     std::memset(&b, '\0', sizeof(b));
@@ -181,30 +214,60 @@ Serial::read_serial()
     int num_bytes;
     char c;
     int i = 0;
-    while ((num_bytes = read(serial_port_, &c, 1)) > 0)
+    while ((num_bytes = read(serial_port_, &c, 1)) > 0 && i < 512)  // catch i == 511
     {
-        b[i] = c;
-        i++;
-
-        if (c == '\n')
+        switch (rec_state_)
         {
-            read_buf_.append(b);
-            sgd_msgs::msg::Serial ser_msg;
-            ser_msg.header.stamp = now();
-            ser_msg.port = get_parameter("port").as_string();
-            ser_msg.msg = read_buf_;
+        case WAIT_HEADER:
+            if (c == sframe_) {
+                rec_state_ = RECEIVER_STATUS::IN_MSG;   // Zeichen wird nicht gespeichert
+            }
+            break;
 
-            pub_serial->publish(ser_msg);
-            read_buf_.clear();
-            c = '\0';
-            return;
+        case AFTER_ESC:
+            b[i++] = c;
+            rec_state_ = RECEIVER_STATUS::IN_MSG;
+            break;
+
+        case IN_MSG:
+            if (c == sframe_) {
+                b[i] = '\0';        // Null termination
+                read_buf_.append(b);
+                sgd_msgs::msg::Serial ser_msg;
+                ser_msg.header.stamp = now();
+                ser_msg.port = get_parameter("port").as_string();
+                ser_msg.msg = read_buf_;
+
+                pub_serial->publish(ser_msg);
+                rec_state_ = raw_ ? RECEIVER_STATUS::IN_MSG : RECEIVER_STATUS::WAIT_HEADER;
+                
+                long t = round(now().seconds() * 1000) - time_at_start_;
+                std::string ts = std::to_string(t);
+                ts.append(",");
+                if (log_ && file_.is_open()) {file_ << ts << read_buf_ << '\n';}
+                
+                read_buf_.clear();
+                c = '\0';
+                return;     // Warum sendet der publisher nur, wenn hier returned wird??
+            } else if (c == ESC_CHAR && !raw_) {
+                rec_state_ = RECEIVER_STATUS::AFTER_ESC;
+            } else {
+                b[i++] = c;
+            }
+            break;
+
+        default:
+            // Error
+            break;
         }
-
     }
 
     if (num_bytes < 0) {
         RCLCPP_WARN(get_logger(), "Error reading %s", strerror(errno));
-        return;
+    }
+    if (rec_state_ != WAIT_HEADER)
+    {   // wir sind noch in der message aber es ist nichts mehr in serial
+        read_buf_.append(b);
     }
 }
 
@@ -230,6 +293,20 @@ Serial::write_serial(const sgd_msgs::msg::Serial::SharedPtr msg_)
     }
 }
 
+Serial::RECEIVER_STATUS
+Serial::set_config()
+{
+    // Send config,wait for config-ack or config-nak
+    // If authentification requested return RECEIVER_STATUS::AUTHENTIFICATE
+    return RECEIVER_STATUS::WAIT_HEADER;
+}
+
+Serial::RECEIVER_STATUS
+Serial::close_port()
+{
+    // Send terminate request, wait for terminate-ack or -nak
+    return RECEIVER_STATUS::STOPPED;
+}
 
 
 }   // namespace

@@ -38,6 +38,18 @@ namespace sgd_util
 
 class Serial : public nav2_util::LifecycleNode
 {
+
+enum RECEIVER_STATUS {
+    INITIAL,
+    ESTABLISH,
+    AUTHENTIFICATE,
+    WAIT_HEADER,
+    IN_MSG,
+    AFTER_ESC,
+    ERROR,
+    STOPPED = -1
+};
+
 public:
     Serial();
     ~Serial();
@@ -55,6 +67,9 @@ protected:
     std::string port_;
     int baud_rate_;
     std::string read_write_;
+    bool raw_;  // set raw mode
+    char sframe_;   // start / stop frame
+    bool log_;
 
     //! \brief Init Publisher and subscriber
     void init_pub_sub();
@@ -64,14 +79,23 @@ protected:
     rclcpp::TimerBase::SharedPtr timer_;
 
     int serial_port_;
+    std::string logfile_;
     std::string read_buf_;
+    long time_at_start_;        // start time in millis
+    std::fstream file_;
 
     //! \brief Open serial port and configure for further operations.
     //! \param port port specifier
     //! \param baud baud-rate
-    int init_serial(const char *port, const int baud);
+    RECEIVER_STATUS open_port(const char *port, const int baud);
+    RECEIVER_STATUS set_config();
+    RECEIVER_STATUS close_port();
     void read_serial();
     void write_serial(const sgd_msgs::msg::Serial::SharedPtr msg_);
+
+    //! \brief 
+    RECEIVER_STATUS rec_state_;
+    const char ESC_CHAR = '#';      // escape character
 };
 
 }

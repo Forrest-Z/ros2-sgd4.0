@@ -35,13 +35,20 @@ ament_target_dependencies(serial
   nav2_util
   sgd_msgs)
 
+  add_executable(serial_mock src/serial_mock.cpp)
+  ament_target_dependencies(serial_mock
+    rclcpp
+    rclcpp_lifecycle
+    nav2_util
+    sgd_msgs)
+
 target_include_directories(sgd_util
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
 
 install(
-  TARGETS serial
+  TARGETS serial serial_mock
   DESTINATION lib/${PROJECT_NAME})
 
 ament_export_targets(export_sgd_util HAS_LIBRARY_TARGET)
@@ -53,6 +60,11 @@ install(
 
 install(
   DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY log
   DESTINATION share/${PROJECT_NAME}
 )
 
