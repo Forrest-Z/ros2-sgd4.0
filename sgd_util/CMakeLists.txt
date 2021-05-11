@@ -14,6 +14,8 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
@@ -35,12 +37,20 @@ ament_target_dependencies(serial
   nav2_util
   sgd_msgs)
 
-  add_executable(serial_mock src/serial_mock.cpp)
-  ament_target_dependencies(serial_mock
-    rclcpp
-    rclcpp_lifecycle
-    nav2_util
-    sgd_msgs)
+add_executable(serial_mock src/serial_mock.cpp)
+ament_target_dependencies(serial_mock
+  rclcpp
+  rclcpp_lifecycle
+  nav2_util
+  sgd_msgs)
+
+add_executable(logger src/logger.cpp)
+ament_target_dependencies(logger
+  rclcpp
+  rclcpp_lifecycle
+  nav2_util
+  sensor_msgs
+  nav_msgs)
 
 target_include_directories(sgd_util
   PUBLIC
@@ -48,7 +58,7 @@ target_include_directories(sgd_util
     $<INSTALL_INTERFACE:include>)
 
 install(
-  TARGETS serial serial_mock
+  TARGETS serial serial_mock logger
   DESTINATION lib/${PROJECT_NAME})
 
 ament_export_targets(export_sgd_util HAS_LIBRARY_TARGET)

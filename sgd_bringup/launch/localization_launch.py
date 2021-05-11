@@ -97,7 +97,8 @@ def generate_launch_description():
                 {"source_frame": "map",
                  "target_frame": "odom",
                  "gps_topic": "gps",
-                 "odom_topic": "odom"}]),
+                 "odom_topic": "odom",
+                 "use_sim_time": use_sim_time}]),
         
         #Node(
         #    package='nav2_amcl',

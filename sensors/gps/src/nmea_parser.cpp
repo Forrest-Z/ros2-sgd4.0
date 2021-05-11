@@ -41,8 +41,8 @@ Nmea_Parser::parse_line(std::string line)
 {
     if (line.front() != '$') // || line.back() != '\0')
     {
-        std::cout << "Badly formatted string." << std::endl;
-        std::cout << "Line has to start with '$'. First char is " << line.front() << std::endl;
+        //std::cout << "Badly formatted string." << std::endl;
+        //std::cout << "Line has to start with '$'. First char is " << line.front() << std::endl;
         return -1;
     }
 

@@ -12,7 +12,6 @@ Navilock_UBlox6_GPS::Navilock_UBlox6_GPS():
 
     add_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
     add_parameter("xml_file", rclcpp::ParameterValue("/home/ipp/dev_ws/src/ros2-sgd4.0/sensors/gps/data/nmea.xml"));
-
 }
 
 Navilock_UBlox6_GPS::~Navilock_UBlox6_GPS()
@@ -28,7 +27,7 @@ Navilock_UBlox6_GPS::on_configure(const rclcpp_lifecycle::State & state)
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
     init_pub_sub();
-
+    RCLCPP_INFO(get_logger(), "Xml-File: %s", xml_file_.c_str());
     nmea_parser_ = std::shared_ptr<Nmea_Parser>(new Nmea_Parser(xml_file_));
 
     return nav2_util::CallbackReturn::SUCCESS;
@@ -89,27 +88,27 @@ void
 Navilock_UBlox6_GPS::read_msg(const sgd_msgs::msg::Serial::SharedPtr msg)
 {
     std::string line = msg->msg;
-  nmea_parser_->parse_line(line);
-  
-  if (nmea_parser_->msg_complete())
-  {
-    // Alle Daten sind da und können gepublished werden.
-    sensor_msgs::msg::NavSatFix nsf;
-    nsf.latitude = nmea_parser_->latitude();
-    nsf.longitude = nmea_parser_->longitude();
-    nsf.header.stamp.sec = nmea_parser_->time();
-    nsf.header.stamp.nanosec = (nmea_parser_->time() - floor(nmea_parser_->time())) * 1E9;
-    
-    nsf.status.status = nmea_parser_->fix() > 1 ? sensor_msgs::msg::NavSatStatus::STATUS_FIX
-                : sensor_msgs::msg::NavSatStatus::STATUS_NO_FIX;
-    
-    RCLCPP_INFO(get_logger(), "GPS lat: %.7f, lon %.7f", nmea_parser_->latitude(), nmea_parser_->longitude());
+    nmea_parser_->parse_line(line);
 
-    publisher_->publish(nsf);
+    if (nmea_parser_->msg_complete())
+    {
+        // Alle Daten sind da und können gepublished werden.
+        sensor_msgs::msg::NavSatFix nsf;
+        nsf.latitude = nmea_parser_->latitude();
+        nsf.longitude = nmea_parser_->longitude();
+        nsf.header.stamp.sec = nmea_parser_->time();
+        nsf.header.stamp.nanosec = (nmea_parser_->time() - floor(nmea_parser_->time())) * 1E9;
 
-    // Clear old message 
-    nmea_parser_->clear();
-  }
+        nsf.status.status = nmea_parser_->fix() > 1 ? sensor_msgs::msg::NavSatStatus::STATUS_FIX
+                    : sensor_msgs::msg::NavSatStatus::STATUS_NO_FIX;
+
+        RCLCPP_INFO(get_logger(), "GPS lat: %.7f, lon %.7f", nmea_parser_->latitude(), nmea_parser_->longitude());
+
+        publisher_->publish(nsf);
+
+        // Clear old message 
+        nmea_parser_->clear();
+    }
 
 }
 

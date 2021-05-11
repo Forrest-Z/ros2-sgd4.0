@@ -17,17 +17,9 @@ Simple_Gps_Localizer::Simple_Gps_Localizer():
     add_parameter("target_frame", rclcpp::ParameterValue("odom"));
     add_parameter("gps_topic", rclcpp::ParameterValue("gps"));
     add_parameter("odom_topic", rclcpp::ParameterValue("odom"));
+    add_parameter("imu_topic", rclcpp::ParameterValue("imu"));
 
     is_odom_avail_ = false;
-
-    // subscribe to gps topic
-    // subscribe to odom topic
-
-    // calculate map -> odom transformation
-
-    // publish transform in global coordinates (-> global controller)
-    // publish transform in local coordinates (temp.)
-
 }
 
 Simple_Gps_Localizer::~Simple_Gps_Localizer()
@@ -42,9 +34,11 @@ Simple_Gps_Localizer::on_configure(const rclcpp_lifecycle::State & state)
     RCLCPP_DEBUG(get_logger(), "Configuring");
 
     // Initialize parameters, pub/sub, services, etc.
+    last_send_time_ = now().seconds();
     init_parameters();
     init_pub_sub();
     init_transforms();
+    xyw = estimation();
 
     return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -105,15 +99,16 @@ Simple_Gps_Localizer::gps_sub_callback(const sensor_msgs::msg::NavSatFix::Shared
     // Calculate transformation
     auto xy = sgd_util::WGS84_to_local(msg_->latitude, msg_->longitude);
 
-    double dx = xy.first - (-cos(angle_odom_) * x_base_gps_ - sin(angle_odom_) * y_base_gps_ + x_odom_);
-    double dy = xy.second - (-sin(angle_odom_) * x_base_gps_ + cos(angle_odom_) * y_base_gps_ + y_odom_);
-    
+    // TODO: use angle from gps data?
+    double dx = xy.first - (-cos(xyw.w) * x_base_gps_ - sin(xyw.w) * y_base_gps_ + xyw.x);
+    double dy = xy.second - (-sin(xyw.w) * x_base_gps_ + cos(xyw.w) * y_base_gps_ + xyw.y);
+    //RCLCPP_INFO(get_logger(), "GPS delta x,y: %.4f, %.4f", dx, dy);
+
     tf_map_odom_.transform.translation.x = dx;
     tf_map_odom_.transform.translation.y = dy;
-    tf_map_odom_.transform.translation.z = 0;
+    tf_map_odom_.transform.translation.z = 0.142176;
     tf_map_odom_.transform.rotation = angleZ_to_Quaternion(0);  // use IMU data??
     tf_broadcaster_->sendTransform(tf_map_odom_);
-
 }
 
 void
@@ -121,6 +116,8 @@ Simple_Gps_Localizer::odom_sub_callback(const nav_msgs::msg::Odometry::SharedPtr
 {
     x_odom_ = msg_->pose.pose.position.x;
     y_odom_ = msg_->pose.pose.position.y;
+    xp_odom_ = msg_->twist.twist.linear.x;
+    wp_odom_ = msg_->twist.twist.angular.z;
 
     tf2::Quaternion q;
     tf2::fromMsg(msg_->pose.pose.orientation ,q);
@@ -133,21 +130,45 @@ Simple_Gps_Localizer::odom_sub_callback(const nav_msgs::msg::Odometry::SharedPtr
 }
 
 void
+Simple_Gps_Localizer::imu_sub_callback(const sensor_msgs::msg::Imu::SharedPtr msg_)
+{
+    // get imu data and calculate position and velocity
+    xpp_imu_ = msg_->linear_acceleration.x;
+
+    auto o = msg_->orientation;
+    w_imu_ = std::atan2(2 * (o.w*o.z + o.x*o.y),
+                        pow(o.w,2) + pow(o.x,2) - pow(o.y,2) - pow(o.z,2));
+
+    wp_imu_ = msg_->angular_velocity.z;
+
+    if (!xyw.initial_pos_set)
+    {
+        xyw.w = w_imu_;
+        xyw.initial_pos_set = true;
+    }
+}
+
+void
 Simple_Gps_Localizer::init_parameters()
 {
     get_parameter("target_frame", target_frame_);
     get_parameter("source_frame", source_frame_);
     get_parameter("gps_topic", gps_topic_);
     get_parameter("odom_topic", odom_topic_);
+    get_parameter("imu_topic", imu_topic_);
 }
 
 void
 Simple_Gps_Localizer::init_pub_sub()
-{
+{ 
     subscriber_gps_ = create_subscription<sensor_msgs::msg::NavSatFix>(
         gps_topic_, default_qos, std::bind(&Simple_Gps_Localizer::gps_sub_callback, this, _1));
     subscriber_odom_ = create_subscription<nav_msgs::msg::Odometry>(
         odom_topic_, default_qos, std::bind(&Simple_Gps_Localizer::odom_sub_callback, this, _1));
+    subscriber_imu_ = create_subscription<sensor_msgs::msg::Imu>(
+        imu_topic_, default_qos, std::bind(&Simple_Gps_Localizer::imu_sub_callback, this, _1));
+    
+    timer_ = this->create_wall_timer(100ms, std::bind(&Simple_Gps_Localizer::kalman_filter, this));
 
     RCLCPP_DEBUG(get_logger(), "Initialised publisher on topic %s and subscriber on topic %s.",
             gps_topic_.c_str(), odom_topic_.c_str());
@@ -199,6 +220,64 @@ Simple_Gps_Localizer::wait_for_transform()
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
+void
+Simple_Gps_Localizer::kalman_filter()
+{
+    if (!xyw.initial_pos_set)  return;     // IMU and odom data are required
+
+    double dt = now().seconds() - last_send_time_;   // time in s
+    double dt2 = pow(dt,2) / 2.0;
+    last_send_time_ = now().seconds();
+    
+    // Prediction
+    xyw.w += dt*xyw.wp + dt2*xyw.wpp;
+    xyw.wp += dt*xyw.wpp;
+
+    double c = cos(xyw.w);
+    double s = sin(xyw.w);
+
+    xyw.x += dt*c*xyw.xp + dt2*c*xyw.xpp;
+    xyw.y += dt*s*xyw.xp + dt2*s*xyw.xpp;
+    xyw.xp += dt*c*xyw.xpp;
+    xyw.yp += dt*s*xyw.xpp;
+    xyw.xpp = c*xyw.xpp;
+    xyw.ypp = s*xyw.xpp;
+
+    // Correction
+    double y[4] = {xp_odom_ - xyw.xp,
+                   xpp_imu_ - xyw.xpp,
+                   w_imu_ - xyw.w,
+                   (0.25*wp_imu_ + 0.75*wp_odom_) - xyw.wp};
+    
+    xyw.x += Kx[0][0] * y[0] + Kx[0][1]*y[1];
+    xyw.y += Kx[1][0] * y[0] + Kx[1][1]*y[1];
+    xyw.xp += Kx[2][0] * y[0] + Kx[2][1]*y[1];
+    xyw.yp += Kx[3][0] * y[0] + Kx[3][1]*y[1];
+    xyw.xpp += Kx[4][0] * y[0] + Kx[4][1]*y[1];
+    xyw.ypp += Kx[5][0] * y[0] + Kx[5][1]*y[1];
+
+    xyw.w += Kw[0][0]*y[2] + Kw[0][1]*y[3];
+    xyw.wp += Kw[1][0]*y[2] + Kw[1][1]*y[3];
+    xyw.wpp += Kw[2][0]*y[2] + Kw[2][1]*y[3];
+
+    // publish pose
+    //RCLCPP_INFO(get_logger(), "Filter pose: %.4f, %.4f, %.4f", xyw.x, xyw.y, xyw.w);
+
+    geometry_msgs::msg::TransformStamped odom_tf;
+    odom_tf.header.stamp = now();
+    odom_tf.header.frame_id = "odom";
+    odom_tf.child_frame_id = "base_footprint";
+
+    odom_tf.transform.translation.x = xyw.x;
+    odom_tf.transform.translation.y = xyw.y;
+    odom_tf.transform.translation.z = 0.0;
+
+    tf2::Quaternion q;
+    q.setRPY(0, 0, xyw.w);
+    odom_tf.transform.rotation = tf2::toMsg(q);
+    
+    tf_broadcaster_->sendTransform(odom_tf);
+}
 
 }   // namespace nav_sgd
 

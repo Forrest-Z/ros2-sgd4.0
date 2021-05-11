@@ -39,6 +39,7 @@ def generate_launch_description():
                        'recoveries_server',
                        'bt_navigator',
                        'waypoint_follower']
+                       #'logger']
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
@@ -93,6 +94,19 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'map_subscribe_transient_local', default_value='false',
             description='Whether to set the map subscriber QoS to transient local'),
+
+        Node(
+            package='sgd_util',
+            executable='logger',
+            name='logger',
+            namespace=namespace,
+            output='screen',
+            emulate_tty=True,
+            parameters=[{"use_sim_time": use_sim_time,
+                        "imu_topic": "imu",
+                        "gps_topic": "gps",
+                        "odom_topic": "odom",
+                        "output_folder": "/home/ipp/dev_ws/log/logger"}]),
 
         Node(
             package='nav2_controller',

@@ -41,6 +41,7 @@ def generate_launch_description():
     params_file = LaunchConfiguration('params_file')
     default_bt_xml_filename = LaunchConfiguration('default_bt_xml_filename')
     autostart = LaunchConfiguration('autostart')
+    rsp_urdf = LaunchConfiguration('rsp_urdf')
 
     # Launch configuration variables specific to simulation
     rviz_config_file = LaunchConfiguration('rviz_config_file')
@@ -100,6 +101,10 @@ def generate_launch_description():
     declare_autostart_cmd = DeclareLaunchArgument(
         'autostart', default_value='true',
         description='Automatically startup the nav2 stack')
+        
+    declare_rsp_urdf_cmd = DeclareLaunchArgument(
+        'rsp_urdf', default_value=os.path.join(bringup_dir, 'urdf', 'sgd_model.urdf'),
+        description='URDF file for Robot_State_Publisher')
 
     declare_rviz_config_file_cmd = DeclareLaunchArgument(
         'rviz_config_file',
@@ -156,7 +161,9 @@ def generate_launch_description():
         name='robot_state_publisher',
         namespace=namespace,
         output='screen',
-        parameters=[{'use_sim_time': use_sim_time}],
+        emulate_tty=True,
+        parameters=[{"use_sim_time": use_sim_time}],
+                     #"robot_description": rsp_urdf}],
         remappings=remappings,
         arguments=[urdf])
 
@@ -190,6 +197,7 @@ def generate_launch_description():
     ld.add_action(declare_params_file_cmd)
     ld.add_action(declare_bt_xml_cmd)
     ld.add_action(declare_autostart_cmd)
+    ld.add_action(declare_rsp_urdf_cmd)
 
     ld.add_action(declare_rviz_config_file_cmd)
     ld.add_action(declare_use_simulator_cmd)

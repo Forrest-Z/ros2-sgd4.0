@@ -222,12 +222,13 @@ WH_Fcruiser::on_motor_received(const sgd_msgs::msg::Serial::SharedPtr msg)
     odom.header.stamp = now();
     odom.header.frame_id = "odom";
     odom.child_frame_id = "base_footprint";
+    // Twist relative to child_frame_id
     odom.twist.twist.angular.x = 0.0;
     odom.twist.twist.angular.y = 0.0;
     odom.twist.twist.angular.z = twist_ang_z;
-    odom.twist.twist.linear.x = cos(pose_orie_z) * speed_xy;
-    odom.twist.twist.linear.y = sin(pose_orie_z) * speed_xy;
-    odom.twist.twist.linear.z = 0.142176;
+    odom.twist.twist.linear.x = speed_xy;
+    odom.twist.twist.linear.y = 0.0;
+    odom.twist.twist.linear.z = 0.0;
 
     odom.pose.pose.position.x = last_odom_msg_.pose.pose.position.x + last_odom_msg_.twist.twist.linear.x * delta_t.seconds();
     odom.pose.pose.position.y = last_odom_msg_.pose.pose.position.y + last_odom_msg_.twist.twist.linear.y * delta_t.seconds();
