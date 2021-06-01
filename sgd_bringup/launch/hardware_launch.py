@@ -26,6 +26,7 @@ from nav2_common.launch import RewrittenYaml
 def generate_launch_description():
     # Get the launch directory
     bringup_dir = get_package_share_directory('sgd_bringup')
+    sgd_util_dir = get_package_share_directory('sgd_util')
 
     namespace = LaunchConfiguration('namespace')
     use_sim_time = LaunchConfiguration('use_sim_time')
@@ -38,11 +39,12 @@ def generate_launch_description():
 
     lifecycle_nodes = ['gps_serial',
                        'gps_sensor',
-                       'feather_serial',
-                       'capacitive_touch',
-                       'laser_1d',
                        'esp_serial',
-                       'wheel_driver']
+                       'wheel_driver',
+                       'logger']
+    #                   'feather_serial',
+    #                   'capacitive_touch',
+    #                   'laser_1d',
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
@@ -111,8 +113,12 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[
                 {"port": gps_port,
-                "baud_rate": 9600,
-                "read_write": "ro"}]),
+                 "baud_rate": 115200,
+                 "read_write": "ro",
+                 "logfile": os.path.join('/home/ipp/dev_ws','log','serial_gps.log'),
+                 "raw": True,
+                 "sframe": '\n',
+                 "log": True}]),
 
         Node(
             package="gps",
@@ -134,7 +140,11 @@ def generate_launch_description():
             parameters=[
                 {"port": feather_port,
                 "baud_rate": 115200,
-                "read_write": "ro"}]),
+                "read_write": "ro",
+                "logfile": os.path.join('/home/ipp/dev_ws','log','serial_feather.log'),
+                "raw": False,
+                "sframe": '$',
+                "log": True}]),
 
         Node(
             package="cap_touch",
@@ -164,7 +174,11 @@ def generate_launch_description():
             output='screen',
             parameters=[{'port': esp_port},
             		 {'baud_rate': 115200},
-            		 {'read_write': 'rw'}]),
+            		 {'read_write': 'rw',
+                      'logfile': os.path.join('/home/ipp/dev_ws','log','serial_esp.log'),
+                      'raw': False,
+                      'sframe': '$',
+                      'log': True}]),
                 
         Node(
             package='sgd_lc',
@@ -176,6 +190,13 @@ def generate_launch_description():
             		 {'max_speed': 200.0},
             		 {'use_sim_time': use_sim_time}]),
 
+        Node(
+            package='sgd_util',
+            executable='logger',
+            name='logger',
+            output='screen',
+            parameters=[{'output_folder': os.path.join('/home/ipp/dev_ws','log')}]),
+                     
         # TODO: Create nodes for lidar
 
         Node(

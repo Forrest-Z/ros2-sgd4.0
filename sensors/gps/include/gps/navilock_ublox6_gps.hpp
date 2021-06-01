@@ -37,8 +37,10 @@ protected:
     rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::NavSatFix>::SharedPtr publisher_;
     rclcpp::Subscription<sgd_msgs::msg::Serial>::SharedPtr subscriber_;
     rclcpp::TimerBase::SharedPtr timer_;
+    u_int8_t gps_counter_;
+    
 
-    std::shared_ptr<Nmea_Parser> nmea_parser_;    
+    std::shared_ptr<Nmea_Parser> nmea_parser_;
 
     void read_msg(const sgd_msgs::msg::Serial::SharedPtr msg);
 

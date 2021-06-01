@@ -73,13 +73,14 @@ Navilock_UBlox6_GPS::init_parameters()
 
 void
 Navilock_UBlox6_GPS::init_pub_sub()
-{    
+{
     std::string serial_topic = "serial_" + port_.substr(port_.find_last_of("/")+1);
 
     publisher_ = this->create_publisher<sensor_msgs::msg::NavSatFix>("gps", default_qos);
     subscriber_ = this->create_subscription<sgd_msgs::msg::Serial>(
         serial_topic, default_qos, std::bind(&Navilock_UBlox6_GPS::read_msg, this, std::placeholders::_1));
 
+    gps_counter_ = 0;
     RCLCPP_DEBUG(get_logger(), "Initialised publisher on topic %s and subscriber on topic %s.",
             'gps', serial_topic.c_str());
 }
@@ -92,6 +93,24 @@ Navilock_UBlox6_GPS::read_msg(const sgd_msgs::msg::Serial::SharedPtr msg)
 
     if (nmea_parser_->msg_complete())
     {
+        if (gps_counter_ > 2)
+        {
+            // filter
+            // publish message, reset counter
+            gps_counter_ = 0;
+        }
+        else
+        {
+            
+            gps_counter_++;
+        }
+        
+
+
+
+        
+
+
         // Alle Daten sind da und können gepublished werden.
         sensor_msgs::msg::NavSatFix nsf;
         nsf.latitude = nmea_parser_->latitude();

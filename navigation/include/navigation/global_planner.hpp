@@ -20,6 +20,8 @@
 #include <list>
 
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
+#include "nav2_util/lifecycle_node.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 //#include "nav2_util/geometry_utils.hpp"
 #include "visualization_msgs/msg/marker.hpp"
@@ -33,7 +35,7 @@
 namespace nav_sgd
 {
 
-class Global_Planner_OSM : public rclcpp::Node
+class Global_Planner_OSM : public nav2_util::LifecycleNode
 {
 
 //! \brief Struct to hold node id, latitude and longitude
@@ -66,19 +68,39 @@ public:
            std::shared_ptr<sgd_msgs::srv::ComputePath::Response> response);
 
 protected:
-    
+    // Implement the lifecycle interface
+    nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
+    nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
+    nav2_util::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
+    nav2_util::CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
+    nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
 
+    //! \brief Init parameters
+    void init_parameters();
     std::string map_file_;
+    std::string waypoints_topic_;
+    std::string mapdata_topic_;
+
+    //! \brief Init Publisher and subscriber
+    void init_pub_sub();
+    rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
+    rclcpp::TimerBase::SharedPtr timer_map_data_;
+    rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_map_data_;
+    rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_waypoints_;
+
+    
+    // variablesused for parsing osm
     std::vector<char> buffer;
     rapidxml::xml_document<> osm;
     rapidxml::xml_node<> * root;
 
-    //! Store waypoints from start to destination
+    // Store waypoints from start to destination
     std::vector<POSE> waypoints;
 
-    //! Store map data
+    // Store map data
     std::vector<POSE> map_data;
  
+    // service
     std::chrono::milliseconds server_timeout_;
     rclcpp::Node::SharedPtr client_node_;
     rclcpp::Service<sgd_msgs::srv::ComputePath>::SharedPtr compute_path_srv;
@@ -86,11 +108,8 @@ protected:
     nav2_msgs::action::FollowWaypoints::Goal waypoint_follower_goal_;
     rclcpp_action::ClientGoalHandle<nav2_msgs::action::FollowWaypoints>::SharedPtr waypoint_follower_goal_handle_;
 
-    rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_map_data_;
-    rclcpp::TimerBase::SharedPtr timer_map_data_;
-    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_waypoints_;
-    rclcpp::TimerBase::SharedPtr timer_waypoints_;
+    // publisher / subscriber
+    
 
     //! \brief Publish map data to map_data topic
     void publish_map_data();

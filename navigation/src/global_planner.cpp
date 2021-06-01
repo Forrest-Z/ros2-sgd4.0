@@ -8,25 +8,87 @@ using std::placeholders::_1;
 using namespace std::chrono_literals;
 
 Global_Planner_OSM::Global_Planner_OSM():
-        Node("global_planner_osm")
-{
-    RCLCPP_INFO(this->get_logger(), "Global planner initialization.");
-    // TODO: read path to map file from params
-    map_file_ = "/home/pascal/dev_ws/src/ros2-sgd4.0/navigation/maps/20_NavigationsFaehigeDaten.osm";
-    parseXml();
-    // Create publisher for map_data
-     
-    compute_path_srv = this->create_service<sgd_msgs::srv::ComputePath>("/compute_path",
-        std::bind(&Global_Planner_OSM::computePath, this, std::placeholders::_1, std::placeholders::_2));
+        nav2_util::LifecycleNode("global_planner_osm", "", true) 
+{   
+    RCLCPP_DEBUG(get_logger(), "Creating"); 
 
-    publisher_map_data_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("mapdata", default_qos);
+    // Add parameters
+    add_parameter("map_file", rclcpp::ParameterValue("3_lohmuehlenpark.osm"));
+    add_parameter("waypoints_topic", rclcpp::ParameterValue("waypoints"));
+    add_parameter("mapdata_topic", rclcpp::ParameterValue("mapdata"));
+}
+
+Global_Planner_OSM::~Global_Planner_OSM()
+{
+    // Destroy
+}
+
+nav2_util::CallbackReturn
+Global_Planner_OSM::on_configure(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Configuring");
+
+    // Initialize parameters, pub/sub, services, etc.
+    init_parameters();
+    init_pub_sub();
+
+    parseXml();
+
+    return nav2_util::CallbackReturn::SUCCESS;
+}
+
+nav2_util::CallbackReturn
+Global_Planner_OSM::on_activate(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Activating");
+
+    return nav2_util::CallbackReturn::SUCCESS;
+}
+
+nav2_util::CallbackReturn
+Global_Planner_OSM::on_deactivate(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Deactivating");
+    return nav2_util::CallbackReturn::SUCCESS;
+}
+
+nav2_util::CallbackReturn
+Global_Planner_OSM::on_cleanup(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Cleanup");
+    return nav2_util::CallbackReturn::SUCCESS;
+}
+
+nav2_util::CallbackReturn
+Global_Planner_OSM::on_shutdown(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Shutdown");
+    return nav2_util::CallbackReturn::SUCCESS;
+}
+
+void
+Global_Planner_OSM::init_parameters()
+{
+    get_parameter("map_file", map_file_);
+    //map_file_ = "/home/pascal/dev_ws/src/ros2-sgd4.0/navigation/maps/20_NavigationsFaehigeDaten.osm";
+    get_parameter("waypoints_topic", waypoints_topic_);
+    get_parameter("mapdata_topic", mapdata_topic_);
+}
+
+void
+Global_Planner_OSM::init_pub_sub()
+{
+    publisher_map_data_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(mapdata_topic_, default_qos);
     timer_map_data_ = this->create_wall_timer(5000ms, std::bind(&Global_Planner_OSM::publish_map_data, this));
 
-    //waypoints.push_back(std::make_pair(53.555833,10.021944));
-    publisher_waypoints_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("waypoints", default_qos);
-    //publish_waypoints();
-    //timer_waypoints_ = this->create_wall_timer(1000ms, std::bind(&Global_Planner_OSM::publish_waypoints, this));
+    publisher_waypoints_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(waypoints_topic_, default_qos);
 
+    RCLCPP_DEBUG(get_logger(), "Initialised publisher on topic %s and %s.",
+            waypoints_topic_.c_str(), mapdata_topic_.c_str());
+
+    compute_path_srv = this->create_service<sgd_msgs::srv::ComputePath>("/compute_path",
+        std::bind(&Global_Planner_OSM::computePath, this, std::placeholders::_1, std::placeholders::_2));
+    
     auto options = rclcpp::NodeOptions().arguments(
         {"--ros-args --remap __node:=navigation_dialog_action_client"});
     client_node_ = std::make_shared<rclcpp::Node>("_follow", options);
@@ -37,12 +99,6 @@ Global_Planner_OSM::Global_Planner_OSM():
     waypoint_follower_goal_ = nav2_msgs::action::FollowWaypoints::Goal();
 
     server_timeout_ = std::chrono::milliseconds(10);
-
-}
-
-Global_Planner_OSM::~Global_Planner_OSM()
-{
-    // Destroy
 }
 
 void
@@ -99,6 +155,7 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::ComputePath
         for (rapidxml::xml_node<> *nd = pos->first_node("nd"); nd; nd = nd->next_sibling("nd"))
         {
             long pos_id = strtol(nd->first_attribute("ref")->value(), NULL, 10);
+            // get cost
 
             for (rapidxml::xml_node<> *np = root->first_node("node"); np; np = np->next_sibling())
             {
@@ -109,15 +166,14 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::ComputePath
                     {
                         continue;
                     }
-
+ 
                     NODE n;
                     n.xml_node = np;
                     n.parent_xml_node = olistData.xml_node;
-                    n.g = olistData.g + cost_node_to_node(olistData.xml_node, np);
+                    n.g = olistData.g + cost_node_to_node(olistData.xml_node, np); // add cost
                     n.h = distance_node_to_node(np, dest_node);
                     n.f = n.g + n.h;
 
-                    //RCLCPP_DEBUG(this->get_logger(), "Node %d to open list, cost from start :%.8f, cost to dest: %.8f ", pos_id, n.g, n.h);
                     openList.push(n);
 
                     break;
@@ -160,8 +216,6 @@ Global_Planner_OSM::publish_marker_array(
 {
     std::vector<POSE>::iterator it;
     visualization_msgs::msg::MarkerArray marker_array;
-
-    //map_data.push_back(std::make_pair(1.23456, 2.34567));
 
     int i = 0;
     for (it = data->begin(); it != data->end(); ++it)
@@ -295,8 +349,6 @@ Global_Planner_OSM::start_waypoint_following(std::vector<POSE> * waypoints)
         RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server.");
         return;
     }
-
-    //QBasicTimer timer.start(200, this);
 }
 
 void
@@ -435,7 +487,6 @@ Global_Planner_OSM::trace_path(std::unordered_map<rapidxml::xml_node<char> *, ra
     }
 
     waypoints.push_back(pose);
-
 }
 
 }   // namespace nav_sgd
@@ -443,11 +494,8 @@ Global_Planner_OSM::trace_path(std::unordered_map<rapidxml::xml_node<char> *, ra
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    std::shared_ptr<rclcpp::Node> node = std::make_shared<nav_sgd::Global_Planner_OSM>();
-
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Ready to compute path");
-
-    rclcpp::spin(node);
+    auto node = std::make_shared<nav_sgd::Global_Planner_OSM>();
+    rclcpp::spin(node->get_node_base_interface());
     rclcpp::shutdown();
 }
 

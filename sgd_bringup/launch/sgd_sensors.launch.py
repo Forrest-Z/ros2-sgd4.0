@@ -49,18 +49,29 @@ def generate_launch_description():
         default_value='/dev/ttyUSB0',
         description='Port to communicate with motors')
 
-    lifecycle_nodes = ['gps_serial', 'gps_sensor']
+    lifecycle_nodes = ['gps_serial', 'gps_sensor',
+                       'esp_serial', 'imu_bno055']
+
+    # Configure logging
+    
+    ros_playback_cmd = launch.actions.ExecuteProcess(
+            cmd=['ros2', 'bag', 'record',
+                 '-o', 'playback',
+                 '/serial_ttyUSB0', '/serial_ttyACM0'],
+            output='screen'
+        )
+
 
     # Create nodes for gps
     start_serial0_cmd = Node(
         package="sgd_util",
-        executable="serial_mock",
+        executable="serial",
         name="gps_serial",
         output="screen",
         emulate_tty=True,
         parameters=[
             {"port": gps_port,
-             "logfile": os.path.join(sgd_util_dir,'log','serial.log'),
+             "logfile": os.path.join(sgd_util_dir,'log','serial_gps.log'),
              "baud_rate": 115200,
              "read_write": "ro",
              "raw": True,
@@ -125,7 +136,11 @@ def generate_launch_description():
         parameters=[
             {"port": esp_port,
              "baud_rate": 115200,
-             "read_write": "rw"}
+             "read_write": "rw",
+             "logfile": os.path.join(sgd_util_dir,'log','serial_esp.log'),
+             "raw": True,
+             "sframe": '\n',
+             "log": True}])}
         ]
     )
     
@@ -193,10 +208,10 @@ def generate_launch_description():
     #ld.add_action(start_cap_touch_cmd)
     #ld.add_action(start_laser1d_cmd)
 
-    #ld.add_action(start_serial2_cmd)
+    ld.add_action(start_serial2_cmd)
     #ld.add_action(start_motor_driver_cmd)
     #ld.add_action(start_motor_cmd)
-    #ld.add_action(start_imu_cmd)
+    ld.add_action(start_imu_cmd)
 
     ld.add_action(lifecycle_manager_sensors)
 

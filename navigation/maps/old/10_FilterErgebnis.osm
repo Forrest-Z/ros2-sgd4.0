@@ -1,0 +1,376 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version='0.6' generator='JOSM'>
+  <bounds minlat='53.5536114' minlon='10.0196922' maxlat='53.5571359' maxlon='10.0245738' origin='CGImap 0.8.3 (439651 spike-07.openstreetmap.org)' />
+  <node id='5126614363' action='modify' timestamp='2020-02-26T23:24:57Z' uid='1431737' user='ma-rt-in' visible='true' version='3' changeset='81524159' lat='53.5548152' lon='10.0227661'>
+    <tag k='barrier' v='bollard' />
+    <tag k='bicycle' v='yes' />
+    <tag k='bollard' v='removable' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='foot' v='yes' />
+    <tag k='material' v='metal' />
+  </node>
+  <node id='5139465931' action='modify' timestamp='2017-09-30T12:26:07Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52508656' lat='53.5560786' lon='10.0211504'>
+    <tag k='barrier' v='bollard' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='emergency' v='yes' />
+    <tag k='foot' v='yes' />
+  </node>
+  <way id='23783479' action='modify' timestamp='2020-12-18T07:43:25Z' uid='6085289' user='Knoblauch13' visible='true' version='8' changeset='96050449'>
+    <nd ref='393959318' />
+    <nd ref='5126614363' />
+    <nd ref='6043686597' />
+    <nd ref='5126614370' />
+    <nd ref='5126613807' />
+    <nd ref='801398443' />
+    <nd ref='257693049' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='surface' v='compacted' />
+  </way>
+  <way id='34346542' action='modify' timestamp='2020-08-01T08:33:35Z' uid='7523217' user='OSMatthias' visible='true' version='5' changeset='88809651'>
+    <nd ref='3691017003' />
+    <nd ref='5126614369' />
+    <nd ref='7246336372' />
+    <nd ref='393959320' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='no' />
+    <tag k='surface' v='paving_stones' />
+  </way>
+  <way id='34346544' action='modify' timestamp='2020-08-01T08:30:01Z' uid='7523217' user='OSMatthias' visible='true' version='21' changeset='88809651'>
+    <nd ref='3691017016' />
+    <nd ref='3693915193' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='yes' />
+    <tag k='motor_vehicle' v='no' />
+    <tag k='name' v='Alexanderstraße' />
+    <tag k='surface' v='paving_stones' />
+  </way>
+  <way id='34346546' action='modify' timestamp='2020-12-09T19:33:20Z' uid='6085289' user='Knoblauch13' visible='true' version='7' changeset='95571741'>
+    <nd ref='257693042' />
+    <nd ref='393959318' />
+    <nd ref='5126614368' />
+    <nd ref='7246371343' />
+    <nd ref='5126614367' />
+    <nd ref='3691017003' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='yes' />
+    <tag k='surface' v='paving_stones' />
+  </way>
+  <way id='74200460' action='delete' timestamp='2020-12-03T08:45:15Z' uid='6085289' user='Knoblauch13' visible='true' version='6' changeset='95209339'>
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='surface' v='paving_stones' />
+  </way>
+  <way id='365057225' action='modify' timestamp='2020-08-01T08:31:18Z' uid='7523217' user='OSMatthias' visible='true' version='8' changeset='88809651'>
+    <nd ref='3691017003' />
+    <nd ref='3691017004' />
+    <nd ref='3693899495' />
+    <nd ref='5018571331' />
+    <nd ref='3693899460' />
+    <nd ref='3693899447' />
+    <nd ref='3693899453' />
+    <nd ref='3693899451' />
+    <nd ref='3693899448' />
+    <nd ref='3693899458' />
+    <nd ref='3693899463' />
+    <nd ref='3693899459' />
+    <nd ref='3693899457' />
+    <nd ref='3693899481' />
+    <nd ref='3691017016' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lanes' v='1' />
+    <tag k='lit' v='yes' />
+    <tag k='name' v='Berliner Tor' />
+    <tag k='surface' v='paving_stones' />
+  </way>
+  <way id='365244735' action='modify' timestamp='2020-08-01T08:34:51Z' uid='7523217' user='OSMatthias' visible='true' version='4' changeset='88809651'>
+    <nd ref='393959320' />
+    <nd ref='7246336371' />
+    <nd ref='3692819576' />
+    <nd ref='797447946' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='no' />
+    <tag k='surface' v='paving_stones' />
+  </way>
+  <way id='473382346' action='modify' timestamp='2020-08-01T08:30:08Z' uid='7523217' user='OSMatthias' visible='true' version='5' changeset='88809651'>
+    <nd ref='3693915193' />
+    <nd ref='3693915194' />
+    <nd ref='3693915195' />
+    <nd ref='3693915196' />
+    <nd ref='3693915197' />
+    <nd ref='3693915199' />
+    <nd ref='3693915198' />
+    <nd ref='5139465931' />
+    <nd ref='3693899468' />
+    <nd ref='3693898802' />
+    <nd ref='789307229' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='yes' />
+    <tag k='motor_vehicle' v='no' />
+    <tag k='name' v='Alexanderstraße' />
+    <tag k='surface' v='paving_stones' />
+  </way>
+  <way id='473382347' action='modify' timestamp='2020-08-01T08:29:09Z' uid='7523217' user='OSMatthias' visible='true' version='4' changeset='88809651'>
+    <nd ref='3691017016' />
+    <nd ref='-107403' />
+    <nd ref='5126614372' />
+    <nd ref='5018571342' />
+    <nd ref='5018571343' />
+    <nd ref='5018571344' />
+    <nd ref='-107396' />
+    <nd ref='788416436' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='yes' />
+    <tag k='surface' v='paving_stones' />
+  </way>
+  <way id='513377605' action='modify' timestamp='2020-11-15T11:14:45Z' uid='10592928' user='Ralle61' visible='true' version='3' changeset='94138711'>
+    <nd ref='26678248' />
+    <nd ref='5018571326' />
+    <nd ref='5126614365' />
+    <nd ref='5018571327' />
+    <nd ref='5018571328' />
+    <nd ref='5018571329' />
+    <nd ref='5018571330' />
+    <nd ref='5018571331' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='yes' />
+    <tag k='surface' v='compacted' />
+  </way>
+  <way id='513377606' action='modify' timestamp='2020-12-18T07:41:27Z' uid='6085289' user='Knoblauch13' visible='true' version='3' changeset='96050449'>
+    <nd ref='5018571326' />
+    <nd ref='5126614366' />
+    <nd ref='5018571332' />
+    <nd ref='801398443' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='surface' v='compacted' />
+  </way>
+  <way id='513377607' action='modify' timestamp='2020-12-18T07:41:29Z' uid='6085289' user='Knoblauch13' visible='true' version='4' changeset='96050452'>
+    <nd ref='5139452005' />
+    <nd ref='5018571334' />
+    <nd ref='5139452004' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='yes' />
+    <tag k='surface' v='compacted' />
+    <tag k='tactile_paving' v='yes' />
+  </way>
+  <way id='513377608' action='modify' timestamp='2020-12-13T11:31:11Z' uid='10592928' user='Ralle61' visible='true' version='6' changeset='95750313'>
+    <nd ref='5126614333' />
+    <nd ref='6043758128' />
+    <nd ref='6043758127' />
+    <nd ref='5139465934' />
+    <nd ref='5139465935' />
+    <nd ref='5018571340' />
+    <nd ref='5126614335' />
+    <nd ref='5126614336' />
+    <nd ref='5126614337' />
+    <nd ref='5126614332' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='no' />
+    <tag k='surface' v='compacted' />
+  </way>
+  <way id='527299335' action='modify' timestamp='2017-09-24T15:46:51Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52332006'>
+    <nd ref='5126614332' />
+    <nd ref='5018571341' />
+    <nd ref='-107365' />
+    <nd ref='-107366' />
+    <nd ref='788416436' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='surface' v='sett' />
+  </way>
+  <way id='527299341' action='modify' timestamp='2020-12-13T11:31:12Z' uid='10592928' user='Ralle61' visible='true' version='3' changeset='95750313'>
+    <nd ref='5139452003' />
+    <nd ref='5018571337' />
+    <nd ref='5139452002' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='yes' />
+    <tag k='surface' v='compacted' />
+    <tag k='tactile_paving' v='yes' />
+  </way>
+  <way id='528975062' action='modify' timestamp='2020-12-13T11:31:12Z' uid='10592928' user='Ralle61' visible='true' version='2' changeset='95750313'>
+    <nd ref='5139452002' />
+    <nd ref='5139465928' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='yes' />
+    <tag k='surface' v='compacted' />
+  </way>
+  <way id='528975063' action='modify' timestamp='2020-12-18T07:41:30Z' uid='6085289' user='Knoblauch13' visible='true' version='2' changeset='96050452'>
+    <nd ref='5018571326' />
+    <nd ref='5139452003' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='yes' />
+    <tag k='surface' v='compacted' />
+  </way>
+  <way id='528975064' action='modify' timestamp='2020-12-13T11:31:12Z' uid='10592928' user='Ralle61' visible='true' version='3' changeset='95750313'>
+    <nd ref='5139452004' />
+    <nd ref='5018571337' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='yes' />
+    <tag k='surface' v='compacted' />
+    <tag k='tactile_paving' v='yes' />
+  </way>
+  <way id='528975065' action='modify' timestamp='2020-12-13T11:31:12Z' uid='10592928' user='Ralle61' visible='true' version='2' changeset='95750313'>
+    <nd ref='5139452007' />
+    <nd ref='5139452005' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='yes' />
+    <tag k='surface' v='paving_stones' />
+    <tag k='tactile_paving' v='yes' />
+  </way>
+  <way id='528975070' action='modify' timestamp='2020-12-22T14:42:53Z' uid='6085289' user='Knoblauch13' visible='true' version='2' changeset='96265978'>
+    <nd ref='5139465928' />
+    <nd ref='3693899488' />
+    <nd ref='3693915198' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='yes' />
+    <tag k='surface' v='paving_stones' />
+  </way>
+  <way id='528975071' action='modify' timestamp='2020-12-13T11:31:12Z' uid='10592928' user='Ralle61' visible='true' version='2' changeset='95750313'>
+    <nd ref='5018571349' />
+    <nd ref='5126614333' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='incline' v='up' />
+    <tag k='lit' v='yes' />
+    <tag k='surface' v='sett' />
+  </way>
+  <way id='528975073' action='modify' timestamp='2020-12-13T11:31:12Z' uid='10592928' user='Ralle61' visible='true' version='2' changeset='95750313'>
+    <nd ref='3693899468' />
+    <nd ref='5018571349' />
+    <tag k='bicycle' v='yes' />
+    <tag k='disabled' v='SharedGuideDog' />
+    <tag k='highway' v='footway' />
+    <tag k='lit' v='yes' />
+    <tag k='surface' v='paving_stones' />
+  </way>
+  <node id='-107365' action='modify' visible='true' lat='53.55687589129' lon='10.02023806997' />
+  <node id='-107366' action='modify' visible='true' lat='53.55691352232' lon='10.02025098193' />
+  <node id='-107396' action='modify' visible='true' lat='53.55699333833' lon='10.0204261004' />
+  <node id='-107403' action='modify' visible='true' lat='53.55643030863' lon='10.02146510975' />
+  <node id='26678248' timestamp='2015-02-12T17:22:35Z' uid='161619' user='FvGordon' visible='true' version='9' changeset='28800274' lat='53.5554196' lon='10.0217294' />
+  <node id='257693042' timestamp='2017-09-30T12:26:09Z' uid='161619' user='FvGordon' visible='true' version='6' changeset='52508656' lat='53.5547573' lon='10.0227938' />
+  <node id='257693049' timestamp='2017-08-06T19:00:00Z' uid='561067' user='flor!an' visible='true' version='7' changeset='50893872' lat='53.5551516' lon='10.022122' />
+  <node id='393959318' timestamp='2017-09-24T15:46:51Z' uid='161619' user='FvGordon' visible='true' version='4' changeset='52332006' lat='53.5548064' lon='10.0228089' />
+  <node id='393959320' timestamp='2015-08-12T06:37:57Z' uid='561067' user='flor!an' visible='true' version='8' changeset='33283773' lat='53.5539962' lon='10.0238513' />
+  <node id='788416436' timestamp='2017-01-22T14:50:24Z' uid='561067' user='flor!an' visible='true' version='11' changeset='45370877' lat='53.5569284' lon='10.0202231'>
+    <tag k='name' v='Berliner Tor' />
+    <tag k='railway' v='subway_entrance' />
+    <tag k='ref' v='5' />
+    <tag k='wheelchair' v='no' />
+  </node>
+  <node id='789307229' timestamp='2015-02-12T17:22:35Z' uid='161619' user='FvGordon' visible='true' version='5' changeset='28800274' lat='53.5560191' lon='10.0210361' />
+  <node id='797447946' timestamp='2020-02-26T15:58:57Z' uid='1431737' user='ma-rt-in' visible='true' version='12' changeset='81511379' lat='53.5537585' lon='10.0240165'>
+    <tag k='entrance' v='yes' />
+    <tag k='entrance_marker:subway' v='yes' />
+    <tag k='level' v='0' />
+    <tag k='name' v='Berliner Tor' />
+    <tag k='railway' v='subway_entrance' />
+    <tag k='wheelchair' v='no' />
+  </node>
+  <node id='801398443' timestamp='2017-08-06T19:00:00Z' uid='561067' user='flor!an' visible='true' version='4' changeset='50893872' lat='53.5551805' lon='10.0221865' />
+  <node id='3691017003' timestamp='2017-09-24T15:46:51Z' uid='161619' user='FvGordon' visible='true' version='3' changeset='52332006' lat='53.5549267' lon='10.0231417' />
+  <node id='3691017004' timestamp='2017-09-24T15:46:51Z' uid='161619' user='FvGordon' visible='true' version='3' changeset='52332006' lat='53.5550816' lon='10.0230709' />
+  <node id='3691017016' timestamp='2017-08-06T19:00:00Z' uid='561067' user='flor!an' visible='true' version='4' changeset='50893872' lat='53.5562788' lon='10.0216647' />
+  <node id='3692819576' timestamp='2020-02-26T23:24:57Z' uid='1431737' user='ma-rt-in' visible='true' version='2' changeset='81524159' lat='53.5537874' lon='10.0239962' />
+  <node id='3693898802' timestamp='2015-08-12T18:35:29Z' uid='561067' user='flor!an' visible='true' version='1' changeset='33297542' lat='53.5560371' lon='10.021077' />
+  <node id='3693899447' timestamp='2017-09-24T15:46:52Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5559312' lon='10.0220966' />
+  <node id='3693899448' timestamp='2017-09-24T15:46:52Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5560866' lon='10.0219199' />
+  <node id='3693899451' timestamp='2017-09-24T15:46:52Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5560328' lon='10.0219515' />
+  <node id='3693899453' timestamp='2017-09-24T15:46:52Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5559845' lon='10.0220049' />
+  <node id='3693899457' timestamp='2017-09-24T15:46:52Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5562167' lon='10.0218094' />
+  <node id='3693899458' timestamp='2017-09-24T15:46:52Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.556115' lon='10.0219026' />
+  <node id='3693899459' timestamp='2017-09-24T15:46:52Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5561903' lon='10.0218426' />
+  <node id='3693899460' timestamp='2017-09-24T15:46:52Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5558623' lon='10.0222261' />
+  <node id='3693899463' timestamp='2017-09-24T15:46:52Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5561502' lon='10.0218733' />
+  <node id='3693899468' timestamp='2017-09-24T14:21:05Z' uid='161619' user='FvGordon' visible='true' version='3' changeset='52329811' lat='53.556061' lon='10.0211217' />
+  <node id='3693899481' timestamp='2017-09-24T15:46:52Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5562422' lon='10.0217594' />
+  <node id='3693899488' timestamp='2017-01-22T14:54:31Z' uid='561067' user='flor!an' visible='true' version='2' changeset='45370964' lat='53.5560743' lon='10.0211959' />
+  <node id='3693899495' timestamp='2017-09-24T15:46:53Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5553038' lon='10.022909' />
+  <node id='3693915193' timestamp='2017-08-06T19:00:01Z' uid='561067' user='flor!an' visible='true' version='2' changeset='50893872' lat='53.556249' lon='10.0215578' />
+  <node id='3693915194' timestamp='2017-09-24T15:46:53Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5562212' lon='10.0214509' />
+  <node id='3693915195' timestamp='2017-09-24T15:46:53Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5562056' lon='10.0214078' />
+  <node id='3693915196' timestamp='2017-09-24T15:46:53Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5561745' lon='10.0213319' />
+  <node id='3693915197' timestamp='2017-09-24T15:46:53Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5561475' lon='10.0212645' />
+  <node id='3693915198' timestamp='2017-09-24T15:46:53Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5560892' lon='10.0211675' />
+  <node id='3693915199' timestamp='2017-09-24T15:46:53Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5561153' lon='10.0212049' />
+  <node id='5018571326' timestamp='2017-09-30T12:26:10Z' uid='161619' user='FvGordon' visible='true' version='3' changeset='52508656' lat='53.5554544' lon='10.0218787' />
+  <node id='5018571327' timestamp='2017-09-24T15:46:53Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5554877' lon='10.0220434' />
+  <node id='5018571328' timestamp='2017-09-24T15:46:53Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5555615' lon='10.0221443' />
+  <node id='5018571329' timestamp='2017-09-24T15:46:53Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5556465' lon='10.0222176' />
+  <node id='5018571330' timestamp='2017-08-06T18:59:59Z' uid='561067' user='flor!an' visible='true' version='1' changeset='50893872' lat='53.5557159' lon='10.0222513' />
+  <node id='5018571331' timestamp='2017-09-24T15:46:53Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.555795' lon='10.0223087' />
+  <node id='5018571332' timestamp='2017-09-24T15:46:53Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5552359' lon='10.0221872' />
+  <node id='5018571334' timestamp='2017-09-30T12:26:10Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52508656' lat='53.5557064' lon='10.0213855' />
+  <node id='5018571337' timestamp='2017-09-30T12:26:10Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52508656' lat='53.5557648' lon='10.0215321' />
+  <node id='5018571340' timestamp='2018-11-07T11:30:40Z' uid='506379' user='hamdroid' visible='true' version='4' changeset='64259154' lat='53.5564935' lon='10.0205392' />
+  <node id='5018571341' timestamp='2018-11-07T11:30:41Z' uid='506379' user='hamdroid' visible='true' version='4' changeset='64259154' lat='53.5568328' lon='10.0201896' />
+  <node id='5018571342' timestamp='2017-09-24T15:46:53Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52332006' lat='53.5564776' lon='10.0213299' />
+  <node id='5018571343' timestamp='2017-08-06T18:59:59Z' uid='561067' user='flor!an' visible='true' version='1' changeset='50893872' lat='53.5569012' lon='10.020779' />
+  <node id='5018571344' timestamp='2017-08-06T18:59:59Z' uid='561067' user='flor!an' visible='true' version='1' changeset='50893872' lat='53.5569503' lon='10.0206399' />
+  <node id='5018571349' timestamp='2017-09-30T12:26:10Z' uid='161619' user='FvGordon' visible='true' version='3' changeset='52508656' lat='53.5560787' lon='10.0210975'>
+    <tag k='barrier' v='bollard' />
+  </node>
+  <node id='5126613807' timestamp='2018-11-07T10:44:42Z' uid='506379' user='hamdroid' visible='true' version='2' changeset='64257994' lat='53.5549729' lon='10.0223945' />
+  <node id='5126614332' timestamp='2018-11-07T11:30:41Z' uid='506379' user='hamdroid' visible='true' version='3' changeset='64259154' lat='53.5567893' lon='10.0202341' />
+  <node id='5126614333' timestamp='2018-11-07T11:30:41Z' uid='506379' user='hamdroid' visible='true' version='3' changeset='64259154' lat='53.5560942' lon='10.0210281' />
+  <node id='5126614335' timestamp='2018-11-07T11:30:41Z' uid='506379' user='hamdroid' visible='true' version='3' changeset='64259154' lat='53.5565441' lon='10.0204562' />
+  <node id='5126614336' timestamp='2018-11-07T11:30:41Z' uid='506379' user='hamdroid' visible='true' version='3' changeset='64259154' lat='53.5566114' lon='10.0203726' />
+  <node id='5126614337' timestamp='2018-11-07T11:30:41Z' uid='506379' user='hamdroid' visible='true' version='3' changeset='64259154' lat='53.5567111' lon='10.0203054' />
+  <node id='5126614365' timestamp='2017-09-24T15:46:50Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52332006' lat='53.5554637' lon='10.021968' />
+  <node id='5126614366' timestamp='2017-09-30T12:26:10Z' uid='161619' user='FvGordon' visible='true' version='2' changeset='52508656' lat='53.5553434' lon='10.022011' />
+  <node id='5126614367' timestamp='2017-09-24T15:46:51Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52332006' lat='53.5549096' lon='10.0230879' />
+  <node id='5126614368' timestamp='2017-09-24T15:46:51Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52332006' lat='53.5548518' lon='10.0229792' />
+  <node id='5126614369' timestamp='2017-09-24T15:46:51Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52332006' lat='53.554851' lon='10.023181' />
+  <node id='5126614370' timestamp='2018-11-07T10:44:42Z' uid='506379' user='hamdroid' visible='true' version='2' changeset='64257994' lat='53.5548844' lon='10.0225647' />
+  <node id='5126614372' timestamp='2017-09-24T15:46:51Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52332006' lat='53.5564523' lon='10.0213625' />
+  <node id='5139452002' timestamp='2017-09-30T12:26:06Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52508656' lat='53.5558028' lon='10.02149' />
+  <node id='5139452003' timestamp='2017-09-30T12:26:06Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52508656' lat='53.5557262' lon='10.0215752' />
+  <node id='5139452004' timestamp='2017-09-30T12:26:06Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52508656' lat='53.5557179' lon='10.021415' />
+  <node id='5139452005' timestamp='2017-09-30T12:26:06Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52508656' lat='53.5556954' lon='10.0213567' />
+  <node id='5139452007' timestamp='2017-09-30T12:26:06Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52508656' lat='53.5556751' lon='10.0213047' />
+  <node id='5139465928' timestamp='2017-09-30T12:26:07Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52508656' lat='53.5560431' lon='10.0212234' />
+  <node id='5139465934' timestamp='2017-09-30T12:26:07Z' uid='161619' user='FvGordon' visible='true' version='1' changeset='52508656' lat='53.5564279' lon='10.0206715' />
+  <node id='5139465935' timestamp='2018-11-07T11:30:41Z' uid='506379' user='hamdroid' visible='true' version='2' changeset='64259154' lat='53.5564564' lon='10.0206221' />
+  <node id='6043686597' timestamp='2018-11-07T10:44:41Z' uid='506379' user='hamdroid' visible='true' version='1' changeset='64257994' lat='53.5548439' lon='10.0226721' />
+  <node id='6043758127' timestamp='2018-11-07T11:30:40Z' uid='506379' user='hamdroid' visible='true' version='1' changeset='64259154' lat='53.5563328' lon='10.0207905' />
+  <node id='6043758128' timestamp='2018-11-07T11:30:40Z' uid='506379' user='hamdroid' visible='true' version='1' changeset='64259154' lat='53.556289' lon='10.0207879' />
+  <node id='7246336371' timestamp='2020-02-26T23:24:57Z' uid='1431737' user='ma-rt-in' visible='true' version='1' changeset='81524159' lat='53.553961' lon='10.0238759' />
+  <node id='7246336372' timestamp='2020-02-26T23:24:57Z' uid='1431737' user='ma-rt-in' visible='true' version='1' changeset='81524159' lat='53.554019' lon='10.0238334' />
+  <node id='7246371343' timestamp='2020-02-26T23:24:57Z' uid='1431737' user='ma-rt-in' visible='true' version='1' changeset='81524159' lat='53.5549007' lon='10.0230711' />
+</osm>

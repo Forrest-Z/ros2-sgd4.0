@@ -137,7 +137,9 @@ Simple_Gps_Localizer::imu_sub_callback(const sensor_msgs::msg::Imu::SharedPtr ms
 
     auto o = msg_->orientation;
     w_imu_ = std::atan2(2 * (o.w*o.z + o.x*o.y),
-                        pow(o.w,2) + pow(o.x,2) - pow(o.y,2) - pow(o.z,2));
+                       pow(o.w,2) + pow(o.x,2) - pow(o.y,2) - pow(o.z,2));
+    //w_imu_ = std::atan2(2*(o.w * o.x + o.y*o.z),
+    //            pow(o.w,2) - pow(o.x,2) - pow(o.y,2) + pow(o.z,2));
 
     wp_imu_ = msg_->angular_velocity.z;
 

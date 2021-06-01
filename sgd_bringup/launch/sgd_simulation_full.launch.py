@@ -152,6 +152,14 @@ def generate_launch_description():
         cmd=['gzclient'],
         cwd=[launch_dir], output='screen')
 
+    # Configure playback recording
+    #ros_playback_cmd = ExecuteProcess(
+    #    cmd=['ros2', 'bag', 'record',
+    #         '-o', 'playback',
+    #         '/imu', '/gps', '/odom'],
+    #    output='screen'
+    #)
+
     urdf = os.path.join(bringup_dir, 'urdf', 'sgd_model.urdf')
 
     start_robot_state_publisher_cmd = Node(
