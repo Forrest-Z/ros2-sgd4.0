@@ -101,6 +101,8 @@ Serial::init_parameters()
     std::string s;
     get_parameter("sframe", s);
     sframe_ = s.front();
+    get_parameter("stframe", s);
+    stframe_ = s.front();
     get_parameter("log", log_);
 }
 
@@ -230,7 +232,7 @@ Serial::read_serial()
             break;
 
         case IN_MSG:
-            if (c == sframe_) {
+            if (c == stframe_) {
                 b[i] = '\0';        // Null termination
                 read_buf_.append(b);
                 sgd_msgs::msg::Serial ser_msg;

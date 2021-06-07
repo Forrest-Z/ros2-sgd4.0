@@ -64,7 +64,7 @@ protected:
     u_int8_t gyr_calibration;
     u_int8_t acc_calibration;
     u_int8_t hea_calibration;
-    u_int8_t sys_calibration;
+    bool system_calibrated = false;
     rclcpp::Time last_calib_msg_;
 
     //! \brief Convert string to vector. String must contain comma separated values.

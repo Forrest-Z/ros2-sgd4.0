@@ -193,6 +193,13 @@ def generate_launch_description():
                           'default_bt_xml_filename': default_bt_xml_filename,
                           'autostart': autostart}.items())
     
+    sensors_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(launch_dir, 'sgd_sensors.launch.py')),
+        launch_arguments={'namespace': namespace,
+                          'map': map_yaml_file,
+                          'use_sim_time': use_sim_time,
+                          'params_file': params_file}.items())
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -222,5 +229,6 @@ def generate_launch_description():
     ld.add_action(start_robot_state_publisher_cmd)
     ld.add_action(rviz_cmd)
     ld.add_action(bringup_cmd)
+    ld.add_action(sensors_cmd)
 
     return ld

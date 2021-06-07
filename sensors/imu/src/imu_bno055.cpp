@@ -113,7 +113,7 @@ IMU_BNO055::on_serial_received(const sgd_msgs::msg::Serial::SharedPtr msg)
     }
 
     std::regex data_reg("(\\w):\\{([-\\d\\.,]*)\\}");
-    std::smatch data_match;
+    //std::smatch data_match;
     auto begin = std::sregex_iterator(msg->msg.begin(), msg->msg.end(), data_reg);
     auto end = std::sregex_iterator();
 
@@ -121,7 +121,7 @@ IMU_BNO055::on_serial_received(const sgd_msgs::msg::Serial::SharedPtr msg)
     imu_msg.header.stamp = now();
     imu_msg.header.frame_id = "imu";
 
-    for (std::sregex_iterator i = begin; i != end; ++i) {
+    for (std::sregex_iterator i = begin; i != end; i++) {
         std::smatch match = *i;
         const char *c = match[1].str().c_str();
 
@@ -146,27 +146,40 @@ IMU_BNO055::on_serial_received(const sgd_msgs::msg::Serial::SharedPtr msg)
                 acc_calibration = floor((cal % 64)/16);
                 hea_calibration = floor((cal % 16)/4);
                 gyr_calibration = floor(cal % 4);
-                sys_calibration = std::min(acc_calibration, std::min(hea_calibration, gyr_calibration));
+                system_calibrated = (cal >= 255);
             }
             break;
-
+        case 'T':
+            //RCLCPP_INFO(get_logger(), "Set temperature.");
+            return;
         default:
             RCLCPP_WARN(get_logger(), "Unknown data type: %s", *c);
             break;
         }
     }
-
-    if (sys_calibration < 2)
+    
+    if (std::min(acc_calibration, std::min(hea_calibration, gyr_calibration)) < 2 && !system_calibrated)
     {
         if (now().seconds() > last_calib_msg_.seconds() + 2)
         {
-            RCLCPP_INFO(get_logger(), "BNO055 not calibrated! Status is S: %i, A: %i, M: %i, G: %i",
-                sys_calibration, acc_calibration, hea_calibration, gyr_calibration);
+            RCLCPP_INFO(get_logger(), "BNO055 not calibrated! Status is A: %i, M: %i, G: %i",
+                acc_calibration, hea_calibration, gyr_calibration);
             last_calib_msg_ = now();
         }
         return;
     }
     
+    tf2::Quaternion q(
+        imu_msg.orientation.x,
+        imu_msg.orientation.y,
+        imu_msg.orientation.z,
+        imu_msg.orientation.w
+    );
+    tf2::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+    RCLCPP_INFO(get_logger(), "IMU heading %.2f", yaw);
+
     if (config_mode_ && now().seconds() > (last_calib_msg_.seconds() + 2))
     {
         if (cov_count < 1) RCLCPP_INFO(get_logger(), "Start calibration");

@@ -26,6 +26,7 @@ from nav2_common.launch import RewrittenYaml
 def generate_launch_description():
     # Get the launch directory
     bringup_dir = get_package_share_directory('sgd_bringup')
+    nav_dir = get_package_share_directory('navigation')
 
     namespace = LaunchConfiguration('namespace')
     use_sim_time = LaunchConfiguration('use_sim_time')
@@ -38,7 +39,8 @@ def generate_launch_description():
                        'planner_server',
                        'recoveries_server',
                        'bt_navigator',
-                       'waypoint_follower']
+                       'waypoint_follower',
+                       'osm_planner']
                        #'logger']
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
@@ -133,6 +135,14 @@ def generate_launch_description():
             output='screen',
             parameters=[configured_params],
             remappings=remappings),
+
+        Node(
+            package='navigation',
+            executable='global_planner',
+            name='osm_planner',
+            output='screen',
+            parameters=[
+                {'map_file': os.path.join(nav_dir, 'maps', '3_lohmuehlenpark.nav')}]),
 
         Node(
             package='nav2_lifecycle_manager',

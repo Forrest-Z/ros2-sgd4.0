@@ -41,6 +41,8 @@ nav2_util::CallbackReturn
 Global_Planner_OSM::on_activate(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Activating");
+    publisher_map_data_->on_activate();
+    publisher_waypoints_->on_activate();
 
     return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -70,6 +72,7 @@ void
 Global_Planner_OSM::init_parameters()
 {
     get_parameter("map_file", map_file_);
+    RCLCPP_INFO(get_logger(), "Set map_file to %s", map_file_.c_str());
     //map_file_ = "/home/pascal/dev_ws/src/ros2-sgd4.0/navigation/maps/20_NavigationsFaehigeDaten.osm";
     get_parameter("waypoints_topic", waypoints_topic_);
     get_parameter("mapdata_topic", mapdata_topic_);
@@ -198,6 +201,7 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::ComputePath
 void
 Global_Planner_OSM::publish_map_data()
 {
+    RCLCPP_INFO(get_logger(), "Publish mapdata");
     publish_marker_array(&map_data, publisher_map_data_);
 }
 
@@ -374,7 +378,8 @@ Global_Planner_OSM::parseXml()
         map_data.push_back(p);
     }
 
-    RCLCPP_INFO(this->get_logger(), "Parsed nodelist with id = %s", root->first_attribute(0)->value());
+    RCLCPP_INFO(this->get_logger(), "Parsed nodelist %s with %i nodes.",
+            root->first_attribute("name")->value(), map_data.size());
 }
 
 bool

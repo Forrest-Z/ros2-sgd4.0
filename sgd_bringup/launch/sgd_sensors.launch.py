@@ -1,22 +1,33 @@
-# 
-# Launch file to start gps sensor, capacitive touch and laser 1D
+# Copyright (c) 2018 Intel Corporation
 #
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import os
 
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from nav2_common.launch import RewrittenYaml
 
 
 def generate_launch_description():
-    gps_dir = get_package_share_directory('gps')
+    # Get the launch directory
+    bringup_dir = get_package_share_directory('sgd_bringup')
     sgd_util_dir = get_package_share_directory('sgd_util')
-    
-    # Create the launch configuration variables
+
     namespace = LaunchConfiguration('namespace')
     use_sim_time = LaunchConfiguration('use_sim_time')
     autostart = LaunchConfiguration('autostart')
@@ -26,193 +37,189 @@ def generate_launch_description():
     feather_port = LaunchConfiguration('feather_port')
     esp_port = LaunchConfiguration('esp_port')
 
-    declare_sim_time_cmd = DeclareLaunchArgument(
-        'use_sim_time', default_value='false',
-        description='Use simulation (Gazebo) clock if true')
+    #lifecycle_nodes = ['gps_serial',
+    #                   'gps_sensor',
+    #                   'esp_serial',
+    #                   'imu_bno055',
+    #                   'wheel_driver']
+    #                   'feather_serial',
+    #                   'capacitive_touch',
+    #                   'laser_1d',
 
-    declare_autostart_cmd = DeclareLaunchArgument(
-        'autostart', default_value='true',
-        description='Automatically startup the nav2 stack')
+    lifecycle_nodes = ['esp_serial',
+                       'wheel_driver']
 
-    declare_gps_port_cmd = DeclareLaunchArgument(
-        'gps_port',
-        default_value='/dev/ttyACM0',
-        description='Port to communication with gps sensor')
+    # Map fully qualified names to relative ones so the node's namespace can be prepended.
+    # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
+    # https://github.com/ros/geometry2/issues/32
+    # https://github.com/ros/robot_state_publisher/pull/30
+    # TODO(orduno) Substitute with `PushNodeRemapping`
+    #              https://github.com/ros2/launch_ros/issues/56
+    remappings = [('/tf', 'tf'),
+                  ('/tf_static', 'tf_static')]
 
-    declare_feather_port_cmd = DeclareLaunchArgument(
-        'feather_port',
-        default_value='/dev/ttyACM0',
-        description='Port to communicate with feather M0')
+    # Create our own temporary YAML files that include substitutions
+    param_substitutions = {
+        'use_sim_time': use_sim_time,
+        'autostart': autostart,
+        'gps_port': '/dev/ttyACM0',
+        'esp_port': '/dev/ttyUSB0',
+        'feather_port': '/dev/ttyACM1'}
 
-    declare_motor_port_cmd = DeclareLaunchArgument(
-        'esp_port',
-        default_value='/dev/ttyUSB0',
-        description='Port to communicate with motors')
+    configured_params = RewrittenYaml(
+            source_file=params_file,
+            root_key=namespace,
+            param_rewrites=param_substitutions,
+            convert_types=True)
 
-    lifecycle_nodes = ['gps_serial', 'gps_sensor',
-                       'esp_serial', 'imu_bno055']
+    return LaunchDescription([
+        # Set env var to print messages to stdout immediately
+        SetEnvironmentVariable('RCUTILS_LOGGING_BUFFERED_STREAM', '1'),
+ 
+        DeclareLaunchArgument(
+            'namespace', default_value='',
+            description='Top-level namespace'),
 
-    # Configure logging
-    
-    ros_playback_cmd = launch.actions.ExecuteProcess(
-            cmd=['ros2', 'bag', 'record',
-                 '-o', 'playback',
-                 '/serial_ttyUSB0', '/serial_ttyACM0'],
-            output='screen'
-        )
+        DeclareLaunchArgument(
+            'use_sim_time', default_value='false',
+            description='Use simulation (Gazebo) clock if true'),
 
+        DeclareLaunchArgument(
+            'autostart', default_value='true',
+            description='Automatically startup the nav2 stack'),
 
-    # Create nodes for gps
-    start_serial0_cmd = Node(
-        package="sgd_util",
-        executable="serial",
-        name="gps_serial",
-        output="screen",
-        emulate_tty=True,
-        parameters=[
-            {"port": gps_port,
-             "logfile": os.path.join(sgd_util_dir,'log','serial_gps.log'),
-             "baud_rate": 115200,
-             "read_write": "ro",
-             "raw": True,
-             "sframe": '\n',
-             "log": True}])
+        DeclareLaunchArgument(
+            'params_file',
+            default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
+            description='Full path to the ROS2 parameters file to use'),
 
-    start_gps_cmd = Node(
-        package="gps",
-        executable="navilock_ublox6_gps",
-        name="gps_sensor",
-        output="screen",
-        emulate_tty=True,
-        parameters=[
-            {"port": gps_port,
-             "xml_file": os.path.join(gps_dir,'data','nmea.xml')}])
+        DeclareLaunchArgument(
+	        'gps_port',
+	        default_value='/dev/ttyACM0',
+	        description='Port to communication with gps sensor'),
 
-    # Create nodes for capacitive touch and laser 1D
-    start_serial1_cmd = Node(
-        package="sgd_util",
-        executable="serial",
-        name="sensor_serial",
-        output="screen",
-        emulate_tty=True,
-        parameters=[
-            {"port": feather_port,
-             "baud_rate": 115200,
-             "read_write": "ro"}
-        ]
-    )
+    	DeclareLaunchArgument(
+	        'feather_port',
+	        default_value='/dev/ttyACM1',
+	        description='Port to communicate with feather M0'),
 
-    start_cap_touch_cmd = Node(
-        package="cap_touch",
-        executable="capacitive_touch",
-        name="capacitive_touch",
-        output="screen",
-        emulate_tty=True,
-        parameters=[
-            {"port": feather_port,
-             "thresh": 2000,
-             "filter_i": 4}
-        ]
-    )
+        DeclareLaunchArgument(
+	        'esp_port',
+	        default_value='/dev/ttyUSB0',
+	        description='Port to communicate with ESP8266'),
 
-    start_laser1d_cmd = Node(
-        package="laser1d",
-        executable="laser_1d",
-        name="laser_1d",
-        output="screen",
-        emulate_tty=True,
-        parameters=[
-            {"port": feather_port}
-        ]
-    )
-    
-    # Create nodes for motor control
-    start_serial2_cmd = Node(
-        package="sgd_util",
-        executable="serial",
-        name="esp_serial",
-        output="screen",
-        emulate_tty=True,
-        parameters=[
-            {"port": esp_port,
-             "baud_rate": 115200,
-             "read_write": "rw",
-             "logfile": os.path.join(sgd_util_dir,'log','serial_esp.log'),
-             "raw": True,
-             "sframe": '\n',
-             "log": True}])}
-        ]
-    )
-    
-    start_motor_driver_cmd = Node(
-        package="sgd_lc",
-        executable="wheel_driver",
-        name="wheel_driver",
-        output="screen",
-        emulate_tty=True,
-        parameters=[
-            {"port": esp_port,
-             "motor_kp": 0.3,
-             "max_speed": 200}
-        ]
-    )
+        Node(
+            package="sgd_util",
+            executable="serial",
+            name="gps_serial",
+            output="screen",
+            emulate_tty=True,
+            parameters=[
+                {"port": gps_port,
+                 "baud_rate": 115200,
+                 "read_write": "ro",
+                 "logfile": os.path.join('/home/ipp/dev_ws','log','serial_gps.log'),
+                 "raw": True,
+                 "sframe": '\n',
+                 "stframe": '\n',
+                 "log": True}]),
 
-    start_motor_cmd = Node(
-        package="sgd_lc",
-        executable="local_controller",
-        name="local_controller",
-        output="screen",
-        emulate_tty=True,
-        parameters=[
-            {"filter_i": 5,
-             "speed_kp": 0.4,
-             "turn_kp": 0.4}
-        ]
-    )
+        Node(
+            package="gps",
+            executable="navilock_ublox6_gps",
+            name="gps_sensor",
+            output="screen",
+            emulate_tty=True,
+            parameters=[
+                {"port": gps_port,
+                 "xml_file": '/home/ipp/dev_ws/src/ros2-sgd4.0/sensors/gps/data/nmea.xml'}]),
 
-    start_imu_cmd = Node(
-        package="imu",
-        executable="imu_bno055",
-        name="imu_bno055",
-        output="screen",
-        emulate_tty=True,
-        parameters=[
-            {"port": esp_port,
-             "config_mode": True}
-        ]
-    )
+        # Create nodes for capacitive touch and laser 1D
+        Node(
+            package="sgd_util",
+            executable="serial",
+            name="feather_serial",
+            output="screen",
+            emulate_tty=True,
+            parameters=[
+                {"port": feather_port,
+                "baud_rate": 115200,
+                "read_write": "ro",
+                "logfile": os.path.join('/home/ipp/dev_ws','log','serial_feather.log'),
+                "raw": False,
+                "sframe": '$',
+                "stframe": '\n',
+                "log": True}]),
 
-    lifecycle_manager_sensors = Node(
-        package='nav2_lifecycle_manager',
-        executable='lifecycle_manager',
-        name='lifecycle_manager_sensors',
-        output='screen',
-        parameters=[{'use_sim_time': use_sim_time},
-                    {'autostart': autostart},
-                    {'node_names': lifecycle_nodes}])
+        Node(
+            package="cap_touch",
+            executable="capacitive_touch",
+            name="capacitive_touch",
+            output="screen",
+            emulate_tty=True,
+            parameters=[
+                {"port": feather_port,
+                "thresh": 2000,
+                "filter_i": 4}]),
 
-    ld = LaunchDescription()
+        Node(
+            package="laser1d",
+            executable="laser_1d",
+            name="laser_1d",
+            output="screen",
+            emulate_tty=True,
+            parameters=[
+                {"port": feather_port}]),
 
-    # Declare the launch options
-    ld.add_action(declare_autostart_cmd)
-    ld.add_action(declare_sim_time_cmd)
-    ld.add_action(declare_gps_port_cmd)
-    ld.add_action(declare_feather_port_cmd)
-    ld.add_action(declare_motor_port_cmd)
+        # Create nodes for motor and TODO: IMU
+        Node(
+            package='sgd_util',
+            executable='serial',
+            name='esp_serial',
+            output='screen',
+            parameters=[{'port': esp_port,
+            		     'baud_rate': 115200,
+            		     'read_write': 'rw',
+                         'logfile': os.path.join('/home/ipp/dev_ws','log','serial_esp.log'),
+                         'raw': False,
+                         'sframe': '$',
+                         'stframe': '\n',
+                         'log': True}]),
+        
+        Node(
+            package='imu',
+            executable='imu_bno055',
+            name='imu_bno055',
+            output='screen',
+            parameters=[{'port': esp_port,
+                         'config_mode': False,
+            		     'use_sim_time': use_sim_time}]),
 
-    # Add nodes
-    ld.add_action(start_serial0_cmd)
-    ld.add_action(start_gps_cmd)
+        Node(
+            package='sgd_lc',
+            executable='wheel_driver',
+            name='wheel_driver',
+            output='screen',
+            parameters=[{'port': esp_port},
+            		 {'motor_kp': 0.1},
+            		 {'max_speed': 200.0},
+            		 {'use_sim_time': use_sim_time}]),
 
-    #ld.add_action(start_serial1_cmd)
-    #ld.add_action(start_cap_touch_cmd)
-    #ld.add_action(start_laser1d_cmd)
+        Node(
+            package='sgd_util',
+            executable='logger',
+            name='logger',
+            output='screen',
+            parameters=[{'output_folder': os.path.join('/home/ipp/dev_ws','log')}]),
+                     
+        # TODO: Create nodes for lidar
 
-    ld.add_action(start_serial2_cmd)
-    #ld.add_action(start_motor_driver_cmd)
-    #ld.add_action(start_motor_cmd)
-    ld.add_action(start_imu_cmd)
-
-    ld.add_action(lifecycle_manager_sensors)
-
-    return ld
+        Node(
+            package='nav2_lifecycle_manager',
+            executable='lifecycle_manager',
+            name='lifecycle_manager_hardware',
+            output='screen',
+            parameters=[{'use_sim_time': use_sim_time},
+                        {'autostart': autostart},
+                        {'node_names': lifecycle_nodes}]),
+    ])

@@ -68,7 +68,7 @@ protected:
     int baud_rate_;
     std::string read_write_;
     bool raw_;  // set raw mode
-    char sframe_;   // start / stop frame
+    char sframe_, stframe_;   // start / stop frame
     bool log_;
 
     //! \brief Init Publisher and subscriber

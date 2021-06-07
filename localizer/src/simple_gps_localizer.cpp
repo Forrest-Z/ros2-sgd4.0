@@ -10,7 +10,7 @@ using std::placeholders::_1;
 Simple_Gps_Localizer::Simple_Gps_Localizer():
     nav2_util::LifecycleNode("simple_gps_localizer", "", true)
 {   
-    RCLCPP_DEBUG(get_logger(), "Creating"); 
+    RCLCPP_DEBUG(get_logger(), "Creating");
 
     // Add parameters
     add_parameter("source_frame", rclcpp::ParameterValue("map"));
@@ -135,11 +135,15 @@ Simple_Gps_Localizer::imu_sub_callback(const sensor_msgs::msg::Imu::SharedPtr ms
     // get imu data and calculate position and velocity
     xpp_imu_ = msg_->linear_acceleration.x;
 
-    auto o = msg_->orientation;
-    w_imu_ = std::atan2(2 * (o.w*o.z + o.x*o.y),
-                       pow(o.w,2) + pow(o.x,2) - pow(o.y,2) - pow(o.z,2));
-    //w_imu_ = std::atan2(2*(o.w * o.x + o.y*o.z),
-    //            pow(o.w,2) - pow(o.x,2) - pow(o.y,2) + pow(o.z,2));
+    tf2::Quaternion q(
+        msg_->orientation.x,
+        msg_->orientation.y,
+        msg_->orientation.z,
+        msg_->orientation.w
+    );
+    tf2::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, w_imu_);
 
     wp_imu_ = msg_->angular_velocity.z;
 
@@ -249,7 +253,7 @@ Simple_Gps_Localizer::kalman_filter()
     double y[4] = {xp_odom_ - xyw.xp,
                    xpp_imu_ - xyw.xpp,
                    w_imu_ - xyw.w,
-                   (0.25*wp_imu_ + 0.75*wp_odom_) - xyw.wp};
+                   (0.75*wp_imu_ + 0.25*wp_odom_) - xyw.wp};
     
     xyw.x += Kx[0][0] * y[0] + Kx[0][1]*y[1];
     xyw.y += Kx[1][0] * y[0] + Kx[1][1]*y[1];

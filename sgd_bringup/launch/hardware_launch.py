@@ -40,11 +40,14 @@ def generate_launch_description():
     lifecycle_nodes = ['gps_serial',
                        'gps_sensor',
                        'esp_serial',
-                       'wheel_driver',
-                       'logger']
+                       'imu_bno055',
+                       'wheel_driver']
     #                   'feather_serial',
     #                   'capacitive_touch',
     #                   'laser_1d',
+
+   # lifecycle_nodes = ['esp_serial',
+   #                    'imu_bno055']
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
@@ -60,7 +63,7 @@ def generate_launch_description():
         'use_sim_time': use_sim_time,
         'autostart': autostart,
         'gps_port': '/dev/ttyACM0',
-        'esp_port': '/dev/ttyUSB0',
+        'esp_port': '/dev/ttyUSB1',
         'feather_port': '/dev/ttyACM1'}
 
     configured_params = RewrittenYaml(
@@ -72,7 +75,7 @@ def generate_launch_description():
     return LaunchDescription([
         # Set env var to print messages to stdout immediately
         SetEnvironmentVariable('RCUTILS_LOGGING_BUFFERED_STREAM', '1'),
-
+ 
         DeclareLaunchArgument(
             'namespace', default_value='',
             description='Top-level namespace'),
@@ -102,7 +105,7 @@ def generate_launch_description():
 
         DeclareLaunchArgument(
 	        'esp_port',
-	        default_value='/dev/ttyUSB0',
+	        default_value='/dev/ttyUSB1',
 	        description='Port to communicate with ESP8266'),
 
         Node(
@@ -118,6 +121,7 @@ def generate_launch_description():
                  "logfile": os.path.join('/home/ipp/dev_ws','log','serial_gps.log'),
                  "raw": True,
                  "sframe": '\n',
+                 "stframe": '\n',
                  "log": True}]),
 
         Node(
@@ -144,6 +148,7 @@ def generate_launch_description():
                 "logfile": os.path.join('/home/ipp/dev_ws','log','serial_feather.log'),
                 "raw": False,
                 "sframe": '$',
+                "stframe": '\n',
                 "log": True}]),
 
         Node(
@@ -172,14 +177,24 @@ def generate_launch_description():
             executable='serial',
             name='esp_serial',
             output='screen',
-            parameters=[{'port': esp_port},
-            		 {'baud_rate': 115200},
-            		 {'read_write': 'rw',
-                      'logfile': os.path.join('/home/ipp/dev_ws','log','serial_esp.log'),
-                      'raw': False,
-                      'sframe': '$',
-                      'log': True}]),
-                
+            parameters=[{'port': esp_port,
+            		     'baud_rate': 115200,
+            		     'read_write': 'rw',
+                         'logfile': os.path.join('/home/ipp/dev_ws','log','serial_esp.log'),
+                         'raw': False,
+                         'sframe': '$',
+                         'stframe': '\n',
+                         'log': True}]),
+        
+        Node(
+            package='imu',
+            executable='imu_bno055',
+            name='imu_bno055',
+            output='screen',
+            parameters=[{'port': esp_port,
+                         'config_mode': False,
+            		     'use_sim_time': use_sim_time}]),
+
         Node(
             package='sgd_lc',
             executable='wheel_driver',
@@ -207,5 +222,4 @@ def generate_launch_description():
             parameters=[{'use_sim_time': use_sim_time},
                         {'autostart': autostart},
                         {'node_names': lifecycle_nodes}]),
-
     ])
