@@ -21,6 +21,9 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
+find_package(rclcpp_action REQUIRED)
+find_package(nav2_msgs REQUIRED)
+find_package(sgd_msgs REQUIRED)
 
 include_directories(include)
 
@@ -31,13 +34,13 @@ ament_target_dependencies(local_controller
   sgd_msgs
   sensor_msgs
   geometry_msgs
+  nav2_util
 )
 
 # add executable
 add_executable(wheel_driver src/wh_f-cruiser.cpp)
 ament_target_dependencies(wheel_driver
   rclcpp
-  rclcpp_lifecycle
   sgd_msgs
   geometry_msgs
   nav_msgs
@@ -47,8 +50,19 @@ ament_target_dependencies(wheel_driver
   nav2_util
 )
 
+# add executable
+add_executable(waypoint_follower src/follow_waypoints_action_server.cpp)
+ament_target_dependencies(waypoint_follower
+  rclcpp
+  rclcpp_action
+  nav2_msgs
+  nav2_util
+  geometry_msgs
+  sgd_msgs
+)
+
 install(
-  TARGETS local_controller wheel_driver
+  TARGETS local_controller wheel_driver waypoint_follower
   DESTINATION lib/${PROJECT_NAME})
   
 install(

@@ -148,7 +148,7 @@ def generate_launch_description():
                 "logfile": os.path.join('/home/ipp/dev_ws','log','serial_feather.log'),
                 "raw": False,
                 "sframe": '$',
-                "stframe": '\n',
+                "stframe": '%',
                 "log": True}]),
 
         Node(
@@ -183,8 +183,8 @@ def generate_launch_description():
                          'logfile': os.path.join('/home/ipp/dev_ws','log','serial_esp.log'),
                          'raw': False,
                          'sframe': '$',
-                         'stframe': '\n',
-                         'log': True}]),
+                         'stframe': '%',
+                         'log': False}]),
         
         Node(
             package='imu',
@@ -201,18 +201,13 @@ def generate_launch_description():
             name='wheel_driver',
             output='screen',
             parameters=[{'port': esp_port},
-            		 {'motor_kp': 0.1},
+            		 {'motor_kp': 0.2},
+                     {'motor_ki': 0.01},
             		 {'max_speed': 200.0},
             		 {'use_sim_time': use_sim_time}]),
-
-        Node(
-            package='sgd_util',
-            executable='logger',
-            name='logger',
-            output='screen',
-            parameters=[{'output_folder': os.path.join('/home/ipp/dev_ws','log')}]),
                      
         # TODO: Create nodes for lidar
+
 
         Node(
             package='nav2_lifecycle_manager',

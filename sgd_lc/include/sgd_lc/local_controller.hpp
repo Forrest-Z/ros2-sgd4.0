@@ -6,6 +6,10 @@
 #include <regex>
 
 #include "rclcpp/rclcpp.hpp"
+#include "nav2_util/lifecycle_node.hpp"
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/create_timer_ros.h"
+
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "sgd_msgs/msg/touch.hpp"
@@ -14,13 +18,43 @@
 
 #include "sgd_lc/pid_controller.hpp"
 
-namespace sgd_lc
+namespace nav_sgd
 {
 
-class Local_Controller : public rclcpp::Node
+class Local_Controller : public nav2_util::LifecycleNode
 {
 
-private:
+protected:
+    // Implement the lifecycle interface
+    nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
+    nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
+    nav2_util::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
+    nav2_util::CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
+    nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
+
+    //! \brief Init parameters
+    void init_parameters();
+    int filter_i_;
+    double speed_kp_;
+    double turn_kp_;
+
+    //! \brief Init Publisher and subscriber
+    void init_pub_sub();
+    rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
+    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr pub_motor_;
+    rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr sub_motor_;
+    rclcpp::Subscription<sensor_msgs::msg::Range>::SharedPtr sub_laser_;
+    //rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr sub_gps_;
+    rclcpp::Subscription<sgd_msgs::msg::Touch>::SharedPtr sub_touch_;
+    rclcpp::TimerBase::SharedPtr timer_;
+
+    //! \brief Init transforms
+    void init_transforms();
+    nav2_util::CallbackReturn wait_for_transform();
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+    geometry_msgs::msg::TransformStamped tf_map_odom_;
+
     /* data */
     const int16_t MAX_SPEED = 160;
     double speed_;
@@ -32,7 +66,6 @@ private:
     double last_sec, last_nsec;
 
     // Data import and filter
-    int filter_i_;
     std::vector<double> filter_speed;
     std::vector<double> filter_steer;
 
@@ -40,17 +73,7 @@ private:
     std::deque<float> poses_;
     float ref_x_, ref_y_, ref_w_;       // Sollposition
     float curr_x_, curr_y_, curr_w_;    // aktuelle Position
-
-
-    // 1 x publisher, 1 x subscriber
-    // 1x service
-    rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr pub_motor_;
-    rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr sub_motor_;
-    rclcpp::Subscription<sensor_msgs::msg::Range>::SharedPtr sub_laser_;
-    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr sub_gps_;
-    rclcpp::Subscription<sgd_msgs::msg::Touch>::SharedPtr sub_touch_;
-    rclcpp::TimerBase::SharedPtr timer_;
+    
 
     void publish_motordata();
     void on_motor_received(const geometry_msgs::msg::TwistStamped::SharedPtr msg_);

@@ -14,6 +14,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -37,6 +38,7 @@ ament_target_dependencies(global_planner
   sgd_msgs
   rapidxml
   sgd_util
+  tf2_ros
 )
 
 add_executable(navigator src/navigator.cpp)

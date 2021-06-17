@@ -4,7 +4,7 @@
 
 # include "sgd_lc/wh_f-cruiser.hpp"
 
-namespace sgd_lc
+namespace nav_sgd
 {
 
 using namespace std::chrono_literals;
@@ -16,7 +16,9 @@ WH_Fcruiser::WH_Fcruiser() : nav2_util::LifecycleNode("wh_cruiser", "", true)
     add_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
     add_parameter("msg_regex", rclcpp::ParameterValue("HS:(\\d+),Rm:(-?\\d+),Lm:(-?\\d+),V:(\\d+),T:(\\d+),S:(\\d?)"));
     add_parameter("motor_kp", rclcpp::ParameterValue(0.3));
-    add_parameter("max_speed", rclcpp::ParameterValue(200.0));
+    add_parameter("motor_ki", rclcpp::ParameterValue(0.1));
+    add_parameter("max_speed", rclcpp::ParameterValue(200.0));  // m/s
+    add_parameter("max_accel", rclcpp::ParameterValue(0.2));    // m/s^2
 }
 
 WH_Fcruiser::~WH_Fcruiser()
@@ -95,7 +97,9 @@ WH_Fcruiser::init_parameters()
     get_parameter("port", port_);
     get_parameter("msg_regex", msg_regex_);
     get_parameter("motor_kp", motor_kp_);
+    get_parameter("motor_ki", motor_ki_);
     get_parameter("max_speed", max_speed_);
+    get_parameter("max_accel", max_accel_);
 }
 
 void
@@ -141,8 +145,8 @@ WH_Fcruiser::init_controller()
 {
     RCLCPP_DEBUG(get_logger(), "Initialise wheel controller with kp = %f and max speed = %f.",
             motor_kp_, max_speed_);
-    wheel_r_controller_ = std::shared_ptr<PID_Controller>(new PID_Controller(motor_kp_));
-    wheel_l_controller_ = std::shared_ptr<PID_Controller>(new PID_Controller(motor_kp_));
+    wheel_r_controller_ = std::shared_ptr<PID_Controller>(new PID_Controller(motor_kp_, motor_ki_, 0));
+    wheel_l_controller_ = std::shared_ptr<PID_Controller>(new PID_Controller(motor_kp_, motor_ki_, 0));
     wheel_r_controller_->set_max(max_speed_);
     wheel_r_controller_->set_min(-max_speed_);
     wheel_l_controller_->set_max(max_speed_);
@@ -152,10 +156,11 @@ WH_Fcruiser::init_controller()
 void
 WH_Fcruiser::publish_motordata()
 {   
-    double set_r_speed = wheel_r_controller_->next(meas_r_);
-    double set_l_speed = wheel_l_controller_->next(meas_l_);
+    double set_r_speed = wheel_r_controller_->next(meas_r_, 0.1);
+    double set_l_speed = wheel_l_controller_->next(meas_l_, 0.1);
 
-    int steer = round(set_l_speed - set_r_speed);
+    RCLCPP_INFO(get_logger(), "Messung: %f, %f; next: %f, %f", meas_r_, meas_l_, set_r_speed, set_l_speed);
+    int steer = round(set_r_speed - set_l_speed);
     int speed = round((set_r_speed + set_l_speed) / 2);
 
     sgd_msgs::msg::Serial msg;
@@ -198,18 +203,21 @@ WH_Fcruiser::on_motor_received(const sgd_msgs::msg::Serial::SharedPtr msg)
     std::smatch matches;
     std::regex_search(msg->msg, matches, regex_);
     
-    int time, v;
+    int v;
     if (matches.size() > 4) // ist gut
     {
-        time = std::stoi(matches[1]);       // in millis
+        //time = std::stoi(matches[1]);       // in millis
         meas_r_ = std::stod(matches[2]);
-        meas_l_ = std::stod(matches[3]);
+        meas_l_ = -1*std::stod(matches[3]);
         v = std::stoi(matches[4]);
     } else { return; }
 
+    meas_r_ = meas_r_ * 2.26048;// + 37.0859 * sig(meas_r_);
+    meas_l_ = meas_l_ * 2.26048;// + 37.0859 * sig(meas_l_);
+
     // -> Winkelgeschwindigkeit [rad/s]
     double w_r_ = (meas_r_ - sig(meas_r_) * 50) / (173 * wheel_cir_);
-    double w_l_ = (meas_l_ - sig(meas_l_) * 50) / (175 * wheel_cir_);
+    double w_l_ = (meas_l_ - sig(meas_l_) * 50) / (173 * wheel_cir_);
 
     // Calculate pose
     rclcpp::Duration delta_t(now() - last_odom_msg_.header.stamp);
@@ -239,18 +247,18 @@ WH_Fcruiser::on_motor_received(const sgd_msgs::msg::Serial::SharedPtr msg)
 
     // TODO: covariance
 
-    geometry_msgs::msg::TransformStamped odom_tf;
-    odom_tf.header.stamp = now();
-    odom_tf.header.frame_id = "odom";
-    odom_tf.child_frame_id = "base_footprint";
+    //geometry_msgs::msg::TransformStamped odom_tf;
+    //odom_tf.header.stamp = now();
+    //odom_tf.header.frame_id = "odom";
+    //odom_tf.child_frame_id = "base_footprint";
 
-    odom_tf.transform.translation.x = odom.pose.pose.position.x;
-    odom_tf.transform.translation.y = odom.pose.pose.position.y;
-    odom_tf.transform.translation.z = odom.pose.pose.position.z;
-    odom_tf.transform.rotation = odom.pose.pose.orientation;
+    //odom_tf.transform.translation.x = odom.pose.pose.position.x;
+    //odom_tf.transform.translation.y = odom.pose.pose.position.y;
+    //odom_tf.transform.translation.z = odom.pose.pose.position.z;
+    //odom_tf.transform.rotation = odom.pose.pose.orientation;
 
     pub_odom_->publish(odom);
-    tf_broadcaster_->sendTransform(odom_tf);
+    //tf_broadcaster_->sendTransform(odom_tf);
     last_odom_msg_ = odom;
 
     publish_battery_state(v/100.0);
@@ -264,9 +272,18 @@ WH_Fcruiser::on_cmd_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg)
     double w_l = (2 * msg->linear.x) / 0.68 - w_r;
 
     // set new reference to controller
-    double r = 173 * 0.68 * w_r + sig(w_r) * 50;
-    double l = 175 * 0.68 * w_l + sig(w_l) * 50;
+    double r = 173 * 0.68 * w_r;
+    double l = 173 * 0.68 * w_l;
 
+    double factor = (abs(r) > abs(l) ? abs(max_speed_/r) : abs(max_speed_/l));
+    if (abs(r) > max_speed_ || abs(l) > max_speed_)
+    {
+        r *= factor;
+        l *= factor;
+    }
+    
+    // TODO Vorzeichen anpassen
+    RCLCPP_INFO(get_logger(), "cmd_vel, ref: %f, %f, %f, %f", msg->linear.x, msg->angular.z, r, l);
     wheel_r_controller_->set_reference(r);
     wheel_l_controller_->set_reference(l);
 }
@@ -276,7 +293,7 @@ WH_Fcruiser::on_cmd_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg)
 int main(int argc, char const *argv[])
 {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<sgd_lc::WH_Fcruiser>();
+    auto node = std::make_shared<nav_sgd::WH_Fcruiser>();
     rclcpp::spin(node->get_node_base_interface());
     rclcpp::shutdown();
 

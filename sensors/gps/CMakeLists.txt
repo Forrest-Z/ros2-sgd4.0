@@ -58,6 +58,7 @@ ament_target_dependencies(navilock_ublox6_gps
     sgd_msgs
     rclcpp_lifecycle
     nav2_util
+    sgd_util
 )
 target_link_libraries(navilock_ublox6_gps ${library_name})
 

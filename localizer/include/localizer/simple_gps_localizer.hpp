@@ -1,5 +1,5 @@
 
-#ifndef SIMPLE_GPS_LOCLIZER_HPP_
+#ifndef SIMPLE_GPS_LOCALIZER_HPP_
 #define SIMPLE_GPS_LOCALIZER_HPP_
 
 #include <utility>
@@ -18,7 +18,9 @@
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/quaternion.hpp"
 #include "nav2_util/lifecycle_node.hpp"
+
 #include "sgd_util/sgd_util.hpp"
+#include "sgd_msgs/msg/speed_accel.hpp"
 
 
 namespace sgd
@@ -36,6 +38,7 @@ struct estimation
     estimation() : x(0), y(0), w(0), xp(0), yp(0), wp(0), xpp(0), ypp(0), wpp(0), initial_pos_set(false) { }
 };
 
+typedef std::pair<double, double> xy_pos;
 
 public:
     Simple_Gps_Localizer();
@@ -56,6 +59,7 @@ protected:
     std::string gps_topic_;
     std::string odom_topic_;
     std::string imu_topic_;
+    double odom_thresh_;
 
     //! \brief Init Publisher and subscriber
     void init_pub_sub();
@@ -63,6 +67,7 @@ protected:
     rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr subscriber_gps_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr subscriber_odom_;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr subscriber_imu_;
+    rclcpp_lifecycle::LifecyclePublisher<sgd_msgs::msg::SpeedAccel>::SharedPtr pub_position_;
     rclcpp::TimerBase::SharedPtr timer_;
 
     //! \brief Init transforms
@@ -80,6 +85,7 @@ protected:
     nav2_util::CallbackReturn wait_for_transform();
 
     void gps_sub_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg_);
+    std::list<xy_pos> gps_pos_; // save last gps positions
     void odom_sub_callback(const nav_msgs::msg::Odometry::SharedPtr msg_);
     void imu_sub_callback(const sensor_msgs::msg::Imu::SharedPtr msg_);
     double xpp_imu_, w_imu_, wp_imu_, xp_odom_, wp_odom_;
@@ -98,6 +104,11 @@ protected:
                              {4.011917, 0.203575},
                              {0.198610, 0.059583}}; // Kalman Gain for w,w',w''
 
+    //! \brief check if robot is moving
+    bool is_robo_moving();
+
+    void publish_position(estimation xyz);
+    
     inline geometry_msgs::msg::Quaternion angleZ_to_Quaternion(double angle)
     {
         tf2::Quaternion q;

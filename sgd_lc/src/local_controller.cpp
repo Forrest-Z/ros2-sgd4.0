@@ -1,17 +1,24 @@
 
 #include "sgd_lc/local_controller.hpp"
 
-namespace sgd_lc
+namespace nav_sgd
 {
 
 using std::placeholders::_1;
-using namespace std::chrono_literals;
+using namespace std::chrono_literals; 
 
-Local_Controller::Local_Controller() : Node("local_controller")
+Local_Controller::Local_Controller() 
+        : nav2_util::LifecycleNode("local_controller", "", true)
 {
+    RCLCPP_DEBUG(get_logger(), "Creating");
+
+    // Add parameters
+    add_parameter("filter_i", rclcpp::ParameterValue(5));
+    add_parameter("speed_kp", rclcpp::ParameterValue(0.05));
+    add_parameter("turn_kp", rclcpp::ParameterValue(0.05));
+
     // Declare parameters from launch file
     this->declare_parameter("filter_i", 5);
-
     this->declare_parameter("speed_kp", 0.05);
     this->declare_parameter("turn_kp", 0.05);
 
@@ -27,14 +34,6 @@ Local_Controller::Local_Controller() : Node("local_controller")
     curr_x_ = 0.0;
     curr_y_ = 0.0;
     curr_w_ = 0.0;
- 
-    pub_motor_ = this->create_publisher<geometry_msgs::msg::TwistStamped>("set_motor", default_qos); 
-    sub_motor_ = this->create_subscription<geometry_msgs::msg::TwistStamped>("motordata", default_qos,
-        std::bind(&Local_Controller::on_motor_received, this, _1));
-    sub_touch_ = this->create_subscription<sgd_msgs::msg::Touch>("handle_touch", default_qos,
-        std::bind(&Local_Controller::on_touch_received, this, std::placeholders::_1));
-    sub_laser_ = this->create_subscription<sensor_msgs::msg::Range>("laser_1d", default_qos,
-        std::bind(&Local_Controller::on_laser_received, this, std::placeholders::_1));
 
     filter_i_ = this->get_parameter("filter_i").as_int() - 1;   // 0 bis filter_i-1
     for (int i = 0; i < filter_i_; i++)
@@ -43,7 +42,6 @@ Local_Controller::Local_Controller() : Node("local_controller")
         filter_steer.push_back(0.0);
     }
 
-    timer_ = this->create_wall_timer(100ms, std::bind(&Local_Controller::publish_motordata, this));
     speed_ = 0.0;
 
     speed_controller_ = std::shared_ptr<PID_Controller>(new PID_Controller(this->get_parameter("speed_kp").as_double()));
@@ -55,9 +53,106 @@ Local_Controller::~Local_Controller()
     // Destroy
 }
 
+nav2_util::CallbackReturn
+Local_Controller::on_configure(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Configure");
+
+    // init
+    init_parameters();
+    init_pub_sub();
+    init_transforms();
+
+    return nav2_util::CallbackReturn::SUCCESS;
+}
+
+nav2_util::CallbackReturn
+Local_Controller::on_activate(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Activate");
+
+    speed_controller_ = std::shared_ptr<PID_Controller>(new PID_Controller(speed_kp_));
+    turn_controller_ = std::shared_ptr<PID_Controller>(new PID_Controller(turn_kp_));
+
+    return wait_for_transform();
+}
+
+nav2_util::CallbackReturn
+Local_Controller::on_deactivate(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Deactivate");
+    return nav2_util::CallbackReturn::SUCCESS;
+}
+
+nav2_util::CallbackReturn
+Local_Controller::on_cleanup(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Cleanup");
+    return nav2_util::CallbackReturn::SUCCESS;
+}
+
+nav2_util::CallbackReturn
+Local_Controller::on_shutdown(const rclcpp_lifecycle::State & state)
+{
+    RCLCPP_DEBUG(get_logger(), "Shutdown");
+    return nav2_util::CallbackReturn::SUCCESS;
+}
+
+void
+Local_Controller::init_transforms()
+{
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(rclcpp_node_->get_clock());
+    auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
+        rclcpp_node_->get_node_base_interface(),
+        rclcpp_node_->get_node_timers_interface());
+    tf_buffer_->setCreateTimerInterface(timer_interface);
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+}
+
+nav2_util::CallbackReturn
+Local_Controller::wait_for_transform()
+{
+    // Wait for transform to be available
+    RCLCPP_DEBUG(get_logger(), "Wait for transform");
+
+    std::string err;
+    int retries = 0;
+    while (rclcpp::ok() && !tf_buffer_->canTransform("base_footprint", "map", tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
+        && retries < 10)
+    {
+        RCLCPP_INFO(this->get_logger(), "Timeout waiting for transform. Tf error: %s", err);
+        err.clear();
+        rclcpp::sleep_for(500000000ns);
+        retries++;
+    }
+    return (retries > 9 ? nav2_util::CallbackReturn::FAILURE : nav2_util::CallbackReturn::SUCCESS);
+}
+
+void
+Local_Controller::init_pub_sub()
+{
+    pub_motor_ = this->create_publisher<geometry_msgs::msg::TwistStamped>("set_motor", default_qos); 
+    sub_motor_ = this->create_subscription<geometry_msgs::msg::TwistStamped>("motordata", default_qos,
+        std::bind(&Local_Controller::on_motor_received, this, _1));
+    sub_touch_ = this->create_subscription<sgd_msgs::msg::Touch>("handle_touch", default_qos,
+        std::bind(&Local_Controller::on_touch_received, this, std::placeholders::_1));
+    sub_laser_ = this->create_subscription<sensor_msgs::msg::Range>("laser_1d", default_qos,
+        std::bind(&Local_Controller::on_laser_received, this, std::placeholders::_1));
+
+    timer_ = this->create_wall_timer(100ms, std::bind(&Local_Controller::publish_motordata, this));
+}
+
+void
+Local_Controller::init_parameters()
+{
+    get_parameter("filter_i", filter_i_);
+    get_parameter("speed_kp", speed_kp_);
+    get_parameter("turn_kp", turn_kp_);
+}
+
 void
 Local_Controller::publish_motordata()
-{   
+{
     geometry_msgs::msg::TwistStamped msg;
     msg.header.stamp = now();
     msg.header.frame_id = "frame";
@@ -181,11 +276,11 @@ Local_Controller::sig(double x)
 int main(int argc, char const *argv[])
 {
     rclcpp::init(argc, argv);
-    std::shared_ptr<rclcpp::Node> node = std::make_shared<sgd_lc::Local_Controller>();
+    std::shared_ptr<nav2_util::LifecycleNode> node = std::make_shared<nav_sgd::Local_Controller>();
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Motor driver startup completed.");
 
-    rclcpp::spin(node);
+    rclcpp::spin(node->get_node_base_interface());
     rclcpp::shutdown();
     return 0;
 }

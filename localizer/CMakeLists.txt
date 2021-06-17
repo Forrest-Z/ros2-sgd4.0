@@ -20,6 +20,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(sgd_util REQUIRED)
+find_package(sgd_msgs REQUIRED)
 
 include_directories(include)
 
@@ -34,6 +35,7 @@ ament_target_dependencies(simple_gps_localizer
   nav_msgs
   nav2_util
   sgd_util
+  sgd_msgs
 )
 
 install(

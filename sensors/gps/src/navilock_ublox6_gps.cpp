@@ -15,7 +15,7 @@ Navilock_UBlox6_GPS::Navilock_UBlox6_GPS():
 }
 
 Navilock_UBlox6_GPS::~Navilock_UBlox6_GPS()
-{ 
+{
     // Destroy
 }
 
@@ -34,7 +34,7 @@ Navilock_UBlox6_GPS::on_configure(const rclcpp_lifecycle::State & state)
 }
 
 nav2_util::CallbackReturn
-Navilock_UBlox6_GPS::on_activate(const rclcpp_lifecycle::State & state)
+Navilock_UBlox6_GPS::on_activate(const rclcpp_lifecycle::State & state) 
 {
     RCLCPP_DEBUG(get_logger(), "Activating");
     publisher_->on_activate();
@@ -86,6 +86,12 @@ Navilock_UBlox6_GPS::init_pub_sub()
 }
 
 void
+Navilock_UBlox6_GPS::init_transforms()
+{
+    tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(rclcpp_node_);
+}
+
+void
 Navilock_UBlox6_GPS::read_msg(const sgd_msgs::msg::Serial::SharedPtr msg)
 {
     std::string line = msg->msg;
@@ -101,15 +107,8 @@ Navilock_UBlox6_GPS::read_msg(const sgd_msgs::msg::Serial::SharedPtr msg)
         }
         else
         {
-            
             gps_counter_++;
         }
-        
-
-
-
-        
-
 
         // Alle Daten sind da und können gepublished werden.
         sensor_msgs::msg::NavSatFix nsf;
@@ -118,17 +117,37 @@ Navilock_UBlox6_GPS::read_msg(const sgd_msgs::msg::Serial::SharedPtr msg)
         nsf.header.stamp.sec = nmea_parser_->time();
         nsf.header.stamp.nanosec = (nmea_parser_->time() - floor(nmea_parser_->time())) * 1E9;
 
-        nsf.status.status = nmea_parser_->fix() > 1 ? sensor_msgs::msg::NavSatStatus::STATUS_FIX
-                    : sensor_msgs::msg::NavSatStatus::STATUS_NO_FIX;
+        nsf.status.status = (nmea_parser_->fix() > 1 ? sensor_msgs::msg::NavSatStatus::STATUS_FIX
+                    : sensor_msgs::msg::NavSatStatus::STATUS_NO_FIX);
 
-        RCLCPP_INFO(get_logger(), "GPS lat: %.7f, lon %.7f", nmea_parser_->latitude(), nmea_parser_->longitude());
+        //RCLCPP_INFO(get_logger(), "GPS lat: %.7f, lon %.7f", nmea_parser_->latitude(), nmea_parser_->longitude());
 
+        // publish message and transforms
         publisher_->publish(nsf);
+
+        geometry_msgs::msg::TransformStamped gps_tf;
+        gps_tf.header.stamp = now();
+        gps_tf.header.frame_id = "map";
+        gps_tf.child_frame_id = "gps";
+
+        auto local_pos = sgd_util::WGS84_to_local(nmea_parser_->latitude(), nmea_parser_->longitude());
+        xy lpos;
+        lpos.x = local_pos.first;
+        lpos.y = local_pos.second;
+
+        gps_tf.transform.translation.x = lpos.x;
+        gps_tf.transform.translation.y = lpos.y;
+        gps_tf.transform.translation.z = 0.0;
+
+        tf2::Quaternion q;
+        q.setRPY(0, 0, 0);
+        gps_tf.transform.rotation = tf2::toMsg(q);
+        
+        tf_broadcaster_->sendTransform(gps_tf);
 
         // Clear old message 
         nmea_parser_->clear();
     }
-
 }
 
 }   // namespace

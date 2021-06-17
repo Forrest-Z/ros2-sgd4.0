@@ -35,10 +35,10 @@ def generate_launch_description():
     default_bt_xml_filename = LaunchConfiguration('default_bt_xml_filename')
     map_subscribe_transient_local = LaunchConfiguration('map_subscribe_transient_local')
 
-    lifecycle_nodes = ['controller_server',
+    lifecycle_nodes = [#'controller_server',
                        'planner_server',
-                       'recoveries_server',
-                       'bt_navigator',
+                       #'recoveries_server',
+                       #'bt_navigator',
                        'waypoint_follower',
                        'osm_planner']
                        #'logger']
@@ -128,13 +128,27 @@ def generate_launch_description():
             parameters=[configured_params],
             remappings=remappings),
 
+        #Node(
+        #    package='nav2_waypoint_follower',
+        #    executable='waypoint_follower',
+        #    name='waypoint_follower',
+        #    output='screen',
+        #    parameters=[configured_params],
+        #    remappings=remappings),
+
+        # Navigation test nodes
         Node(
-            package='nav2_waypoint_follower',
+            package='sgd_lc',
             executable='waypoint_follower',
             name='waypoint_follower',
             output='screen',
-            parameters=[configured_params],
-            remappings=remappings),
+            parameters=[{'out_topic': 'cmd_vel'},
+            		    {'speed_kp': 0.2},
+                        {'speed_ki': 0.1},
+            		    {'turn_kp': 0.5},
+                        {'turn_ki': 0.1},
+                        {'max_speed': 0.3},
+            		    {'use_sim_time': use_sim_time}]),
 
         Node(
             package='navigation',
@@ -142,7 +156,10 @@ def generate_launch_description():
             name='osm_planner',
             output='screen',
             parameters=[
-                {'map_file': os.path.join(nav_dir, 'maps', '3_lohmuehlenpark.nav')}]),
+                {'waypoints_topic': 'waypoints'},
+                {'clicked_point_topic': 'clicked_point'},
+                {'port': 8080},
+                {'ip_address': '127.0.0.1'}]),
 
         Node(
             package='nav2_lifecycle_manager',

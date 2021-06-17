@@ -63,7 +63,7 @@ def generate_launch_description():
         'use_sim_time': use_sim_time,
         'autostart': autostart,
         'gps_port': '/dev/ttyACM0',
-        'esp_port': '/dev/ttyUSB1',
+        'esp_port': '/dev/ttyUSB0',
         'feather_port': '/dev/ttyACM1'}
 
     configured_params = RewrittenYaml(
@@ -105,7 +105,7 @@ def generate_launch_description():
 
         DeclareLaunchArgument(
 	        'esp_port',
-	        default_value='/dev/ttyUSB1',
+	        default_value='/dev/ttyUSB0',
 	        description='Port to communicate with ESP8266'),
 
         Node(
@@ -122,7 +122,7 @@ def generate_launch_description():
                  "raw": True,
                  "sframe": '\n',
                  "stframe": '\n',
-                 "log": True}]),
+                 "log": False}]),
 
         Node(
             package="gps",
@@ -149,7 +149,8 @@ def generate_launch_description():
                 "raw": False,
                 "sframe": '$',
                 "stframe": '\n',
-                "log": True}]),
+                "log": False,
+                'use_sim_time': use_sim_time}]),
 
         Node(
             package="cap_touch",
@@ -184,7 +185,8 @@ def generate_launch_description():
                          'raw': False,
                          'sframe': '$',
                          'stframe': '\n',
-                         'log': True}]),
+                         'log': False,
+                         'use_sim_time': use_sim_time}]),
         
         Node(
             package='imu',

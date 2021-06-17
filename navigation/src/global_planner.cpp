@@ -10,12 +10,13 @@ using namespace std::chrono_literals;
 Global_Planner_OSM::Global_Planner_OSM():
         nav2_util::LifecycleNode("global_planner_osm", "", true) 
 {   
-    RCLCPP_DEBUG(get_logger(), "Creating"); 
+    RCLCPP_DEBUG(get_logger(), "Creating");
 
     // Add parameters
-    add_parameter("map_file", rclcpp::ParameterValue("3_lohmuehlenpark.osm"));
     add_parameter("waypoints_topic", rclcpp::ParameterValue("waypoints"));
-    add_parameter("mapdata_topic", rclcpp::ParameterValue("mapdata"));
+    add_parameter("clicked_point_topic", rclcpp::ParameterValue("clicked_point"));
+    add_parameter("port", rclcpp::ParameterValue(8080));
+    add_parameter("ip_address", rclcpp::ParameterValue("127.0.0.1"));
 }
 
 Global_Planner_OSM::~Global_Planner_OSM()
@@ -31,8 +32,8 @@ Global_Planner_OSM::on_configure(const rclcpp_lifecycle::State & state)
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
     init_pub_sub();
-
-    parseXml();
+    init_transforms();
+    init_ip_connection();
 
     return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -41,10 +42,9 @@ nav2_util::CallbackReturn
 Global_Planner_OSM::on_activate(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Activating");
-    publisher_map_data_->on_activate();
     publisher_waypoints_->on_activate();
 
-    return nav2_util::CallbackReturn::SUCCESS;
+    return wait_for_transform();
 }
 
 nav2_util::CallbackReturn
@@ -71,145 +71,168 @@ Global_Planner_OSM::on_shutdown(const rclcpp_lifecycle::State & state)
 void
 Global_Planner_OSM::init_parameters()
 {
-    get_parameter("map_file", map_file_);
-    RCLCPP_INFO(get_logger(), "Set map_file to %s", map_file_.c_str());
-    //map_file_ = "/home/pascal/dev_ws/src/ros2-sgd4.0/navigation/maps/20_NavigationsFaehigeDaten.osm";
     get_parameter("waypoints_topic", waypoints_topic_);
-    get_parameter("mapdata_topic", mapdata_topic_);
+    get_parameter("clicked_point_topic", clicked_point_topic_);
+    get_parameter("port", port_);
+    get_parameter("ip_address", ip_address_);
 }
 
 void
 Global_Planner_OSM::init_pub_sub()
 {
-    publisher_map_data_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(mapdata_topic_, default_qos);
-    timer_map_data_ = this->create_wall_timer(5000ms, std::bind(&Global_Planner_OSM::publish_map_data, this));
-
     publisher_waypoints_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(waypoints_topic_, default_qos);
 
-    RCLCPP_DEBUG(get_logger(), "Initialised publisher on topic %s and %s.",
-            waypoints_topic_.c_str(), mapdata_topic_.c_str());
+    sub_clicked_point_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
+        clicked_point_topic_, default_qos, std::bind(&Global_Planner_OSM::computePath, this, _1));
 
-    compute_path_srv = this->create_service<sgd_msgs::srv::ComputePath>("/compute_path",
-        std::bind(&Global_Planner_OSM::computePath, this, std::placeholders::_1, std::placeholders::_2));
-    
+    RCLCPP_DEBUG(get_logger(), "Initialised publisher on topic %s and subscriber on %s.",
+            waypoints_topic_.c_str(), clicked_point_topic_.c_str());
+
     auto options = rclcpp::NodeOptions().arguments(
         {"--ros-args --remap __node:=navigation_dialog_action_client"});
     client_node_ = std::make_shared<rclcpp::Node>("_follow", options);
     waypoint_follower_action_client_ = 
         rclcpp_action::create_client<nav2_msgs::action::FollowWaypoints>(
         client_node_,
-        "FollowWaypoints");
+        "follow_waypoints");
     waypoint_follower_goal_ = nav2_msgs::action::FollowWaypoints::Goal();
 
     server_timeout_ = std::chrono::milliseconds(10);
 }
 
 void
-Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::ComputePath::Request> request,
-           std::shared_ptr<sgd_msgs::srv::ComputePath::Response> response)
-{   
-    RCLCPP_INFO(this->get_logger(), "Compute path from %.7f, %.7f to %.7f, %.7f.",
-            request->lata, request->lona, request->latb, request->lonb);
-
-    clear_marker_array(publisher_waypoints_);
-
-    rapidxml::xml_node<char> *start_node = get_id(request->lata, request->lona);
-    rapidxml::xml_node<char> *dest_node = get_id(request->latb, request->lonb);
-
-    auto compare = [](NODE a, NODE b) {return a.f > b.f;};
-    std::priority_queue<NODE, std::vector<NODE>, decltype(compare)> openList(compare);
-    std::unordered_map<rapidxml::xml_node<char> *, rapidxml::xml_node<char> *> closedList;
-
-    // Initialise parameters of starting node
-    NODE d;
-    d.xml_node = start_node;
-    d.parent_xml_node = NULL;
-    d.f = 0.0;
-    d.g = 0.0;  // bisherige Kosten
-    d.h = 0.0;  // estimated cost to destination
-    openList.push(d);
-
-    // initially the destination is not reached
-    bool foundDest = false;
-
-    while (!openList.empty())
-    {
-        NODE olistData = openList.top();
-
-        rapidxml::xml_node<char> *pos = olistData.xml_node;
-
-        // Remove this node from the open list
-        openList.pop();
-
-        if (isDestination(pos, dest_node))
-        {
-            RCLCPP_INFO(this->get_logger(), "The destination cell is found. Node ID: %s, lat: %s, lon: %s\n",
-                dest_node->first_attribute("id")->value(),
-                dest_node->first_attribute("lat")->value(),
-                dest_node->first_attribute("lon")->value());
-
-            closedList.insert(std::make_pair(olistData.xml_node, olistData.parent_xml_node));
-            foundDest = true;
-            trace_path(closedList, dest_node);
-
-            break;
-        }
-
-        for (rapidxml::xml_node<> *nd = pos->first_node("nd"); nd; nd = nd->next_sibling("nd"))
-        {
-            long pos_id = strtol(nd->first_attribute("ref")->value(), NULL, 10);
-            // get cost
-
-            for (rapidxml::xml_node<> *np = root->first_node("node"); np; np = np->next_sibling())
-            {
-                if ( strtol(np->first_attribute("id")->value(), NULL, 10) == pos_id )
-                {
-                    // If successor is already on the closed list ignore it.
-                    if (closedList.find(np) != closedList.end())
-                    {
-                        continue;
-                    }
- 
-                    NODE n;
-                    n.xml_node = np;
-                    n.parent_xml_node = olistData.xml_node;
-                    n.g = olistData.g + cost_node_to_node(olistData.xml_node, np); // add cost
-                    n.h = distance_node_to_node(np, dest_node);
-                    n.f = n.g + n.h;
-
-                    openList.push(n);
-
-                    break;
-                }
-            }
-        }
-        closedList.insert(std::make_pair(olistData.xml_node, olistData.parent_xml_node));
-    }
-
-    if (!foundDest)
-    {
-        RCLCPP_ERROR(this->get_logger(), "Failed to compute path to destination.");
-    }
-
-    start_waypoint_following(&waypoints);
-    publish_waypoints();
-
-    RCLCPP_DEBUG(this->get_logger(), "Path computation successful.");
-    response->routeid = 123456;
-}
-
-void
-Global_Planner_OSM::publish_map_data()
+Global_Planner_OSM::init_transforms()
 {
-    RCLCPP_INFO(get_logger(), "Publish mapdata");
-    publish_marker_array(&map_data, publisher_map_data_);
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(rclcpp_node_->get_clock());
+    auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
+        rclcpp_node_->get_node_base_interface(),
+        rclcpp_node_->get_node_timers_interface());
+    tf_buffer_->setCreateTimerInterface(timer_interface);
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 }
 
 void
-Global_Planner_OSM::publish_waypoints()
-{   
-    RCLCPP_DEBUG(this->get_logger(), "Publish path on topic 'waypoints'");
-    publish_marker_array(&waypoints, publisher_waypoints_, 1.0, 1.0, 0.0);
+Global_Planner_OSM::init_ip_connection()
+{
+    struct sockaddr_in serv_addr;
+
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+        RCLCPP_ERROR(get_logger(), "Socket creation error!");
+        return;
+    }
+   
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port_);
+       
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    if(inet_pton(AF_INET, ip_address_.c_str(), &serv_addr.sin_addr)<=0) 
+    {
+        RCLCPP_ERROR(get_logger(), "Invalid address/ Address not supported");
+        return;
+    }
+   
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        RCLCPP_ERROR(get_logger(), "Connection Failed!");
+        return;
+    }
+}
+
+nav2_util::CallbackReturn
+Global_Planner_OSM::wait_for_transform()
+{
+    // Wait for transform to be available
+    RCLCPP_DEBUG(get_logger(), "Wait for transform");
+
+    std::string err;
+    int retries = 0;
+    while (rclcpp::ok() && !tf_buffer_->canTransform("base_footprint", "map", tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
+        && retries < 10)
+    {
+        RCLCPP_INFO(this->get_logger(), "Timeout waiting for transform. Tf error: %s", err);
+        err.clear();
+        rclcpp::sleep_for(500000000ns);
+        retries++;
+    }
+    return (retries > 9 ? nav2_util::CallbackReturn::FAILURE : nav2_util::CallbackReturn::SUCCESS);
+}
+
+void
+Global_Planner_OSM::computePath(const std::shared_ptr<geometry_msgs::msg::PointStamped> msg)
+{
+    // get current position
+    double x_base_map, y_base_map;
+    try
+    {
+        geometry_msgs::msg::TransformStamped tf_base_map = tf_buffer_->lookupTransform("map", "base_footprint",
+                    rclcpp::Time(0), rclcpp::Duration(5,0));
+        x_base_map = tf_base_map.transform.translation.x;
+        y_base_map = tf_base_map.transform.translation.y;
+        RCLCPP_INFO(this->get_logger(), "Transform map -> base_footprint x: %f, %f", x_base_map, y_base_map);
+    } catch (tf2::TransformException &ex)
+    {
+        RCLCPP_WARN(this->get_logger(), "%s", ex.what());
+        return;
+    }
+
+    std::vector<std::string> in;
+    in.push_back(""); // TODO get username
+    // local coordinates to lat/lon
+    auto latlon = sgd_util::local_to_WGS84(x_base_map, y_base_map);
+    RCLCPP_INFO(get_logger(), "Current pos (lat/lon): %.7f, %.7f", latlon.first, latlon.second);
+    in.push_back(to_string(latlon.first));
+    in.push_back(to_string(latlon.second));
+
+    // get destination from message
+    auto dest = sgd_util::local_to_WGS84(msg->point.x, msg->point.y);
+    in.push_back(to_string(dest.first));
+    in.push_back(to_string(dest.second));
+
+    // build message
+    std::string s = "{";
+    for (uint i = 0; i < in.size(); i++)
+    {
+        if (i > 0 && in[i].size() > 0)
+        {
+            s.append(",");
+        }
+        s.append(std::to_string(i) + ":" + in[i]);
+    }
+
+    s.append("}");
+    RCLCPP_DEBUG(get_logger(), "Send message %s", s.c_str());
+    send(sock , s.c_str() , s.length() , 0 );
+    s.clear();
+
+    // wait for response
+    std::string wps;
+    std::vector<POSE> waypoints;
+    bool IN_MSG = false;
+    while (1)
+    {
+        char c;
+        read(sock , &c, 1);
+
+        if (c == '{' && !IN_MSG)
+        {
+            wps.clear();
+            IN_MSG = true;
+        }
+        else if (IN_MSG && c == '}')
+        {
+            // end of message -> parse msg, compute waypoints and send to controller
+            waypoints = get_waypoints_from_msg(wps);
+            publish_marker_array(&waypoints, publisher_waypoints_, 1.0, 1.0, 0.0);
+            start_waypoint_following(&waypoints);
+
+            return;
+        }
+        else if (IN_MSG)
+        {
+            wps.push_back(c);
+        }
+    }
 }
 
 void
@@ -330,12 +353,6 @@ Global_Planner_OSM::start_waypoint_following(std::vector<POSE> * waypoints)
     }
 
     waypoint_follower_goal_.poses = poses;
-    
-    RCLCPP_INFO(this->get_logger(), "Sending a path of %zu waypoints:", waypoint_follower_goal_.poses.size());
-    for (auto waypoint : waypoint_follower_goal_.poses)
-    {
-        RCLCPP_DEBUG(this->get_logger(), "\t(%lf, %lf)", waypoint.pose.position.x, waypoint.pose.position.y);
-    }
 
     auto send_goal_options = rclcpp_action::Client<nav2_msgs::action::FollowWaypoints>::SendGoalOptions();
     send_goal_options.result_callback = [](auto) {};
@@ -355,144 +372,25 @@ Global_Planner_OSM::start_waypoint_following(std::vector<POSE> * waypoints)
     }
 }
 
-void
-Global_Planner_OSM::parseXml()
-{   
-    RCLCPP_DEBUG(this->get_logger(), "Parse xml");
-    std::ifstream t(map_file_);
-
-    buffer = std::vector<char>((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-    buffer.push_back('\0');
-    osm.parse<0>(&buffer[0]);
-
-    root = osm.first_node("nodelist");
-    map_data.clear();
-
-    POSE p;
-    for (rapidxml::xml_node<> *node = root->first_node("node"); node; node = node->next_sibling())
-    {
-        p.lat = strtod(node->first_attribute("lat")->value(), NULL);
-        p.lon = strtod(node->first_attribute("lon")->value(), NULL);
-        p.angle = 0.0;      // angle is not needed
-
-        map_data.push_back(p);
-    }
-
-    RCLCPP_INFO(this->get_logger(), "Parsed nodelist %s with %i nodes.",
-            root->first_attribute("name")->value(), map_data.size());
-}
-
-bool
-Global_Planner_OSM::isDestination(rapidxml::xml_node<char> *pos, rapidxml::xml_node<char> *dest)
+std::vector<Global_Planner_OSM::POSE>
+Global_Planner_OSM::get_waypoints_from_msg(std::string waypoints_)
 {
-    RCLCPP_DEBUG(this->get_logger(),"Check if node with id %s equals desination node (id: %s).",
-        pos->first_attribute("id")->value(),
-        dest->first_attribute("id")->value());
-    return (pos->first_attribute("id")->value() == dest->first_attribute("id")->value());
-}
+    std::vector<POSE> waypoints;
 
-rapidxml::xml_node<char>
-*Global_Planner_OSM::get_id(double const lat, double const lon)
-{   
-    rapidxml::xml_node<char> *nnode = nullptr;
-    double lastDist = 10000.0;
-
-    for (rapidxml::xml_node<> *node = root->first_node("node"); node; node = node->next_sibling())
+    std::string token;
+    std::istringstream tokenStream(waypoints_);
+    while (std::getline(tokenStream, token, ';'))
     {
-        double lat_ = strtod(node->first_attribute("lat")->value(), NULL);
-        double lon_ = strtod(node->first_attribute("lon")->value(), NULL);
-
-        double lastDist_;
-        if((lastDist_ = std::sqrt(std::pow(lat_ - lat, 2) + std::pow(lon_ - lon, 2))) < lastDist )
-        {
-            lastDist = lastDist_;
-            
-            nnode = node;
-        }
+        int del_pos = token.find(',');
+        POSE p;
+        p.lat = stod(token.substr(0,del_pos));
+        p.lon = stod(token.substr(del_pos + 1));
+        waypoints.push_back(p);
     }
-
-    if (lastDist == 10000.0)
-    {
-        RCLCPP_INFO(this->get_logger(), "Could not find node at position %.7f, %.7f", lat, lon);
-        return nullptr;
-    } else {
-        RCLCPP_DEBUG(this->get_logger(), "Nearest Node to position %.7f, %.7f is node with id: %s\n",
-                lat, lon, nnode->first_attribute("id")->value());
-    }
-    return nnode;
+    
+    return waypoints;
 }
 
-double
-Global_Planner_OSM::distance_node_to_node(rapidxml::xml_node<char> *start, rapidxml::xml_node<char> *dest)
-{
-    double start_lat = strtod(start->first_attribute("lat")->value(), NULL);
-    double start_lon = strtod(start->first_attribute("lon")->value(), NULL);
-    double dest_lat = strtod(dest->first_attribute("lat")->value(), NULL);
-    double dest_lon = strtod(dest->first_attribute("lon")->value(), NULL);
-
-    return std::sqrt( std::pow(start_lat - dest_lat, 2.0) + std::pow(start_lon - dest_lon, 2.0) );
-}
-
-double
-Global_Planner_OSM::cost_node_to_node(rapidxml::xml_node<char> *start, rapidxml::xml_node<char> *dest)
-{
-    // TODO: implement cost function
-    return distance_node_to_node(start, dest);
-}
-
-void
-Global_Planner_OSM::trace_path(std::unordered_map<rapidxml::xml_node<char> *, rapidxml::xml_node<char> *> closedList,
-        rapidxml::xml_node<char> * dest)
-{
-    if (!waypoints.empty()) {waypoints.clear();}
-
-    rapidxml::xml_node<char> *pid, *id;
-    std::stack<rapidxml::xml_node<char> *> path;
-    pid = dest;
-
-    while (pid != NULL)
-    {
-        id = pid;
-        path.push(id);
-        pid = closedList.at(id);
-    }
-
-    RCLCPP_INFO(this->get_logger(), "Computed path:");
-
-    double lat_, lon_;
-    POSE pose;
-    rapidxml::xml_node<char> *nextnode = path.top();
-    pose.lat = strtod(nextnode->first_attribute("lat")->value(), NULL);
-    pose.lon = strtod(nextnode->first_attribute("lon")->value(), NULL);
-    path.pop();
-
-    while (!path.empty())
-    {   
-        rapidxml::xml_node<char> *p = path.top();
-        lat_ = strtod(p->first_attribute("lat")->value(), NULL);
-        lon_ = strtod(p->first_attribute("lon")->value(), NULL);
-        path.pop();
-        // Calculate angle from nextnode to p
-        // tan = G/A = y/x = lat/lon
-        // tan 
-
-        if (pose.lon == 0 && pose.lat == 0 )
-        {
-            pose.angle = 0.0;   // undefined
-        } else {
-            pose.angle = atan2(lat_ - pose.lat, lon_ - pose.lon);
-        }
-
-        RCLCPP_INFO(this->get_logger(), "Added waypoint with lat: %.8f, lon: %.8f, angle: %f.",
-               pose.lat, pose.lon, pose.angle);
-        waypoints.push_back(pose);
-
-        pose.lat = lat_;
-        pose.lon = lon_;
-    }
-
-    waypoints.push_back(pose);
-}
 
 }   // namespace nav_sgd
 

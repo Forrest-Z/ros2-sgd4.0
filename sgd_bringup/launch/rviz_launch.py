@@ -59,7 +59,7 @@ def generate_launch_description():
         executable='rviz2',
         name='rviz2',
         arguments=['-d', rviz_config_file],
-        output='screen')
+        output={'both': 'log'})
 
     namespaced_rviz_config_file = ReplaceString(
             source_file=rviz_config_file,
@@ -72,7 +72,7 @@ def generate_launch_description():
         name='rviz2',
         namespace=namespace,
         arguments=['-d', namespaced_rviz_config_file],
-        output='screen',
+        output={'both': 'log'},
         remappings=[('/tf', 'tf'),
                     ('/tf_static', 'tf_static'),
                     ('/goal_pose', 'goal_pose'),

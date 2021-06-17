@@ -63,15 +63,8 @@
       </include>
     </model>
 
-    <!--model name="blindenhund">
-      <pose>-2.0 -0.5 0.01 0 0 0</pose>
-      <include>
-        <uri>model://blindenhund</uri>
-      </include>
-    </model-->
-
     <model name="blindenhund">
-      <pose>-2.0 -0.5 0.15 0.0 0.0 0.0</pose>
+      <pose>12.5 -76.5 0.15 0.0 0.0 0.0</pose>
       <link name="base_footprint"/>
 
       <link name="base_link">
@@ -112,48 +105,69 @@
       </link>
 
       <link name="imu_link">
-        <pose>0 0 0 0 0 0</pose>
+        <pose>0 0 0.3 0 0 0</pose>
+        <visual name="imu_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.05 0.05 0.05</size>
+            </box>
+          </geometry>
+        </visual>
+        <collision name="imu_collision">
+          <max_contacts>10</max_contacts>
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.05 0.05 0.05</size>
+            </box>
+          </geometry>
+        </collision>
         <sensor name="sgd_imu" type="imu">
+          <pose>0 0 0 0 0 0</pose>
           <always_on>true</always_on>
-          <update_rate>200</update_rate>
+          <update_rate>10</update_rate>
+          <visualize>true</visualize>
+          <topic>__default_topic__</topic>
+          <initialOrientationAsReference>false</initialOrientationAsReference>
           <imu>
             <angular_velocity>
               <x>
                 <noise type="gaussian">
                   <mean>0.0</mean>
-                  <stddev>2e-4</stddev>
+                  <stddev>2e-2</stddev>
                 </noise>
               </x>
               <y>
                 <noise type="gaussian">
                   <mean>0.0</mean>
-                  <stddev>2e-4</stddev>
+                  <stddev>2e-2</stddev>
                 </noise>
               </y>
               <z>
                 <noise type="gaussian">
                   <mean>0.0</mean>
-                  <stddev>2e-4</stddev>
+                  <stddev>2e-2</stddev>
                 </noise>
               </z>
             </angular_velocity>
             <linear_acceleration>
               <x>
                 <noise type="gaussian">
-                  <mean>0.0</mean>
-                  <stddev>1.7e-2</stddev>
+                  <mean>-0.00055</mean>
+                  <stddev>3.54e-3</stddev>
                 </noise>
               </x>
               <y>
                 <noise type="gaussian">
                   <mean>0.0</mean>
-                  <stddev>1.7e-2</stddev>
+                  <stddev>3.98e-3</stddev>
                 </noise>
               </y>
               <z>
                 <noise type="gaussian">
-                  <mean>0.0</mean>
-                  <stddev>1.7e-2</stddev>
+                  <mean>-9.80999</mean>
+                  <stddev>4.8e-4</stddev>
                 </noise>
               </z>
             </linear_acceleration>
@@ -162,6 +176,15 @@
             <ros>
               <remapping>~/out:=imu</remapping>
             </ros>
+            <gravity>false</gravity>
+            <topicName>imu</topicName>
+            <bodyName>imu_link</bodyName>
+            <updateRateHZ>10.0</updateRateHZ>
+            <gaussianNoise>0.0</gaussianNoise>
+            <xyzOffset>0 0 0</xyzOffset>
+            <rpyOffset>0 0 0</rpyOffset>
+            <frameName>imu_link</frameName>
+            <initialOrientationAsReference>false</initialOrientationAsReference>
           </plugin>
         </sensor>
         <self_collide>0</self_collide>
@@ -254,7 +277,7 @@
       </link>
 
       <link name="wheel_left_link">
-        <pose>0 0.3493 0 -1.5707 0 0</pose>
+        <pose>0 0.3493 -0.05 -1.5707 0 0</pose>
         <inertial>
           <pose>0 0 0 0 0 0</pose>
           <inertia>
@@ -271,7 +294,7 @@
           <pose>0 0 0 0 0 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.1524</radius>
+              <radius>0.1082</radius>
               <length>0.056</length>
             </cylinder>
           </geometry>
@@ -280,7 +303,7 @@
           <pose>0 0 0 0 0 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.1524</radius>
+              <radius>0.1082</radius>
               <length>0.056</length>
             </cylinder>
           </geometry>
@@ -309,7 +332,7 @@
       </link>
 
       <link name="wheel_right_link">
-        <pose>0 -0.3493 0 -1.5707 0 0</pose>
+        <pose>0 -0.3493 -0.05 -1.5707 0 0</pose>
         <inertial>
           <pose>0 0 0 0 -0 0</pose>
           <inertia>
@@ -326,7 +349,7 @@
           <pose>0 0 0 0 -0 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.1524</radius>
+              <radius>0.1082</radius>
               <length>0.056</length>
             </cylinder>
           </geometry>
@@ -335,7 +358,7 @@
           <pose>0 0 0 0 -0 0</pose>
           <geometry>
             <cylinder>
-              <radius>0.1524</radius>
+              <radius>0.1082</radius>
               <length>0.056</length>
             </cylinder>
           </geometry>
@@ -441,7 +464,7 @@
         </collision>
         <sensor name="gps_sensor" type="gps">
           <always_on>true</always_on>
-          <update_rate>1</update_rate>
+          <update_rate>4</update_rate>
           <gps>
             <position_sensing>
               <horizontal>
@@ -462,48 +485,7 @@
             <ros>
               <remapping>~/out:=gps</remapping>
             </ros>
-            <!--output_type>sensor_msgs/LaserScan</output_type-->
             <frame_name>map</frame_name>
-          </plugin>
-        </sensor>
-      </link>
-      
-      <link name="camera_link">
-        <pose>0.75 -0.065 0.2 0 -0 0</pose>
-        <inertial>
-          <pose>0 0 0 0 0 0</pose>
-          <inertia>
-            <ixx>0.001</ixx>
-            <ixy>0.000</ixy>
-            <ixz>0.000</ixz>
-            <iyy>0.001</iyy>
-            <iyz>0.000</iyz>
-            <izz>0.001</izz>
-          </inertia>
-          <mass>0.035</mass>
-        </inertial>
-        <collision name="collision">
-          <pose>0 0 0 0 0 0</pose>
-          <geometry>
-            <box>
-              <size>0.008 0.130 0.022</size>
-            </box>
-          </geometry>
-        </collision>
-        <sensor name="intel_realsense_r200_depth" type="depth">
-          <always_on>1</always_on>
-          <update_rate>5</update_rate>
-          <pose>0 0 0 0 0 0</pose>
-          <camera name="realsense_depth_camera">
-          </camera>
-          <plugin name="intel_realsense_r200_depth_driver" filename="libgazebo_ros_camera.so">
-            <ros>
-            </ros>
-            <camera_name>intel_realsense_r200_depth</camera_name>
-            <frame_name>camera_depth_frame</frame_name>
-            <hack_baseline>0.07</hack_baseline>
-            <min_depth>0.001</min_depth>
-            <max_depth>5.0</max_depth>
           </plugin>
         </sensor>
       </link>
@@ -544,40 +526,34 @@
         <pose>0 0 0 0 0 0</pose>
       </joint>
 
-      <joint name="camera_joint" type="fixed">
-        <parent>base_link</parent>
-        <child>camera_link</child>
-        <pose>0 0 0 0 0 0</pose>
-      </joint>
-
       <joint name="gps_joint" type="fixed">
         <parent>base_link</parent>
         <child>gps_link</child>
         <pose>0 0 0 0 0 0</pose>
       </joint>
-
-      <joint name="camera_rgb_joint" type="fixed">
-        <parent>camera_link</parent>
-        <child>camera_rgb_frame</child>
+      
+      <joint name="imu_joint" type="fixed">
+        <parent>base_footprint</parent>
+        <child>imu_link</child>
         <pose>0 0 0 0 0 0</pose>
       </joint>
 
       <plugin name="turtlebot3_diff_drive" filename="libgazebo_ros_diff_drive.so">
-        <update_rate>30</update_rate>
+        <update_rate>10</update_rate>
 
         <left_joint>wheel_left_joint</left_joint>
         <right_joint>wheel_right_joint</right_joint>
 
-        <wheel_separation>0.648</wheel_separation>
-        <wheel_diameter>0.3048</wheel_diameter>
+        <wheel_separation>0.71</wheel_separation>
+        <wheel_diameter>0.2165</wheel_diameter>
 
-        <max_wheel_torque>20</max_wheel_torque>
+        <max_wheel_torque>10</max_wheel_torque>
         <max_wheel_acceleration>0.2</max_wheel_acceleration>
 
         <command_topic>cmd_vel</command_topic>
 
         <publish_odom>true</publish_odom>
-        <publish_odom_tf>true</publish_odom_tf>
+        <publish_odom_tf>false</publish_odom_tf>
         <publish_wheel_tf>false</publish_wheel_tf>
 
         <odometry_topic>odom</odometry_topic>

@@ -2,9 +2,8 @@
 #define PID_CONTROLLER_HPP_
 
 #include <limits>
-#include "rclcpp/rclcpp.hpp"
 
-namespace sgd_lc
+namespace nav_sgd
 {
 
 class PID_Controller
@@ -18,8 +17,6 @@ private:
     double integral;
     double last_val_;
 
-    rclcpp::Time last_t_;
-
     void init();
 public:
     PID_Controller(double kp, double ki, double kd);
@@ -29,8 +26,8 @@ public:
     void set_reference(double reference);
     void set_max(double max);
     void set_min(double min);
-    double next(double actual_value);
-    double next(double actual_value, rclcpp::Time time);
+    double next(double current_value);
+    double next(double current_value, double interval);
 };
 
 PID_Controller::PID_Controller(double kp)
@@ -60,27 +57,27 @@ void
 PID_Controller::set_min(double min) {min_ = min;}
 
 double
-PID_Controller::next(double actual_value)
+PID_Controller::next(double current_value)
 {
-    return next(actual_value, rclcpp::Time(0));
+    return next(current_value, 0.0);
 }
 
 double
-PID_Controller::next(double actual_value, rclcpp::Time time)
+PID_Controller::next(double current_value, double interval)
 {   
-    if (ref_value_ == 0.0 && actual_value == 0.0)
+    if (ref_value_ == 0.0 && current_value == 0.0)
     {
         return 0;
     }
 
-    integral += (ref_value_ - actual_value) * rclcpp::Duration(time - last_t_).seconds();
-    double r = last_val_ + (ref_value_ - actual_value) * kp_ + integral * ki_;
-    last_t_ = time;
-
+    integral += (ref_value_ - current_value) * interval;
+    //double r = last_val_ + (ref_value_ - current_value) * kp_ + integral * ki_;
+    double r = current_value + (ref_value_ - current_value) * kp_ + integral * ki_;
+    
     if (r > max_) r = max_;
     if (r < min_) r = min_;
     
-    last_val_ = r;
+    //last_val_ = r;
     return r;
 }
 
@@ -94,7 +91,7 @@ PID_Controller::init()
     min_ = -max_;
 }
 
-}       // namespace sgd_lc
+}       // namespace nav_sgd
 
 
 #endif

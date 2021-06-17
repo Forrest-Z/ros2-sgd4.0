@@ -3,6 +3,8 @@
 namespace sgd_sensors
 {
 
+#define PI 3.14159265
+
 using namespace std::chrono_literals;   // if a timer is used
 
 IMU_BNO055::IMU_BNO055():
@@ -178,7 +180,7 @@ IMU_BNO055::on_serial_received(const sgd_msgs::msg::Serial::SharedPtr msg)
     tf2::Matrix3x3 m(q);
     double roll, pitch, yaw;
     m.getRPY(roll, pitch, yaw);
-    RCLCPP_INFO(get_logger(), "IMU heading %.2f", yaw);
+    //RCLCPP_INFO(get_logger(), "IMU r: %.2f, p: %.2f, y: %.2f",roll/PI*180, pitch/PI*180, yaw/PI*180);
 
     if (config_mode_ && now().seconds() > (last_calib_msg_.seconds() + 2))
     {
@@ -277,7 +279,9 @@ IMU_BNO055::data_to_quat(std::string data)
     auto end = std::sregex_iterator();
 
     int k = 0;
-    geometry_msgs::msg::Quaternion quat;
+    double r,p,y;
+    
+    tf2::Quaternion q;    
     for (std::sregex_iterator i = begin; i != end; ++i) {
         std::smatch match = *i;
 
@@ -296,23 +300,22 @@ IMU_BNO055::data_to_quat(std::string data)
         switch (k)
         {
         case 0:
-            quat.w = d;
+            r = d / 180 * PI;
             break;
         case 1:
-            quat.x = d;
+            p = d / 180 * PI;
             break;
         case 2:
-            quat.y = d;
-            break;
-        case 3:
-            quat.z = d;
+            y = d / 180 * PI;
             break;
         default:
             break;
         }
         k++;
     }
-    return quat;
+    //RCLCPP_INFO(get_logger(), "IMU raw r: %.2f, p: %.2f, y: %.2f", r, p, y);
+    q.setRPY(r, p, y);
+    return tf2::toMsg(q);
 }
 
 std::array<double, 9UL>
@@ -349,9 +352,10 @@ IMU_BNO055::Vector3
 IMU_BNO055::quat_to_euler(geometry_msgs::msg::Quaternion q)
 {
     Vector3 e;
-    e.x = atan2(2*(q.w * q.x + q.y * q.z), 1-2*(q.x * q.x + q.y * q.y));
-    e.y = asin(2*(q.w * q.y - q.z * q.x));
-    e.z = atan2(2*(q.w * q.z + q.x * q.y), 1-2*(q.y * q.y + q.z * q.z));
+    tf2::Quaternion quat(q.x, q.y, q.z, q.w);
+    tf2::Matrix3x3 m(quat);
+    m.getRPY(e.x, e.y, e.z);
+
     return e;
 }
 

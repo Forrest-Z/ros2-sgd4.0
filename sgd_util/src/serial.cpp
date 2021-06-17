@@ -17,6 +17,7 @@ Serial::Serial():
     add_parameter("read_write", rclcpp::ParameterValue("rw"));
     add_parameter("raw", rclcpp::ParameterValue(false));
     add_parameter("sframe", rclcpp::ParameterValue("$"));
+    add_parameter("stframe", rclcpp::ParameterValue("%"));
     add_parameter("log", rclcpp::ParameterValue(false));
 }
 
@@ -98,11 +99,14 @@ Serial::init_parameters()
     get_parameter("baud_rate", baud_rate_);
     get_parameter("read_write", read_write_);
     get_parameter("raw", raw_);
-    std::string s;
-    get_parameter("sframe", s);
-    sframe_ = s.front();
-    get_parameter("stframe", s);
-    stframe_ = s.front();
+    std::string s1;
+    get_parameter("sframe", s1);
+    sframe_ = s1.front();
+    RCLCPP_INFO(get_logger(), "Set startframe to %c", sframe_);
+    std::string s2;
+    get_parameter("stframe", s2);
+    stframe_ = s2.front();
+    RCLCPP_INFO(get_logger(), "Set stopframe to %c", stframe_);
     get_parameter("log", log_);
 }
 

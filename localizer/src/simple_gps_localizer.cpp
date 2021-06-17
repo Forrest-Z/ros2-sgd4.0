@@ -18,11 +18,12 @@ Simple_Gps_Localizer::Simple_Gps_Localizer():
     add_parameter("gps_topic", rclcpp::ParameterValue("gps"));
     add_parameter("odom_topic", rclcpp::ParameterValue("odom"));
     add_parameter("imu_topic", rclcpp::ParameterValue("imu"));
+    add_parameter("odom_thresh", rclcpp::ParameterValue(0.1));
 
     is_odom_avail_ = false;
 }
 
-Simple_Gps_Localizer::~Simple_Gps_Localizer()
+Simple_Gps_Localizer::~Simple_Gps_Localizer() 
 {
     // Destroy
 }
@@ -48,6 +49,8 @@ Simple_Gps_Localizer::on_activate(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Activating");
 
+    pub_position_->on_activate();
+
     return wait_for_transform();
 }
 
@@ -55,6 +58,7 @@ nav2_util::CallbackReturn
 Simple_Gps_Localizer::on_deactivate(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Deactivating");
+    pub_position_->on_deactivate();
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
@@ -67,6 +71,7 @@ Simple_Gps_Localizer::on_cleanup(const rclcpp_lifecycle::State & state)
     tf_broadcaster_.reset();
     tf_listener_.reset();
     tf_buffer_.reset();
+    pub_position_.reset();
 
     return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -98,16 +103,40 @@ Simple_Gps_Localizer::gps_sub_callback(const sensor_msgs::msg::NavSatFix::Shared
 
     // Calculate transformation
     auto xy = sgd_util::WGS84_to_local(msg_->latitude, msg_->longitude);
+    gps_pos_.push_back(xy);
+    if (gps_pos_.size() > 8) gps_pos_.pop_front();
+
+    // check if robot is moving
+    // if robot is not moving get average of last 2s
+    double x_ = 0.0;
+    double y_ = 0.0;
+    if (is_robo_moving())
+    {
+        // gps is expected to be bad due to delay in signal
+        x_ = xy.first;
+        y_ = xy.second;
+        gps_pos_.clear();
+    }
+    else
+    {
+        // get average
+        // TODO filter bad values
+        for (auto p : gps_pos_)
+        {
+            x_ += p.first / gps_pos_.size();
+            y_ += p.second / gps_pos_.size();
+        }
+    }
 
     // TODO: use angle from gps data?
-    double dx = xy.first - (-cos(xyw.w) * x_base_gps_ - sin(xyw.w) * y_base_gps_ + xyw.x);
-    double dy = xy.second - (-sin(xyw.w) * x_base_gps_ + cos(xyw.w) * y_base_gps_ + xyw.y);
+    double dx = x_ - (-cos(xyw.w) * x_base_gps_ - sin(xyw.w) * y_base_gps_ + xyw.x);
+    double dy = y_ - (-sin(xyw.w) * x_base_gps_ + cos(xyw.w) * y_base_gps_ + xyw.y);
     //RCLCPP_INFO(get_logger(), "GPS delta x,y: %.4f, %.4f", dx, dy);
 
     tf_map_odom_.transform.translation.x = dx;
     tf_map_odom_.transform.translation.y = dy;
     tf_map_odom_.transform.translation.z = 0.142176;
-    tf_map_odom_.transform.rotation = angleZ_to_Quaternion(0);  // use IMU data??
+    tf_map_odom_.transform.rotation = angleZ_to_Quaternion(0);
     tf_broadcaster_->sendTransform(tf_map_odom_);
 }
 
@@ -162,6 +191,7 @@ Simple_Gps_Localizer::init_parameters()
     get_parameter("gps_topic", gps_topic_);
     get_parameter("odom_topic", odom_topic_);
     get_parameter("imu_topic", imu_topic_);
+    get_parameter("odom_thresh", odom_thresh_);
 }
 
 void
@@ -174,9 +204,11 @@ Simple_Gps_Localizer::init_pub_sub()
     subscriber_imu_ = create_subscription<sensor_msgs::msg::Imu>(
         imu_topic_, default_qos, std::bind(&Simple_Gps_Localizer::imu_sub_callback, this, _1));
     
+    pub_position_ = create_publisher<sgd_msgs::msg::SpeedAccel>("speed_accel", default_qos);
+
     timer_ = this->create_wall_timer(100ms, std::bind(&Simple_Gps_Localizer::kalman_filter, this));
 
-    RCLCPP_DEBUG(get_logger(), "Initialised publisher on topic %s and subscriber on topic %s.",
+    RCLCPP_DEBUG(get_logger(), "Initialised subscriber on topic %s and subscriber on topic %s.",
             gps_topic_.c_str(), odom_topic_.c_str());
 }
 
@@ -229,7 +261,11 @@ Simple_Gps_Localizer::wait_for_transform()
 void
 Simple_Gps_Localizer::kalman_filter()
 {
-    if (!xyw.initial_pos_set)  return;     // IMU and odom data are required
+    if (!xyw.initial_pos_set)
+    {
+        RCLCPP_WARN(get_logger(), "Could not calculate position due to missing odom or imu data.");
+        return;     // IMU and odom data are required
+    }
 
     double dt = now().seconds() - last_send_time_;   // time in s
     double dt2 = pow(dt,2) / 2.0;
@@ -283,6 +319,34 @@ Simple_Gps_Localizer::kalman_filter()
     odom_tf.transform.rotation = tf2::toMsg(q);
     
     tf_broadcaster_->sendTransform(odom_tf);
+    publish_position(xyw);
+}
+
+bool
+Simple_Gps_Localizer::is_robo_moving()
+{
+    // odom > 0
+    return (abs(xp_odom_) > odom_thresh_ ? true : false);
+}
+
+void
+Simple_Gps_Localizer::publish_position(estimation xyz)
+{
+    sgd_msgs::msg::SpeedAccel message;
+    message.header.stamp = now();
+    message.header.frame_id = "base_footprint";
+
+    // Position
+    message.twist.linear.x = xyz.xp;
+    message.twist.linear.y = xyz.yp;
+    message.accel.linear.x = xyz.xpp;
+    message.accel.linear.y = xyz.ypp;
+
+    // Rotation
+    message.twist.angular.z = xyz.wp;
+    message.accel.angular.z = xyz.wpp;
+
+    pub_position_->publish(message);
 }
 
 }   // namespace nav_sgd

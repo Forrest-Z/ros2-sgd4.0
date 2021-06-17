@@ -1,19 +1,29 @@
 #ifndef NAVILOCK_UBLOX6_GPS_HPP_
 #define NAVILOCK_UBLOX6_GPS_HPP_
 
+#include <list>
+
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
+#include "tf2_ros/transform_broadcaster.h"
 #include "nav2_util/lifecycle_node.hpp"
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include "sensor_msgs/msg/nav_sat_status.hpp"
 #include "sgd_msgs/msg/serial.hpp"
 #include "gps/nmea_parser.hpp"
+#include "sgd_util/sgd_util.hpp"
 
 namespace sgd_sensors
 {
 
 class Navilock_UBlox6_GPS : public nav2_util::LifecycleNode
 {
+
+struct xy
+{
+    double x, y;
+};
+
 public: 
     Navilock_UBlox6_GPS();
     ~Navilock_UBlox6_GPS();
@@ -39,11 +49,15 @@ protected:
     rclcpp::TimerBase::SharedPtr timer_;
     u_int8_t gps_counter_;
     
+    void init_transforms();
+    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
     std::shared_ptr<Nmea_Parser> nmea_parser_;
 
     void read_msg(const sgd_msgs::msg::Serial::SharedPtr msg);
+    double get_direction_from_previous();
 
+    xy last_pos_;
 };
 
 }

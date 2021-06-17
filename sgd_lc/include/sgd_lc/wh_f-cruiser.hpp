@@ -20,7 +20,7 @@
 
 #include "sgd_lc/pid_controller.hpp"
 
-namespace sgd_lc
+namespace nav_sgd
 {
 
 class WH_Fcruiser : public nav2_util::LifecycleNode
@@ -41,8 +41,8 @@ protected:
   void init_parameters();
   std::string port_;
   std::string msg_regex_;
-  double motor_kp_;
-  double max_speed_;
+  double motor_kp_, motor_ki_;
+  double max_speed_, max_accel_;
 
   //! \brief Init publisher and subscriber
   void init_pub_sub();
