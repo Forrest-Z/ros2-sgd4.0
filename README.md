@@ -133,8 +133,14 @@ Um den Pfad automatisch bei jedem neuen Terminalfenster zu setzen, kann der Befe
 
 **git clone**
 Usage: `git clone [url]`
+Alternative: `git clone --branch [branch] [url]`
 
 Obtain a new repository from an existing URL
+
+**git checkout**
+Usage: `git checkout [branch]`
+
+Checkout another branch from current repository.
 
 **git add**
 Usage: `git add [file]`
