@@ -35,7 +35,7 @@
 		<param name="dir_EW" type="string">[EW]</param>
 		<param name="status" type="int">[012]</param> <!-- status indicator -->
 		<param type="int">(\d+)</param>    	<!-- number of sats -->
-		<param type="double">(\d+\.\d+)</param>     <!-- HDOP -->
+		<param name="hdop" type="double">(\d+\.\d+)</param>     <!-- HDOP -->
 		<param type="double">(\d+\.\d+)</param>    	<!-- antenna height -->
 		<param type="char">\w</param>  		<!-- antenna height unit -->
 		<param type="double">(\d+\.\d+)</param>    	<!-- geoidal separation -->

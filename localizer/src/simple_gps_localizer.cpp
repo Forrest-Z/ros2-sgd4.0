@@ -133,6 +133,8 @@ Simple_Gps_Localizer::gps_sub_callback(const sensor_msgs::msg::NavSatFix::Shared
     double dy = y_ - (-sin(xyw.w) * x_base_gps_ + cos(xyw.w) * y_base_gps_ + xyw.y);
     //RCLCPP_INFO(get_logger(), "GPS delta x,y: %.4f, %.4f", dx, dy);
 
+    // kein Signal ausgeben -> Signal für Kalman
+
     tf_map_odom_.transform.translation.x = dx;
     tf_map_odom_.transform.translation.y = dy;
     tf_map_odom_.transform.translation.z = 0.142176;
@@ -143,8 +145,13 @@ Simple_Gps_Localizer::gps_sub_callback(const sensor_msgs::msg::NavSatFix::Shared
 void
 Simple_Gps_Localizer::odom_sub_callback(const nav_msgs::msg::Odometry::SharedPtr msg_)
 {
-    x_odom_ = msg_->pose.pose.position.x;
-    y_odom_ = msg_->pose.pose.position.y;
+    if (!is_odom_avail_)
+    {
+        odom_initial_ = std::make_pair(msg_->pose.pose.position.x, msg_->pose.pose.position.y);
+    }
+
+    x_odom_ = msg_->pose.pose.position.x - odom_initial_.first;
+    y_odom_ = msg_->pose.pose.position.y - odom_initial_.second;
     xp_odom_ = msg_->twist.twist.linear.x;
     wp_odom_ = msg_->twist.twist.angular.z;
 
@@ -156,6 +163,21 @@ Simple_Gps_Localizer::odom_sub_callback(const nav_msgs::msg::Odometry::SharedPtr
 
     angle_odom_ = y;
     is_odom_avail_ = true;
+
+    geometry_msgs::msg::TransformStamped odom_tf;
+    odom_tf.header.stamp = now();
+    odom_tf.header.frame_id = "odom";
+    odom_tf.child_frame_id = "base_footprint";
+
+    odom_tf.transform.translation.x = x_odom_;
+    odom_tf.transform.translation.y = y_odom_;
+    odom_tf.transform.translation.z = 0.0;
+
+    tf2::Quaternion q1;
+    q1.setRPY(0, 0, xyw.w);
+    odom_tf.transform.rotation = tf2::toMsg(q1);
+    
+    tf_broadcaster_->sendTransform(odom_tf);
 }
 
 void
@@ -305,20 +327,7 @@ Simple_Gps_Localizer::kalman_filter()
     // publish pose
     //RCLCPP_INFO(get_logger(), "Filter pose: %.4f, %.4f, %.4f", xyw.x, xyw.y, xyw.w);
 
-    geometry_msgs::msg::TransformStamped odom_tf;
-    odom_tf.header.stamp = now();
-    odom_tf.header.frame_id = "odom";
-    odom_tf.child_frame_id = "base_footprint";
-
-    odom_tf.transform.translation.x = xyw.x;
-    odom_tf.transform.translation.y = xyw.y;
-    odom_tf.transform.translation.z = 0.0;
-
-    tf2::Quaternion q;
-    q.setRPY(0, 0, xyw.w);
-    odom_tf.transform.rotation = tf2::toMsg(q);
     
-    tf_broadcaster_->sendTransform(odom_tf);
     publish_position(xyw);
 }
 

@@ -46,8 +46,10 @@ def generate_launch_description():
     #                   'capacitive_touch',
     #                   'laser_1d',
 
-    lifecycle_nodes = ['esp_serial',
-                       'wheel_driver']
+    lifecycle_nodes = ['gps_serial',
+                       'gps_sensor',
+                       'feather_serial',
+                       'imu_bno055']
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
@@ -116,13 +118,13 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[
                 {"port": gps_port,
-                 "baud_rate": 115200,
+                 "baud_rate": 9600,
                  "read_write": "ro",
                  "logfile": os.path.join('/home/ipp/dev_ws','log','serial_gps.log'),
                  "raw": True,
                  "sframe": '\n',
                  "stframe": '\n',
-                 "log": True}]),
+                 "log": False}]),
 
         Node(
             package="gps",
@@ -131,8 +133,9 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
             parameters=[
-                {"port": gps_port,
-                 "xml_file": '/home/ipp/dev_ws/src/ros2-sgd4.0/sensors/gps/data/nmea.xml'}]),
+                {'port': gps_port,
+                 'xml_file': '/home/ipp/dev_ws/src/ros2-sgd4.0/sensors/gps/data/nmea.xml',
+                 'output_folder': os.path.join('/home/ipp/dev_ws','log')}]),
 
         # Create nodes for capacitive touch and laser 1D
         Node(
@@ -149,7 +152,18 @@ def generate_launch_description():
                 "raw": False,
                 "sframe": '$',
                 "stframe": '%',
-                "log": True}]),
+                "log": False}]),
+
+        Node(
+            package='imu',
+            executable='imu_bno055',
+            name='imu_bno055',
+            output='screen',
+            emulate_tty=True,
+            parameters=[{'port': feather_port,
+                         'config_mode': False,
+            		     #'use_sim_time': use_sim_time,
+                         'output_folder': os.path.join('/home/ipp/dev_ws','log')}]),
 
         Node(
             package="cap_touch",
@@ -185,15 +199,6 @@ def generate_launch_description():
                          'sframe': '$',
                          'stframe': '%',
                          'log': False}]),
-        
-        Node(
-            package='imu',
-            executable='imu_bno055',
-            name='imu_bno055',
-            output='screen',
-            parameters=[{'port': esp_port,
-                         'config_mode': False,
-            		     'use_sim_time': use_sim_time}]),
 
         Node(
             package='sgd_lc',
@@ -207,6 +212,14 @@ def generate_launch_description():
             		 {'use_sim_time': use_sim_time}]),
                      
         # TODO: Create nodes for lidar
+
+
+        Node(
+            package='sgd_util',
+            executable='logger',
+            name='logger',
+            output='screen',
+            parameters=[{'output_folder': os.path.join('/home/ipp/dev_ws','log')}]),
 
 
         Node(

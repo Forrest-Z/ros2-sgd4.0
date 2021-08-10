@@ -33,7 +33,7 @@ Logger::on_configure(const rclcpp_lifecycle::State & state)
     
     out_imu_.open(output_folder_ + "/imu_" + time + ".log", std::ios::out | std::ios::trunc);
     out_gps_.open(output_folder_ + "/gps_" + time + ".log", std::ios::out | std::ios::trunc);
-    out_odom_.open(output_folder_ + "/odom_" + time + ".log", std::ios::out | std::ios::trunc);
+    //out_odom_.open(output_folder_ + "/odom_" + time + ".log", std::ios::out | std::ios::trunc);
 
     // Initialize parameters, pub/sub, services, etc.
     init_pub_sub();
@@ -72,7 +72,7 @@ Logger::on_shutdown(const rclcpp_lifecycle::State & state)
 
     out_imu_.close();
     out_gps_.close();
-    out_odom_.close();
+    //out_odom_.close();
 
     return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -97,8 +97,8 @@ Logger::init_pub_sub()
         std::bind(&Logger::imu_callback, this, std::placeholders::_1));
 
     // Receive velocity command from local controller
-    sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>(odom_topic_, default_qos,
-        std::bind(&Logger::odom_callback, this, std::placeholders::_1));
+    //sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>(odom_topic_, default_qos,
+    //    std::bind(&Logger::odom_callback, this, std::placeholders::_1));
 }
 
 void
@@ -127,9 +127,9 @@ void
 Logger::odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg_)
 {
     // lin velocity x and ang velocity z
-    out_odom_ << time_to_string();
-    out_odom_ << std::to_string(msg_->twist.twist.linear.x) << ",";
-    out_odom_ << std::to_string(msg_->twist.twist.angular.z) << "\n";
+    //out_odom_ << time_to_string();
+    //out_odom_ << std::to_string(msg_->twist.twist.linear.x) << ",";
+    //out_odom_ << std::to_string(msg_->twist.twist.angular.z) << "\n";
 }
 
 std::string

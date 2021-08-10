@@ -36,10 +36,15 @@ protected:
     nav2_util::CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
     nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
 
+    std::fstream out_gps_;
+    double time_at_start_;
+    std::string time_to_string();
+
     //! \brief Init parameters
     void init_parameters();
     std::string port_;
     std::string xml_file_;
+    std::string output_folder_;
 
     //! \brief Init Publisher and subscriber
     void init_pub_sub();
@@ -47,7 +52,7 @@ protected:
     rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::NavSatFix>::SharedPtr publisher_;
     rclcpp::Subscription<sgd_msgs::msg::Serial>::SharedPtr subscriber_;
     rclcpp::TimerBase::SharedPtr timer_;
-    u_int8_t gps_counter_;
+    int gps_counter_;
     
     void init_transforms();
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;

@@ -154,20 +154,20 @@
             <linear_acceleration>
               <x>
                 <noise type="gaussian">
-                  <mean>-0.00055</mean>
-                  <stddev>3.54e-3</stddev>
+                  <mean>-0.0</mean>
+                  <stddev>3.54e-1</stddev>
                 </noise>
               </x>
               <y>
                 <noise type="gaussian">
                   <mean>0.0</mean>
-                  <stddev>3.98e-3</stddev>
+                  <stddev>3.98e-1</stddev>
                 </noise>
               </y>
               <z>
                 <noise type="gaussian">
-                  <mean>-9.80999</mean>
-                  <stddev>4.8e-4</stddev>
+                  <mean>0.0</mean>
+                  <stddev>4.8e-1</stddev>
                 </noise>
               </z>
             </linear_acceleration>
@@ -205,7 +205,7 @@
       </link>
 
       <link name="base_scan">
-        <pose>0.6 -0 0.3 0 -0 0</pose>
+        <pose>0.6 -0 0.4 0 -0 0</pose>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
@@ -547,13 +547,13 @@
         <wheel_separation>0.71</wheel_separation>
         <wheel_diameter>0.2165</wheel_diameter>
 
-        <max_wheel_torque>10</max_wheel_torque>
+        <max_wheel_torque>20</max_wheel_torque>
         <max_wheel_acceleration>0.2</max_wheel_acceleration>
 
-        <command_topic>cmd_vel</command_topic>
+        <command_topic>cmd_vel9</command_topic>
 
         <publish_odom>true</publish_odom>
-        <publish_odom_tf>false</publish_odom_tf>
+        <publish_odom_tf>true</publish_odom_tf>
         <publish_wheel_tf>false</publish_wheel_tf>
 
         <odometry_topic>odom</odometry_topic>

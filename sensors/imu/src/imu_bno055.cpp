@@ -18,7 +18,7 @@ IMU_BNO055::IMU_BNO055():
     add_parameter("acc_var", rclcpp::ParameterValue(var));
     add_parameter("mag_var", rclcpp::ParameterValue(var));
     add_parameter("gyr_var", rclcpp::ParameterValue(var));
-
+    add_parameter("output_folder", rclcpp::ParameterValue("log"));
 }
 
 IMU_BNO055::~IMU_BNO055()
@@ -30,6 +30,8 @@ nav2_util::CallbackReturn
 IMU_BNO055::on_configure(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Configuring");
+    double time_at_start_ = round(now().nanoseconds() / 1.0E6);
+    std::string time = std::to_string(time_at_start_); // time in millis
 
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
@@ -39,6 +41,8 @@ IMU_BNO055::on_configure(const rclcpp_lifecycle::State & state)
     mean_acc = Vector3();
     mean_gyr = Vector3();
     mean_hea = Vector3();
+
+    out_imu_.open(output_folder_ + "/imu_" + time + ".log", std::ios::out | std::ios::trunc);
 
     return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -78,6 +82,7 @@ nav2_util::CallbackReturn
 IMU_BNO055::on_shutdown(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Shutdown");
+    out_imu_.close();
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
@@ -86,6 +91,7 @@ IMU_BNO055::init_parameters()
 {
     get_parameter("port", port_);
     get_parameter("config_mode", config_mode_);
+    get_parameter("output_folder", output_folder_);
 }
 
 void
@@ -123,6 +129,8 @@ IMU_BNO055::on_serial_received(const sgd_msgs::msg::Serial::SharedPtr msg)
     imu_msg.header.stamp = now();
     imu_msg.header.frame_id = "imu";
 
+    geometry_msgs::msg::Vector3 heading;
+
     for (std::sregex_iterator i = begin; i != end; i++) {
         std::smatch match = *i;
         const char *c = match[1].str().c_str();
@@ -133,14 +141,18 @@ IMU_BNO055::on_serial_received(const sgd_msgs::msg::Serial::SharedPtr msg)
             imu_msg.linear_acceleration = data_to_vector(match[2]);
             break;
 
-        case 'H':   // heading in quaternions
-            imu_msg.orientation = data_to_quat(match[2]);
+        case 'H':   // heading
+            heading = data_to_vector(match[2]);
             break;
 
         case 'G':   // gyroscope
             imu_msg.angular_velocity = data_to_vector(match[2]);
             break;
         
+        case 'Q':   // heading in quaternions
+            imu_msg.orientation = data_to_quat(match[2]);
+            break;
+
         case 'C':   // calibration 0-255
             {
                 u_int16_t cal = std::stoi(match[2]);
@@ -159,7 +171,18 @@ IMU_BNO055::on_serial_received(const sgd_msgs::msg::Serial::SharedPtr msg)
             break;
         }
     }
-    
+
+    out_imu_ << time_to_string();
+    out_imu_ << std::to_string(acc_calibration) << ",";
+    out_imu_ << std::to_string(gyr_calibration) << ",";
+    out_imu_ << std::to_string(hea_calibration) << ",";
+    out_imu_ << vec3_to_string(imu_msg.linear_acceleration) << ",";
+    out_imu_ << vec3_to_string(imu_msg.angular_velocity) << ",";
+    out_imu_ << std::to_string(imu_msg.orientation.w) << ",";
+    out_imu_ << std::to_string(imu_msg.orientation.x) << ",";
+    out_imu_ << std::to_string(imu_msg.orientation.y) << ",";
+    out_imu_ << std::to_string(imu_msg.orientation.z) << "\n";
+
     if (std::min(acc_calibration, std::min(hea_calibration, gyr_calibration)) < 2 && !system_calibrated)
     {
         if (now().seconds() > last_calib_msg_.seconds() + 2)
@@ -180,7 +203,8 @@ IMU_BNO055::on_serial_received(const sgd_msgs::msg::Serial::SharedPtr msg)
     tf2::Matrix3x3 m(q);
     double roll, pitch, yaw;
     m.getRPY(roll, pitch, yaw);
-    //RCLCPP_INFO(get_logger(), "IMU r: %.2f, p: %.2f, y: %.2f",roll/PI*180, pitch/PI*180, yaw/PI*180);
+    //RCLCPP_INFO(get_logger(), "IMU deg: %.2f, %.2f, %.2f; raw: %.2f, %.2f, %.2f",
+    //        roll/PI*180, pitch/PI*180, yaw/PI*180, heading.x, heading.y, heading.z);
 
     if (config_mode_ && now().seconds() > (last_calib_msg_.seconds() + 2))
     {
@@ -278,10 +302,8 @@ IMU_BNO055::data_to_quat(std::string data)
     auto begin = std::sregex_iterator(data.begin(), data.end(), reg);
     auto end = std::sregex_iterator();
 
-    int k = 0;
-    double r,p,y;
-    
-    tf2::Quaternion q;    
+    int k = 0;    
+    tf2::Quaternion q; 
     for (std::sregex_iterator i = begin; i != end; ++i) {
         std::smatch match = *i;
 
@@ -300,21 +322,23 @@ IMU_BNO055::data_to_quat(std::string data)
         switch (k)
         {
         case 0:
-            r = d / 180 * PI;
+            q.setW(d);
             break;
         case 1:
-            p = d / 180 * PI;
+            q.setX(d);
             break;
         case 2:
-            y = d / 180 * PI;
+            q.setY(d);
+            break;
+        case 3:
+            q.setZ(d);
             break;
         default:
             break;
         }
         k++;
     }
-    //RCLCPP_INFO(get_logger(), "IMU raw r: %.2f, p: %.2f, y: %.2f", r, p, y);
-    q.setRPY(r, p, y);
+    q.normalize();
     return tf2::toMsg(q);
 }
 
@@ -357,6 +381,23 @@ IMU_BNO055::quat_to_euler(geometry_msgs::msg::Quaternion q)
     m.getRPY(e.x, e.y, e.z);
 
     return e;
+}
+
+std::string
+IMU_BNO055::time_to_string()
+{
+  long t = round(now().nanoseconds() / 1.0E6);
+  std::string ts = std::to_string(t);
+  ts.append(",");
+  return ts;
+}
+
+std::string
+IMU_BNO055::vec3_to_string(geometry_msgs::msg::Vector3 vec3)
+{
+  std::string s;
+  s = std::to_string(vec3.x) + "," + std::to_string(vec3.y) + "," + std::to_string(vec3.z);
+  return s;
 }
 
 }   // namespace

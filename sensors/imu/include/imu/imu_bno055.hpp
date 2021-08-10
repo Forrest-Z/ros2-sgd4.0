@@ -4,6 +4,8 @@
 #include <regex>
 #include <string>
 #include <cmath>
+#include <iostream>
+#include <fstream>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
@@ -83,6 +85,12 @@ protected:
     Vector3 meas_gyr[100];
     Vector3 mean_acc, mean_hea, mean_gyr;
     const int max_cov_count = 100;
+
+    // Logging
+    std::string output_folder_;
+    std::fstream out_imu_;
+    std::string time_to_string();
+    std::string vec3_to_string(geometry_msgs::msg::Vector3 vec3);
 };
 
 }

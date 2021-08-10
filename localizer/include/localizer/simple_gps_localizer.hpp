@@ -82,6 +82,8 @@ protected:
     double x_odom_, y_odom_, angle_odom_;
     bool is_odom_avail_, is_imu_avail_;
 
+    xy_pos odom_initial_;
+
     nav2_util::CallbackReturn wait_for_transform();
 
     void gps_sub_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg_);

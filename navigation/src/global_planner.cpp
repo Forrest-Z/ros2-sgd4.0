@@ -190,18 +190,21 @@ Global_Planner_OSM::computePath(const std::shared_ptr<geometry_msgs::msg::PointS
     in.push_back(to_string(dest.second));
 
     // build message
-    std::string s = "{";
-    for (uint i = 0; i < in.size(); i++)
+    /*
     {
-        if (i > 0 && in[i].size() > 0)
-        {
-            s.append(",");
-        }
-        s.append(std::to_string(i) + ":" + in[i]);
+      "mode": 0,
+      "username": "default",
+      "start": [53.1234567, 10.1234567],
+      "dest": [53.9876543, 10.9876543],
+      "address": "Berliner Tor 21"
     }
-
-    s.append("}");
-    RCLCPP_DEBUG(get_logger(), "Send message %s", s.c_str());
+    */
+    std::string s = "{\n  \"mode\": 0,\n  \"username\":\"default\",\n  \"start\": [";
+    s.append(to_string(latlon.first) + "," + to_string(latlon.second) + "],\n");
+    s.append("  \"dest\": [" + to_string(dest.first) + "," + to_string(dest.second) + "],\n");
+    s.append("  \"address\": \"\"\n}");
+    
+    RCLCPP_INFO(get_logger(), "Send message %s", s.c_str());
     send(sock , s.c_str() , s.length() , 0 );
     s.clear();
 

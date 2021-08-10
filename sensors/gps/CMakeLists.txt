@@ -14,6 +14,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(sgd_util REQUIRED)
 find_package(sgd_msgs REQUIRED)
 find_package(rapidxml REQUIRED)
@@ -48,6 +49,7 @@ install(TARGETS ${library_name}
 ament_target_dependencies(gps_transform
     rclcpp
     sensor_msgs
+    geometry_msgs
     sgd_util
 )
 

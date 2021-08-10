@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(sgd_lc)
+project(example_pkg)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -13,64 +13,34 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(sgd_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(nav_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
-find_package(rclcpp_action REQUIRED)
-find_package(nav2_msgs REQUIRED)
-find_package(sgd_msgs REQUIRED)
 
 include_directories(include)
 
-# add executable
-add_executable(subsum_controller src/subsum_controller.cpp)
-ament_target_dependencies(subsum_controller
+set(executable_name example_node)
+
+set(dependencies
   rclcpp
   geometry_msgs
   nav2_util
-)
-
-# add executable
-add_executable(wheel_driver src/wh_f-cruiser.cpp)
-ament_target_dependencies(wheel_driver
-  rclcpp
-  sgd_msgs
-  geometry_msgs
-  nav_msgs
-  sensor_msgs
   tf2_ros
   tf2_geometry_msgs
-  nav2_util
 )
 
 # add executable
-add_executable(waypoint_follower src/follow_waypoints_action_server.cpp)
-ament_target_dependencies(waypoint_follower
-  rclcpp
-  rclcpp_action
-  nav2_msgs
-  nav2_util
-  geometry_msgs
-  sgd_msgs
-)
+add_executable(${executable_name} src/example_node.cpp)
+ament_target_dependencies(example_node ${dependencies})
 
 install(
-  TARGETS subsum_controller wheel_driver waypoint_follower
+  TARGETS ${executable_name}
   DESTINATION lib/${PROJECT_NAME})
   
 install(
   DIRECTORY include/
   DESTINATION include/)
-
-install(
-  DIRECTORY launch
-  DESTINATION share/${PROJECT_NAME}
-)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

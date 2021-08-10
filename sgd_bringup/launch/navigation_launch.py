@@ -35,10 +35,11 @@ def generate_launch_description():
     default_bt_xml_filename = LaunchConfiguration('default_bt_xml_filename')
     map_subscribe_transient_local = LaunchConfiguration('map_subscribe_transient_local')
 
-    lifecycle_nodes = [#'controller_server',
+    lifecycle_nodes = ['subsum_controller',
+                       'controller_server',
                        'planner_server',
-                       #'recoveries_server',
-                       #'bt_navigator',
+                       'recoveries_server',
+                       'bt_navigator',
                        'waypoint_follower',
                        'osm_planner']
                        #'logger']
@@ -98,8 +99,18 @@ def generate_launch_description():
             description='Whether to set the map subscriber QoS to transient local'),
 
         Node(
+            package='sgd_lc',
+            executable='subsum_controller',
+            name='subsum_controller',
+            output='screen',
+            parameters=[
+                {'topic_layer9': 'cmd_vel'}
+            ]),
+
+        Node(
             package='nav2_controller',
             executable='controller_server',
+            name='controller_server',
             output='screen',
             parameters=[configured_params],
             remappings=remappings),
@@ -128,27 +139,27 @@ def generate_launch_description():
             parameters=[configured_params],
             remappings=remappings),
 
-        #Node(
-        #    package='nav2_waypoint_follower',
-        #    executable='waypoint_follower',
-        #    name='waypoint_follower',
-        #    output='screen',
-        #    parameters=[configured_params],
-        #    remappings=remappings),
-
-        # Navigation test nodes
         Node(
-            package='sgd_lc',
+            package='nav2_waypoint_follower',
             executable='waypoint_follower',
             name='waypoint_follower',
             output='screen',
-            parameters=[{'out_topic': 'cmd_vel'},
-            		    {'speed_kp': 0.2},
-                        {'speed_ki': 0.1},
-            		    {'turn_kp': 0.5},
-                        {'turn_ki': 0.1},
-                        {'max_speed': 0.3},
-            		    {'use_sim_time': use_sim_time}]),
+            parameters=[configured_params],
+            remappings=remappings),
+
+        # Navigation test nodes
+        #Node(
+        #    package='sgd_lc',
+        #    executable='waypoint_follower',
+        #    name='waypoint_follower',
+        #    output='screen',
+        #    parameters=[{'out_topic': 'cmd_vel'},
+        #    		    {'speed_kp': 0.2},
+        #                {'speed_ki': 0.1},
+        #    		    {'turn_kp': 0.5},
+        #                {'turn_ki': 0.1},
+        #                {'max_speed': 0.3},
+        #    		    {'use_sim_time': use_sim_time}]),
 
         Node(
             package='navigation',
