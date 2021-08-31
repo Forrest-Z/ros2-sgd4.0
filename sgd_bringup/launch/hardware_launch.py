@@ -37,12 +37,12 @@ def generate_launch_description():
     feather_port = LaunchConfiguration('feather_port')
     esp_port = LaunchConfiguration('esp_port')
 
-    lifecycle_nodes = ['gps_serial',
-                       'gps_sensor',
+    lifecycle_nodes = [#'gps_serial',
+                       #'gps_sensor',
                        'esp_serial',
                        'imu_bno055',
-                       'wheel_driver']
-    #                   'feather_serial',
+                       'wheel_driver',
+                       'feather_serial']
     #                   'capacitive_touch',
     #                   'laser_1d',
 
@@ -64,13 +64,19 @@ def generate_launch_description():
         'autostart': autostart,
         'gps_port': '/dev/ttyACM0',
         'esp_port': '/dev/ttyUSB0',
-        'feather_port': '/dev/ttyACM1'}
+        'feather_port': '/dev/ttyACM0'}
 
     configured_params = RewrittenYaml(
             source_file=params_file,
             root_key=namespace,
             param_rewrites=param_substitutions,
             convert_types=True)
+
+    config = os.path.join(
+        bringup_dir,
+        'params',
+        'sick_tim_5xx.yaml'
+        )
 
     return LaunchDescription([
         # Set env var to print messages to stdout immediately
@@ -100,7 +106,7 @@ def generate_launch_description():
 
     	DeclareLaunchArgument(
 	        'feather_port',
-	        default_value='/dev/ttyACM1',
+	        default_value='/dev/ttyACM0',
 	        description='Port to communicate with feather M0'),
 
         DeclareLaunchArgument(
@@ -153,6 +159,15 @@ def generate_launch_description():
                 'use_sim_time': use_sim_time}]),
 
         Node(
+            package='imu',
+            executable='imu_bno055',
+            name='imu_bno055',
+            output='screen',
+            parameters=[{'port': esp_port,
+                         'config_mode': False,
+            		     'use_sim_time': use_sim_time}]),
+
+        Node(
             package="cap_touch",
             executable="capacitive_touch",
             name="capacitive_touch",
@@ -172,7 +187,6 @@ def generate_launch_description():
             parameters=[
                 {"port": feather_port}]),
 
-        # Create nodes for motor and TODO: IMU
         Node(
             package='sgd_util',
             executable='serial',
@@ -187,15 +201,6 @@ def generate_launch_description():
                          'stframe': '\n',
                          'log': False,
                          'use_sim_time': use_sim_time}]),
-        
-        Node(
-            package='imu',
-            executable='imu_bno055',
-            name='imu_bno055',
-            output='screen',
-            parameters=[{'port': esp_port,
-                         'config_mode': False,
-            		     'use_sim_time': use_sim_time}]),
 
         Node(
             package='sgd_lc',
@@ -215,6 +220,12 @@ def generate_launch_description():
             parameters=[{'output_folder': os.path.join('/home/ipp/dev_ws','log')}]),
                      
         # TODO: Create nodes for lidar
+        Node(
+            package='sick_scan2',
+            name = 'sick_scan2',
+            executable='sick_generic_caller',
+            output='screen',
+            parameters = [config]),
 
         Node(
             package='nav2_lifecycle_manager',

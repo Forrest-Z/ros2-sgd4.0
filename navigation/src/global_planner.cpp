@@ -147,7 +147,7 @@ Global_Planner_OSM::wait_for_transform()
 
     std::string err;
     int retries = 0;
-    while (rclcpp::ok() && !tf_buffer_->canTransform("base_footprint", "map", tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
+    while (rclcpp::ok() && !tf_buffer_->canTransform("base_link", "map", tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
         && retries < 10)
     {
         RCLCPP_INFO(this->get_logger(), "Timeout waiting for transform. Tf error: %s", err);
@@ -165,11 +165,11 @@ Global_Planner_OSM::computePath(const std::shared_ptr<geometry_msgs::msg::PointS
     double x_base_map, y_base_map;
     try
     {
-        geometry_msgs::msg::TransformStamped tf_base_map = tf_buffer_->lookupTransform("map", "base_footprint",
+        geometry_msgs::msg::TransformStamped tf_base_map = tf_buffer_->lookupTransform("map", "base_link",
                     rclcpp::Time(0), rclcpp::Duration(5,0));
         x_base_map = tf_base_map.transform.translation.x;
         y_base_map = tf_base_map.transform.translation.y;
-        RCLCPP_INFO(this->get_logger(), "Transform map -> base_footprint x: %f, %f", x_base_map, y_base_map);
+        RCLCPP_INFO(this->get_logger(), "Transform map -> base_link x: %f, %f", x_base_map, y_base_map);
     } catch (tf2::TransformException &ex)
     {
         RCLCPP_WARN(this->get_logger(), "%s", ex.what());
@@ -226,9 +226,16 @@ Global_Planner_OSM::computePath(const std::shared_ptr<geometry_msgs::msg::PointS
         {
             // end of message -> parse msg, compute waypoints and send to controller
             waypoints = get_waypoints_from_msg(wps);
-            publish_marker_array(&waypoints, publisher_waypoints_, 1.0, 1.0, 0.0);
-            start_waypoint_following(&waypoints);
-
+            if (waypoints.size() < 1)
+            {
+                RCLCPP_INFO(get_logger(), "No waypoints received!");
+            }
+            else
+            {
+                publish_marker_array(&waypoints, publisher_waypoints_, 1.0, 1.0, 0.0);
+                start_waypoint_following(&waypoints);
+            }
+            
             return;
         }
         else if (IN_MSG)
@@ -380,14 +387,21 @@ Global_Planner_OSM::get_waypoints_from_msg(std::string waypoints_)
 {
     std::vector<POSE> waypoints;
 
+    std::string wps_str = waypoints_.substr(waypoints_.find_first_of("[")+1,waypoints_.find_last_of("]")-1);
+    RCLCPP_INFO(get_logger(), "Parse message %s", wps_str.c_str());
+
     std::string token;
-    std::istringstream tokenStream(waypoints_);
-    while (std::getline(tokenStream, token, ';'))
+    std::istringstream tokenStream(wps_str);
+    while (std::getline(tokenStream, token, ']'))
     {
+        if (token.size() < 5)   continue;
+        token = token.substr(token.find_first_of("[")+1);
+
         int del_pos = token.find(',');
         POSE p;
-        p.lat = stod(token.substr(0,del_pos));
+        p.lat = stod(token.substr(0, del_pos));
         p.lon = stod(token.substr(del_pos + 1));
+        
         waypoints.push_back(p);
     }
     

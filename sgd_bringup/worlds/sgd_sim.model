@@ -256,7 +256,7 @@
               </horizontal>
             </scan>
             <range>
-              <min>0.15</min>
+              <min>0.5</min>
               <max>25</max>
               <resolution>0.06</resolution>
             </range>
@@ -538,7 +538,7 @@
         <pose>0 0 0 0 0 0</pose>
       </joint>
 
-      <plugin name="turtlebot3_diff_drive" filename="libgazebo_ros_diff_drive.so">
+      <plugin name="sgd_diff_drive" filename="libgazebo_ros_diff_drive.so">
         <update_rate>10</update_rate>
 
         <left_joint>wheel_left_joint</left_joint>
@@ -550,7 +550,7 @@
         <max_wheel_torque>20</max_wheel_torque>
         <max_wheel_acceleration>0.2</max_wheel_acceleration>
 
-        <command_topic>cmd_vel9</command_topic>
+        <command_topic>cmd_veltrn</command_topic>
 
         <publish_odom>true</publish_odom>
         <publish_odom_tf>true</publish_odom_tf>

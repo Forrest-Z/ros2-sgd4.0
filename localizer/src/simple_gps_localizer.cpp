@@ -167,7 +167,7 @@ Simple_Gps_Localizer::odom_sub_callback(const nav_msgs::msg::Odometry::SharedPtr
     geometry_msgs::msg::TransformStamped odom_tf;
     odom_tf.header.stamp = now();
     odom_tf.header.frame_id = "odom";
-    odom_tf.child_frame_id = "base_footprint";
+    odom_tf.child_frame_id = "base_link";
 
     odom_tf.transform.translation.x = x_odom_;
     odom_tf.transform.translation.y = y_odom_;
@@ -256,7 +256,7 @@ Simple_Gps_Localizer::wait_for_transform()
 
     std::string err;
     int retries = 0;
-    while (rclcpp::ok() && !tf_buffer_->canTransform("gps_link", "base_footprint", tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
+    while (rclcpp::ok() && !tf_buffer_->canTransform("gps_link", "base_link", tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
         && retries < 10)
     {
         RCLCPP_INFO(this->get_logger(), "Timeout waiting for transform. Tf error: %s", err);
@@ -267,10 +267,10 @@ Simple_Gps_Localizer::wait_for_transform()
 
     try
     {
-        geometry_msgs::msg::TransformStamped tf_base_gps_ = tf_buffer_->lookupTransform("gps_link", "base_footprint", rclcpp::Time(0), rclcpp::Duration(5,0));
+        geometry_msgs::msg::TransformStamped tf_base_gps_ = tf_buffer_->lookupTransform("gps_link", "base_link", rclcpp::Time(0), rclcpp::Duration(5,0));
         x_base_gps_ = tf_base_gps_.transform.translation.x;
         y_base_gps_ = tf_base_gps_.transform.translation.y;
-        RCLCPP_DEBUG(this->get_logger(), "Transform base_footprint -> base_link z: %f", tf_base_gps_.transform.translation.z);
+        RCLCPP_DEBUG(this->get_logger(), "Transform base_link -> base_link z: %f", tf_base_gps_.transform.translation.z);
     } catch (tf2::TransformException &ex)
     {
         RCLCPP_WARN(this->get_logger(), "%s", ex.what());

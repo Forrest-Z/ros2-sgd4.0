@@ -127,7 +127,7 @@ Follow_Waypoints_Action_Server::execute(const std::shared_ptr<GoalHandleWaypoint
         // get current position
         try
         {
-            geometry_msgs::msg::TransformStamped tf_base_map = tf_buffer_->lookupTransform("map", "base_footprint",
+            geometry_msgs::msg::TransformStamped tf_base_map = tf_buffer_->lookupTransform("map", "base_link",
                         rclcpp::Time(0), rclcpp::Duration(5,0));
             
             // calculate angle from quaternion
@@ -265,7 +265,7 @@ Follow_Waypoints_Action_Server::wait_for_transform()
 
     std::string err;
     int retries = 0;
-    while (rclcpp::ok() && !tf_buffer_->canTransform("base_footprint", "map", tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
+    while (rclcpp::ok() && !tf_buffer_->canTransform("base_link", "map", tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
         && retries < 10)
     {
         RCLCPP_INFO(this->get_logger(), "Timeout waiting for transform. Tf error: %s", err);

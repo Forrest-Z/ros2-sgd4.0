@@ -159,7 +159,7 @@ WH_Fcruiser::publish_motordata()
     double set_r_speed = wheel_r_controller_->next(meas_r_, 0.1);
     double set_l_speed = wheel_l_controller_->next(meas_l_, 0.1);
 
-    RCLCPP_INFO(get_logger(), "Messung: %f, %f; next: %f, %f", meas_r_, meas_l_, set_r_speed, set_l_speed);
+    //RCLCPP_INFO(get_logger(), "Messung: %f, %f; next: %f, %f", meas_r_, meas_l_, set_r_speed, set_l_speed);
     int steer = round(set_r_speed - set_l_speed);
     int speed = round((set_r_speed + set_l_speed) / 2);
 
@@ -229,7 +229,7 @@ WH_Fcruiser::on_motor_received(const sgd_msgs::msg::Serial::SharedPtr msg)
     nav_msgs::msg::Odometry odom;
     odom.header.stamp = now();
     odom.header.frame_id = "odom";
-    odom.child_frame_id = "base_footprint";
+    odom.child_frame_id = "base_link";
     // Twist relative to child_frame_id
     odom.twist.twist.angular.x = 0.0;
     odom.twist.twist.angular.y = 0.0;
@@ -250,7 +250,7 @@ WH_Fcruiser::on_motor_received(const sgd_msgs::msg::Serial::SharedPtr msg)
     //geometry_msgs::msg::TransformStamped odom_tf;
     //odom_tf.header.stamp = now();
     //odom_tf.header.frame_id = "odom";
-    //odom_tf.child_frame_id = "base_footprint";
+    //odom_tf.child_frame_id = "base_link";
 
     //odom_tf.transform.translation.x = odom.pose.pose.position.x;
     //odom_tf.transform.translation.y = odom.pose.pose.position.y;

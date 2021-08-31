@@ -84,7 +84,7 @@ Subsum_Controller::on_shutdown(const rclcpp_lifecycle::State & state)
 void
 Subsum_Controller::init_pub_sub()
 {
-    pub_cmd_vel = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", default_qos);
+    pub_cmd_vel = this->create_publisher<geometry_msgs::msg::Twist>("cmd_veltrn", default_qos);
 
     for (uint8_t i = 0; i < layer_topics.size(); i++)
     {   

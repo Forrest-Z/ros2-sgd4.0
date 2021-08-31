@@ -550,7 +550,7 @@
         <max_wheel_torque>20</max_wheel_torque>
         <max_wheel_acceleration>0.2</max_wheel_acceleration>
 
-        <command_topic>cmd_vel</command_topic>
+        <command_topic>cmd_vel_turn</command_topic>
 
         <publish_odom>true</publish_odom>
         <publish_odom_tf>false</publish_odom_tf>

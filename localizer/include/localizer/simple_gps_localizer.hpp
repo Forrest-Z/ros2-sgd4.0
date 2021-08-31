@@ -77,7 +77,7 @@ protected:
     std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
     geometry_msgs::msg::TransformStamped tf_map_odom_;
 
-    // static transform from base_footprint to gps_link
+    // static transform from base_link to gps_link
     double x_base_gps_, y_base_gps_;
     double x_odom_, y_odom_, angle_odom_;
     bool is_odom_avail_, is_imu_avail_;
