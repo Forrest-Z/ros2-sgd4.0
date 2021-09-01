@@ -138,7 +138,6 @@ def generate_launch_description():
         # default_value=os.path.join(get_package_share_directory('turtlebot3_gazebo'),
         #                            'worlds/turtlebot3_worlds/waffle.model'),
         default_value=os.path.join(bringup_dir, 'worlds', 'model_static.model'),
-        #default_value=os.path.join(bringup_dir, 'worlds', 'blindenhund_simulation.world'),
         description='Full path to world model file to load')
 
     # Specify the actions
@@ -182,16 +181,25 @@ def generate_launch_description():
                           'use_namespace': 'False',
                           'rviz_config': rviz_config_file}.items())
 
-    bringup_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(launch_dir, 'bringup_launch.py')),
-        launch_arguments={'namespace': namespace,
-                          'use_namespace': use_namespace,
-                          'slam': slam,
-                          'map': map_yaml_file,
-                          'use_sim_time': use_sim_time,
-                          'params_file': params_file,
-                          'default_bt_xml_filename': default_bt_xml_filename,
-                          'autostart': autostart}.items())
+    localization_cmd = IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(launch_dir, 'localization_launch.py')),
+            condition=IfCondition(PythonExpression(['not ', slam])),
+            launch_arguments={'namespace': namespace,
+                            'map': map_yaml_file,
+                            'use_sim_time': use_sim_time,
+                            'autostart': autostart,
+                            'params_file': params_file,
+                            'use_lifecycle_mgr': 'false'}.items())
+
+    navigation_cmd = IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(launch_dir, 'navigation_launch.py')),
+            launch_arguments={'namespace': namespace,
+                            'use_sim_time': use_sim_time,
+                            'autostart': autostart,
+                            'params_file': params_file,
+                            'default_bt_xml_filename': default_bt_xml_filename,
+                            'use_lifecycle_mgr': 'false',
+                            'map_subscribe_transient_local': 'true'}.items())
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -221,6 +229,7 @@ def generate_launch_description():
     # Add the actions to launch all of the navigation nodes
     ld.add_action(start_robot_state_publisher_cmd)
     ld.add_action(rviz_cmd)
-    ld.add_action(bringup_cmd)
+    ld.add_action(localization_cmd)
+    ld.add_action(navigation_cmd)
 
     return ld

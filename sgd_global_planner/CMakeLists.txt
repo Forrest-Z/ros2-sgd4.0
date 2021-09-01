@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(sgd_util)
+project(sgd_global_planner)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -13,54 +13,55 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
-find_package(nav_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(nav2_util REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(tf2 REQUIRED)
-find_package(tf2_geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(nav2_msgs REQUIRED)
+find_package(nav2_util REQUIRED)
+find_package(sgd_msgs REQUIRED)
+find_package(rapidxml REQUIRED)
+find_package(sgd_util REQUIRED)
 
 include_directories(include)
 
-add_library(sgd_util SHARED src/sgd_util.cpp)
-ament_target_dependencies(sgd_util
-  geometry_msgs
-  tf2
-  tf2_geometry_msgs)
-
-add_executable(logger src/logger.cpp)
-ament_target_dependencies(logger
+# add executable
+add_executable(global_planner src/global_planner.cpp)
+ament_target_dependencies(global_planner
   rclcpp
-  rclcpp_lifecycle
+  rclcpp_action
+  visualization_msgs
+  geometry_msgs
+  nav2_msgs
   nav2_util
-  sensor_msgs
-  nav_msgs)
+  sgd_msgs
+  rapidxml
+  sgd_util
+  tf2_ros
+)
 
-target_include_directories(sgd_util
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>)
+add_executable(navigator src/navigator.cpp)
+ament_target_dependencies(navigator
+  rclcpp
+  geometry_msgs
+  sensor_msgs
+  sgd_msgs
+  sgd_util
+)
 
 install(
-  TARGETS logger
+  TARGETS global_planner navigator
   DESTINATION lib/${PROJECT_NAME})
-
-ament_export_targets(export_sgd_util HAS_LIBRARY_TARGET)
-ament_export_dependencies(geometry_msgs tf2 tf2_geometry_msgs)
-
+  
 install(
   DIRECTORY include/
   DESTINATION include/)
 
 install(
-  TARGETS sgd_util
-  EXPORT export_sgd_util
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
-)
+  DIRECTORY maps
+  DESTINATION share/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -73,7 +74,4 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-#ament_export_include_directories(include)
-#ament_export_libraries(sgd_util_lib)
-#ament_export_dependencies(rclcpp)
 ament_package()

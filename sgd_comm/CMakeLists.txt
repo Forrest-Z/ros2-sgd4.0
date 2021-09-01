@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(sgd_util)
+project(sgd_comm)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -14,52 +14,41 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
-find_package(nav_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(tf2 REQUIRED)
-find_package(tf2_geometry_msgs REQUIRED)
+find_package(sgd_msgs REQUIRED)
 
 include_directories(include)
 
-add_library(sgd_util SHARED src/sgd_util.cpp)
-ament_target_dependencies(sgd_util
-  geometry_msgs
-  tf2
-  tf2_geometry_msgs)
-
-add_executable(logger src/logger.cpp)
-ament_target_dependencies(logger
+add_executable(serial src/serial.cpp)
+ament_target_dependencies(serial
   rclcpp
   rclcpp_lifecycle
   nav2_util
-  sensor_msgs
-  nav_msgs)
+  sgd_msgs)
 
-target_include_directories(sgd_util
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>)
+add_executable(serial_mock src/serial_mock.cpp)
+ament_target_dependencies(serial_mock
+  rclcpp
+  rclcpp_lifecycle
+  nav2_util
+  sgd_msgs)
 
 install(
-  TARGETS logger
+  TARGETS serial serial_mock
   DESTINATION lib/${PROJECT_NAME})
-
-ament_export_targets(export_sgd_util HAS_LIBRARY_TARGET)
-ament_export_dependencies(geometry_msgs tf2 tf2_geometry_msgs)
 
 install(
   DIRECTORY include/
   DESTINATION include/)
 
 install(
-  TARGETS sgd_util
-  EXPORT export_sgd_util
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
+  DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY log
+  DESTINATION share/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)

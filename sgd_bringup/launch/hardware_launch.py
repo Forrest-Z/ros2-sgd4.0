@@ -26,7 +26,7 @@ from nav2_common.launch import RewrittenYaml
 def generate_launch_description():
     # Get the launch directory
     bringup_dir = get_package_share_directory('sgd_bringup')
-    sgd_util_dir = get_package_share_directory('sgd_util')
+    sgd_comm_dir = get_package_share_directory('sgd_comm')
 
     namespace = LaunchConfiguration('namespace')
     use_sim_time = LaunchConfiguration('use_sim_time')
@@ -41,7 +41,7 @@ def generate_launch_description():
                        #'gps_sensor',
                        'esp_serial',
                        'imu_bno055',
-                       'wheel_driver',
+                       'wh_f-cruiser',
                        'feather_serial']
     #                   'capacitive_touch',
     #                   'laser_1d',
@@ -115,7 +115,7 @@ def generate_launch_description():
 	        description='Port to communicate with ESP8266'),
 
         Node(
-            package="sgd_util",
+            package="sgd_comm",
             executable="serial",
             name="gps_serial",
             output="screen",
@@ -142,7 +142,7 @@ def generate_launch_description():
 
         # Create nodes for capacitive touch and laser 1D
         Node(
-            package="sgd_util",
+            package="sgd_comm",
             executable="serial",
             name="feather_serial",
             output="screen",
@@ -188,7 +188,7 @@ def generate_launch_description():
                 {"port": feather_port}]),
 
         Node(
-            package='sgd_util',
+            package='sgd_comm',
             executable='serial',
             name='esp_serial',
             output='screen',
@@ -203,9 +203,9 @@ def generate_launch_description():
                          'use_sim_time': use_sim_time}]),
 
         Node(
-            package='sgd_lc',
-            executable='wheel_driver',
-            name='wheel_driver',
+            package='motorcontroller',
+            executable='wh_f-cruiser',
+            name='wh_f-cruiser',
             output='screen',
             parameters=[{'port': esp_port},
             		 {'motor_kp': 0.1},

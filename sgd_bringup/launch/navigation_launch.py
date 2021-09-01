@@ -26,7 +26,6 @@ from nav2_common.launch import RewrittenYaml
 def generate_launch_description():
     # Get the launch directory
     bringup_dir = get_package_share_directory('sgd_bringup')
-    nav_dir = get_package_share_directory('navigation')
 
     namespace = LaunchConfiguration('namespace')
     use_sim_time = LaunchConfiguration('use_sim_time')
@@ -99,7 +98,7 @@ def generate_launch_description():
             description='Whether to set the map subscriber QoS to transient local'),
 
         Node(
-            package='sgd_lc',
+            package='sgd_controller',
             executable='subsum_controller',
             name='subsum_controller',
             output='screen',
@@ -162,7 +161,7 @@ def generate_launch_description():
         #    		    {'use_sim_time': use_sim_time}]),
 
         Node(
-            package='navigation',
+            package='sgd_global_planner',
             executable='global_planner',
             name='osm_planner',
             output='screen',
