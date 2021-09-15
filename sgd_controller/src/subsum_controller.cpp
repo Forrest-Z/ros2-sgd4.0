@@ -142,7 +142,7 @@ int main(int argc, char const *argv[])
     rclcpp::init(argc, argv);
     std::shared_ptr<nav2_util::LifecycleNode> node = std::make_shared<nav_sgd::Subsum_Controller>();
 
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Motor driver startup completed.");
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Subsumption controller startup completed.");
 
     rclcpp::spin(node->get_node_base_interface());
     rclcpp::shutdown();

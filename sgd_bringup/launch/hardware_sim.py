@@ -37,12 +37,12 @@ def generate_launch_description():
     feather_port = LaunchConfiguration('feather_port')
     esp_port = LaunchConfiguration('esp_port')
 
-    lifecycle_nodes = [#'gps_serial',
-                       #'ublox6_gps',
-                       'esp_serial',
-                       'imu_bno055',
-                       'wh_fcruiser',
-                       'feather_serial']
+    lifecycle_nodes = ['wh_fcruiser', 'esp_serial']
+                       #'gps_sensor',
+                       #'esp_serial',
+                       #'imu_bno055',
+                       #'wh_fcruiser',
+                       #'feather_serial']
     #                   'capacitive_touch',
     #                   'laser_1d',
 
@@ -133,7 +133,7 @@ def generate_launch_description():
         Node(
             package="gps",
             executable="navilock_ublox6_gps",
-            name="ublox6_gps",
+            name="gps_sensor",
             output="screen",
             emulate_tty=True,
             parameters=[
@@ -208,8 +208,9 @@ def generate_launch_description():
             name='wh_fcruiser',
             output='screen',
             parameters=[{'port': esp_port},
-            		 {'motor_kp': 0.1},
-            		 {'max_speed': 200.0},
+            		 {'odom_topic': 'odom_hardware'},
+            		 {'battery_state_topic': 'battery'},
+                     {'vel_twist_topic': 'cmd_vel'},
             		 {'use_sim_time': use_sim_time}]),
 
         Node(

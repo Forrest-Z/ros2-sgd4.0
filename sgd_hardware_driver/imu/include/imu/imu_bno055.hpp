@@ -15,6 +15,7 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include "sensor_msgs/msg/temperature.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include "diagnostic_msgs/msg/diagnostic_status.hpp"
 
 namespace sgd_sensors
 {
@@ -50,14 +51,25 @@ protected:
     //! \brief Init parameters
     void init_parameters();
     std::string port_;
+    std::string imu_topic_;
+    std::string diagnostic_topic_;
+    bool log_;
     bool config_mode_;
+
+    // Logging
+    std::string output_folder_;
+    std::fstream out_imu_;
+    std::string time_to_string();
+    std::string vec3_to_string(geometry_msgs::msg::Vector3 vec3);
 
     //! \brief Init Publisher and subscriber
     void init_pub_sub();
     rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
+    rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Subscription<sgd_msgs::msg::Serial>::SharedPtr serial_sub_;
     rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
     rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::Temperature>::SharedPtr temp_pub_;
+    rclcpp_lifecycle::LifecyclePublisher<diagnostic_msgs::msg::DiagnosticStatus>::SharedPtr diagnostic_pub_;
 
     void on_serial_received(sgd_msgs::msg::Serial::SharedPtr msg);
     std::regex time_regex_;
@@ -68,6 +80,9 @@ protected:
     u_int8_t hea_calibration;
     bool system_calibrated = false;
     rclcpp::Time last_calib_msg_;
+
+    //! \brief Publish diagnostic information about sensor.
+    void publish_diagnostics();
 
     //! \brief Convert string to vector. String must contain comma separated values.
     //! \returns True if conversion was successful, false if sensor is not 
@@ -86,11 +101,6 @@ protected:
     Vector3 mean_acc, mean_hea, mean_gyr;
     const int max_cov_count = 100;
 
-    // Logging
-    std::string output_folder_;
-    std::fstream out_imu_;
-    std::string time_to_string();
-    std::string vec3_to_string(geometry_msgs::msg::Vector3 vec3);
 };
 
 }

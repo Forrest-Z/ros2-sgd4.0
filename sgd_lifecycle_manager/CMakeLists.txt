@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(sgd_localizer)
+project(sgd_lifecycle_manager)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -13,25 +13,25 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(nav2_util REQUIRED)
-find_package(sgd_util REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
+find_package(rapidxml REQUIRED)
 
 include_directories(include)
 
-# add executable
-add_executable(initial_pose_estimator src/initial_pose_estimator.cpp)
-ament_target_dependencies(initial_pose_estimator
+set(executable_name lifecycle_manager)
+
+set(dependencies
   rclcpp
-  geometry_msgs
-  sensor_msgs
-  nav2_util
-  sgd_util
+  lifecycle_msgs
+  rapidxml
 )
 
+# add executable
+add_executable(${executable_name} src/lifecycle_manager.cpp)
+ament_target_dependencies(lifecycle_manager ${dependencies})
+
 install(
-  TARGETS initial_pose_estimator
+  TARGETS ${executable_name}
   DESTINATION lib/${PROJECT_NAME})
   
 install(

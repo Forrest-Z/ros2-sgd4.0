@@ -12,13 +12,14 @@ Serial::Serial():
     rec_state_ = RECEIVER_STATUS::INITIAL;
 
     add_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
-    add_parameter("logfile", rclcpp::ParameterValue("serial.log"));
     add_parameter("baud_rate", rclcpp::ParameterValue(9600));
     add_parameter("read_write", rclcpp::ParameterValue("rw"));
     add_parameter("raw", rclcpp::ParameterValue(false));
     add_parameter("sframe", rclcpp::ParameterValue("$"));
     add_parameter("stframe", rclcpp::ParameterValue("%"));
+    
     add_parameter("log", rclcpp::ParameterValue(false));
+    add_parameter("logfile", rclcpp::ParameterValue("serial.log"));
 }
 
 Serial::~Serial()

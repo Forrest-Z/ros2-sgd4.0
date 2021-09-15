@@ -13,7 +13,7 @@ amcl:
     do_beamskip: false
     global_frame_id: "map"
     lambda_short: 0.1
-    laser_likelihood_max_dist: 2.0
+    laser_likelihood_max_dist: 5.0
     laser_max_range: 25.0
     laser_min_range: -1.0
     laser_model_type: "likelihood_field"
@@ -23,15 +23,15 @@ amcl:
     odom_frame_id: "odom"
     pf_err: 0.05
     pf_z: 0.99
-    recovery_alpha_fast: 0.0
-    recovery_alpha_slow: 0.0
+    recovery_alpha_fast: 0.1
+    recovery_alpha_slow: 0.001
     resample_interval: 1
     robot_model_type: "differential"
     save_pose_rate: 0.5
     sigma_hit: 0.2
     tf_broadcast: true
     transform_tolerance: 1.0
-    update_min_a: 0.2
+    update_min_a: 0.1
     update_min_d: 0.25
     z_hit: 0.5
     z_max: 0.05
@@ -101,8 +101,8 @@ controller_server:
     # Goal checker parameters
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 1.0
-      yaw_goal_tolerance: 1.0
+      xy_goal_tolerance: 0.5
+      yaw_goal_tolerance: 0.5
       stateful: True
     # DWB parameters
     FollowPath:
@@ -276,9 +276,9 @@ recoveries_server:
     transform_timeout: 0.1
     use_sim_time: true
     simulate_ahead_time: 2.0
-    max_rotational_vel: 1.0
-    min_rotational_vel: 0.4
-    rotational_acc_lim: 3.2
+    max_rotational_vel: 0.5
+    min_rotational_vel: 0.2
+    rotational_acc_lim: 1.6
 
 robot_state_publisher:
   ros__parameters:

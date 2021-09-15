@@ -32,7 +32,7 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time')
     autostart = LaunchConfiguration('autostart')
     params_file = LaunchConfiguration('params_file')
-    lifecycle_nodes = ['map_server', 'amcl'] #, 'amcl']
+    lifecycle_nodes = ['map_server', 'amcl', 'initial_pose_estimator']
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
@@ -92,15 +92,29 @@ def generate_launch_description():
             package='gps',
             executable='gps_transform',
             name='gps_transform',
-            output='screen'
+            output='screen',
+            parameters=[{'use_sim_time': use_sim_time}],
         ),
 
-        #Node(
-        #    package='robot_localization',
-        #    executable='navsat_transform_node',
-        #    name='navsat_transform',
-        #    output='screen',
-        #    parameters=[os.path.join(get_package_share_directory("robot_localization"), 'params', 'dual_ekf_navsat_example.yaml')]),
+        Node(
+            package='nav2_amcl',
+            executable='amcl',
+            name='amcl',
+            output='screen',
+            parameters=[configured_params],
+            remappings=remappings),
+
+        Node(
+            package='sgd_localizer',
+            executable='initial_pose_estimator',
+            name='initial_pose_estimator',
+            output='screen',
+            parameters=[
+                {"source_frame": "map",
+                 "gps_topic": "gps",
+                 "imu_topic": "imu",
+                 "initial_pose_topic": "initialpose",
+                 "use_sim_time": use_sim_time}]),
 
         Node(
             package='robot_localization',
@@ -119,26 +133,6 @@ def generate_launch_description():
         #    parameters=[{os.path.join(bringup_dir, 'params', 'dual_ekf.yaml')},
         #                {'use_sim_time': use_sim_time}],
         #    remappings=remappings),
-
-        #Node(
-        #    package='localizer',
-        #    executable='simple_gps_localizer',
-        #    name='simple_gps_localizer',
-        #    output='screen',
-        #    parameters=[
-        #        {"source_frame": "map",
-        #         "target_frame": "odom",
-        #         "gps_topic": "gps",
-        #         "odom_topic": "odom",
-        #         "use_sim_time": use_sim_time}]),
-        
-        Node(
-            package='nav2_amcl',
-            executable='amcl',
-            name='amcl',
-            output='screen',
-            parameters=[configured_params],
-            remappings=remappings),
 
         Node(
             package='nav2_lifecycle_manager',

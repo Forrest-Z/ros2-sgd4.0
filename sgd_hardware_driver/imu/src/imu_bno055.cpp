@@ -14,10 +14,15 @@ IMU_BNO055::IMU_BNO055():
 
     add_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
     add_parameter("config_mode", rclcpp::ParameterValue(false));
+    
     double var[3] = {0.0,0.0,0.0};
     add_parameter("acc_var", rclcpp::ParameterValue(var));
     add_parameter("mag_var", rclcpp::ParameterValue(var));
     add_parameter("gyr_var", rclcpp::ParameterValue(var));
+
+    // Logging and diagnostics
+    add_parameter("diagnostic_topic", rclcpp::ParameterValue("sensor_diagnostics"));
+    add_parameter("log", rclcpp::ParameterValue(false));
     add_parameter("output_folder", rclcpp::ParameterValue("log"));
 }
 
@@ -42,8 +47,11 @@ IMU_BNO055::on_configure(const rclcpp_lifecycle::State & state)
     mean_gyr = Vector3();
     mean_hea = Vector3();
 
-    out_imu_.open(output_folder_ + "/imu_" + time + ".log", std::ios::out | std::ios::trunc);
-
+    if (log_)
+    {
+        out_imu_.open(output_folder_ + "/imu_" + time + ".log", std::ios::out | std::ios::trunc);
+    }
+    
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
@@ -54,6 +62,7 @@ IMU_BNO055::on_activate(const rclcpp_lifecycle::State & state)
 
     imu_pub_->on_activate();
     temp_pub_->on_activate();
+    diagnostic_pub_->on_activate();
 
     return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -65,6 +74,7 @@ IMU_BNO055::on_deactivate(const rclcpp_lifecycle::State & state)
 
     imu_pub_->on_deactivate();
     temp_pub_->on_deactivate();
+    diagnostic_pub_->on_deactivate();
 
     return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -75,6 +85,7 @@ IMU_BNO055::on_cleanup(const rclcpp_lifecycle::State & state)
     RCLCPP_DEBUG(get_logger(), "Cleanup");
     imu_pub_.reset();
     temp_pub_.reset();
+    diagnostic_pub_.reset();
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
@@ -91,6 +102,9 @@ IMU_BNO055::init_parameters()
 {
     get_parameter("port", port_);
     get_parameter("config_mode", config_mode_);
+
+    get_parameter("diagnostic_topic", diagnostic_topic_);
+    get_parameter("log", log_);
     get_parameter("output_folder", output_folder_);
 }
 
@@ -398,6 +412,12 @@ IMU_BNO055::vec3_to_string(geometry_msgs::msg::Vector3 vec3)
   std::string s;
   s = std::to_string(vec3.x) + "," + std::to_string(vec3.y) + "," + std::to_string(vec3.z);
   return s;
+}
+
+void
+IMU_BNO055::publish_diagnostics()
+{
+
 }
 
 }   // namespace

@@ -284,49 +284,12 @@ robot_state_publisher:
   ros__parameters:
     use_sim_time: False
 
-gps_serial:
-  ros__parameters:
-    use_sim_time: False
-    port: "/dev/ttyACM0"
-    baud_rate: 9600
-    read_write: "ro"
-
-gps_sensor:
-  ros_parameters:
-    use_sim_time: false
-    port: "/dev/ttyACM0"
-    xml_file: "/home/ipp/dev_ws/src/ros2-sgd4.0/sensors/gps/data/nmea.xml"
-
-feather_serial:
-  ros_parameters:
-    use_sim_time: false
-    port: "/dev/ttyACM1"
-    baud_rate: 115200
-    read_write: "ro"
-
-capacitive_touch:
-  ros_parameters:
-    use_sim_time: false
-    port: "/dev/ttyACM1"
-    thresh: 2000
-    filter_i: 4
-
-laser_1d:
+wh_fcruiser:
   ros_parameters:
     use_sim_time: False
-    port: "/dev/ttyACM1"
-
-esp_serial:
-  ros_parameters:
-    use_sim_time: False
-    port: "/dev/ttyUSB0"
-    baud_rate: 115200
-    read_write: "rw"
-
-wheel_driver:
-  ros_parameters:
-    use_sim_time: False
-    port: "/dev/ttyUSB0"
-    motor_kp: 0.1
-    max_speed: 200.0
+    odom_topic: "odom"
+    battery_state_topic: "battery"
+    vel_twist_topic: "cmd_vel"
+    wheel_separation: 0.71
+    wheel_circumference: 0.68
 

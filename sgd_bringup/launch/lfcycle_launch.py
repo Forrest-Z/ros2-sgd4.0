@@ -140,73 +140,17 @@ def generate_launch_description():
         default_value=os.path.join(bringup_dir, 'worlds', 'model_static.model'),
         description='Full path to world model file to load')
 
-    # Specify the actions
-    start_gazebo_server_cmd = ExecuteProcess(
-        condition=IfCondition(use_simulator),
-        cmd=['gzserver', '-s', 'libgazebo_ros_init.so', world],
-        cwd=[launch_dir], output={'both': 'log'})
-
-    start_gazebo_client_cmd = ExecuteProcess(
-        condition=IfCondition(PythonExpression([use_simulator, ' and not ', headless])),
-        cmd=['gzclient'],
-        cwd=[launch_dir], output='screen')
-
-    # Configure playback recording
-    #ros_playback_cmd = ExecuteProcess(
-    #    cmd=['ros2', 'bag', 'record',
-    #         '-o', 'playback',
-    #         '/imu', '/gps', '/odom'],
-    #    output='screen'
-    #)
 
     urdf = os.path.join(bringup_dir, 'urdf', 'sgd_model.urdf')
 
-    start_robot_state_publisher_cmd = Node(
-        condition=IfCondition(use_robot_state_pub),
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        name='robot_state_publisher',
+    start_lifecycle_cmd = Node(
+        package='sgd_lifecycle_manager',
+        executable='lifecycle_manager',
+        name='lifecycle_manager',
         namespace=namespace,
         output='screen',
         emulate_tty=True,
-        parameters=[{"use_sim_time": use_sim_time}],
-                     #"robot_description": rsp_urdf}],
-        remappings=remappings,
-        arguments=[urdf])
-
-    rviz_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(launch_dir, 'rviz_launch.py')),
-        condition=IfCondition(use_rviz),
-        launch_arguments={'namespace': '',
-                          'use_namespace': 'False',
-                          'rviz_config': rviz_config_file}.items())
-
-    localization_cmd = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(launch_dir, 'localization_launch.py')),
-            condition=IfCondition(PythonExpression(['not ', slam])),
-            launch_arguments={'namespace': namespace,
-                            'map': map_yaml_file,
-                            'use_sim_time': use_sim_time,
-                            'autostart': autostart,
-                            'params_file': params_file,
-                            'use_lifecycle_mgr': 'false'}.items())
-
-    navigation_cmd = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(launch_dir, 'navigation_launch.py')),
-            launch_arguments={'namespace': namespace,
-                            'use_sim_time': use_sim_time,
-                            'autostart': autostart,
-                            'params_file': params_file,
-                            'default_bt_xml_filename': default_bt_xml_filename,
-                            'use_lifecycle_mgr': 'false',
-                            'map_subscribe_transient_local': 'true'}.items())
-
-    hardware_sim_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(launch_dir, 'hardware_sim.py')),
-        launch_arguments={'namespace': namespace,
-                          'map': map_yaml_file,
-                          'use_sim_time': use_sim_time,
-                          'params_file': params_file}.items())
+        parameters=[{"launch_file": os.path.join(bringup_dir, 'params', 'launch.xml')}])
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -229,15 +173,7 @@ def generate_launch_description():
     ld.add_action(declare_simulator_cmd)
     ld.add_action(declare_world_cmd)
 
-    # Add any conditioned actions
-    ld.add_action(start_gazebo_server_cmd)
-    ld.add_action(start_gazebo_client_cmd)  
-
     # Add the actions to launch all of the navigation nodes
-    ld.add_action(start_robot_state_publisher_cmd)
-    ld.add_action(rviz_cmd)
-    ld.add_action(localization_cmd)
-    ld.add_action(navigation_cmd)
-    ld.add_action(hardware_sim_cmd)
+    ld.add_action(start_lifecycle_cmd)
 
     return ld

@@ -2,23 +2,26 @@
  *  Some text
  */
 
-# include "motorcontroller/wh_f-cruiser.hpp"
+# include "motorcontroller/wh_fcruiser.hpp"
 
-namespace nav_sgd
+namespace sgd_hardware_drivers
 {
 
 using namespace std::chrono_literals;
 
-WH_Fcruiser::WH_Fcruiser() : nav2_util::LifecycleNode("wh_f-cruiser", "", true)
+WH_Fcruiser::WH_Fcruiser() : nav2_util::LifecycleNode("wh_fcruiser", "", true)
 {
     RCLCPP_DEBUG(get_logger(), "Creating");
     // Add parameters
     add_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
     add_parameter("msg_regex", rclcpp::ParameterValue("HS:(\\d+),Rm:(-?\\d+),Lm:(-?\\d+),V:(\\d+),T:(\\d+),S:(\\d?)"));
-    add_parameter("motor_kp", rclcpp::ParameterValue(0.3));
-    add_parameter("motor_ki", rclcpp::ParameterValue(0.1));
-    add_parameter("max_speed", rclcpp::ParameterValue(200.0));  // m/s
-    add_parameter("max_accel", rclcpp::ParameterValue(0.2));    // m/s^2
+    add_parameter("odom_topic", rclcpp::ParameterValue("odom"));
+    add_parameter("battery_state_topic", rclcpp::ParameterValue("battery"));
+    add_parameter("vel_twist_topic", rclcpp::ParameterValue("robo_move_cmd"));
+    add_parameter("wheel_separation", rclcpp::ParameterValue(0.71));
+    add_parameter("wheel_circumference", rclcpp::ParameterValue(0.68));
+
+    // Logging and diagnostics
 }
 
 WH_Fcruiser::~WH_Fcruiser()
@@ -37,8 +40,6 @@ WH_Fcruiser::on_configure(const rclcpp_lifecycle::State & state)
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
     init_pub_sub();
-    init_transforms();
-    init_controller();
 
     return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -79,7 +80,6 @@ WH_Fcruiser::on_cleanup(const rclcpp_lifecycle::State & state)
     pub_odom_.reset();
     pub_motor_.reset();
     pub_battery_.reset();
-    tf_broadcaster_.reset();
 
     return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -96,10 +96,11 @@ WH_Fcruiser::init_parameters()
 {
     get_parameter("port", port_);
     get_parameter("msg_regex", msg_regex_);
-    get_parameter("motor_kp", motor_kp_);
-    get_parameter("motor_ki", motor_ki_);
-    get_parameter("max_speed", max_speed_);
-    get_parameter("max_accel", max_accel_);
+    get_parameter("odom_topic", odom_topic_);
+    get_parameter("battery_state_topic", battery_state_topic_);
+    get_parameter("vel_twist_topic", vel_twist_topic_);
+    get_parameter("wheel_separation", wheel_separation_);
+    get_parameter("wheel_circumference", wheel_circum_);
 }
 
 void
@@ -118,56 +119,14 @@ WH_Fcruiser::init_pub_sub()
         std::bind(&WH_Fcruiser::on_motor_received, this, std::placeholders::_1));
 
     // Publish odometry
-    pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", default_qos);
+    pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>(odom_topic_, default_qos);
 
     // Receive velocity command from local controller
-    sub_data_ = this->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", default_qos,
+    sub_data_ = this->create_subscription<geometry_msgs::msg::Twist>(vel_twist_topic_, default_qos,
         std::bind(&WH_Fcruiser::on_cmd_vel_received, this, std::placeholders::_1));
 
     // Publish battery state
-    pub_battery_ = this->create_publisher<sensor_msgs::msg::BatteryState>("battery", default_qos);
-
-    timer_ = this->create_wall_timer(100ms, std::bind(&WH_Fcruiser::publish_motordata, this));
-}
-
-void
-WH_Fcruiser::init_transforms()
-{
-    // TODO get wheel separation etc from tf
-    wheel_sep_ = 0.71;
-    wheel_cir_ = 0.68;
-
-    tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(rclcpp_node_);
-}
-
-void
-WH_Fcruiser::init_controller()
-{
-    RCLCPP_DEBUG(get_logger(), "Initialise wheel controller with kp = %f and max speed = %f.",
-            motor_kp_, max_speed_);
-    wheel_r_controller_ = std::shared_ptr<PID_Controller>(new PID_Controller(motor_kp_, motor_ki_, 0));
-    wheel_l_controller_ = std::shared_ptr<PID_Controller>(new PID_Controller(motor_kp_, motor_ki_, 0));
-    wheel_r_controller_->set_max(max_speed_);
-    wheel_r_controller_->set_min(-max_speed_);
-    wheel_l_controller_->set_max(max_speed_);
-    wheel_l_controller_->set_min(-max_speed_);
-}
-
-void
-WH_Fcruiser::publish_motordata()
-{   
-    double set_r_speed = wheel_r_controller_->next(meas_r_, 0.1);
-    double set_l_speed = wheel_l_controller_->next(meas_l_, 0.1);
-
-    //RCLCPP_INFO(get_logger(), "Messung: %f, %f; next: %f, %f", meas_r_, meas_l_, set_r_speed, set_l_speed);
-    int steer = round(set_r_speed - set_l_speed);
-    int speed = round((set_r_speed + set_l_speed) / 2);
-
-    sgd_msgs::msg::Serial msg;
-    msg.header.stamp = now();
-    std::string m = std::to_string(speed) + "," + std::to_string(steer);
-    msg.msg = m;
-    pub_motor_->publish(msg);
+    pub_battery_ = this->create_publisher<sensor_msgs::msg::BatteryState>(battery_state_topic_, default_qos);
 }
 
 void
@@ -181,7 +140,7 @@ WH_Fcruiser::publish_battery_state(double voltage)
     msg.header.stamp = now();
     msg.header.frame_id = "odom";
 
-    if (batt_volt_ < 32)
+    if (batt_volt_ < 35)
     {
         RCLCPP_WARN(get_logger(), "Battery voltage low!");
         msg.power_supply_health = sensor_msgs::msg::BatteryState::POWER_SUPPLY_HEALTH_DEAD;
@@ -203,6 +162,9 @@ WH_Fcruiser::on_motor_received(const sgd_msgs::msg::Serial::SharedPtr msg)
     std::smatch matches;
     std::regex_search(msg->msg, matches, regex_);
     
+    double meas_r_ = 0.0;   // measurement from right wheel
+    double meas_l_ = 0.0;   // measurement from left wheel
+
     int v;
     if (matches.size() > 4) // ist gut
     {
@@ -212,19 +174,16 @@ WH_Fcruiser::on_motor_received(const sgd_msgs::msg::Serial::SharedPtr msg)
         v = std::stoi(matches[4]);
     } else { return; }
 
-    meas_r_ = meas_r_ * 2.26048;// + 37.0859 * sig(meas_r_);
-    meas_l_ = meas_l_ * 2.26048;// + 37.0859 * sig(meas_l_);
+    meas_r_ = meas_r_ / RIGHT_WHEEL_FACTOR;
+    meas_l_ = meas_l_ / LEFT_WHEEL_FACTOR;
 
-    // -> Winkelgeschwindigkeit [rad/s]
-    double w_r_ = (meas_r_ - sig(meas_r_) * 50) / (173 * wheel_cir_);
-    double w_l_ = (meas_l_ - sig(meas_l_) * 50) / (173 * wheel_cir_);
+    double speed_xy = ((meas_r_ + meas_l_) * wheel_circum_) / 2;
+    double twist = ((meas_r_ - meas_l_) * wheel_circum_) / wheel_separation_;
 
     // Calculate pose
     rclcpp::Duration delta_t(now() - last_odom_msg_.header.stamp);
 
-    double twist_ang_z = ((w_r_ - w_l_) * wheel_cir_) / wheel_sep_;
-    pose_orie_z += twist_ang_z * delta_t.seconds();
-    double speed_xy = ((w_r_ + w_l_) * wheel_cir_) / 2;
+    pose_orie_z += twist * delta_t.seconds();
 
     nav_msgs::msg::Odometry odom;
     odom.header.stamp = now();
@@ -233,13 +192,13 @@ WH_Fcruiser::on_motor_received(const sgd_msgs::msg::Serial::SharedPtr msg)
     // Twist relative to child_frame_id
     odom.twist.twist.angular.x = 0.0;
     odom.twist.twist.angular.y = 0.0;
-    odom.twist.twist.angular.z = twist_ang_z;
+    odom.twist.twist.angular.z = twist;
     odom.twist.twist.linear.x = speed_xy;
     odom.twist.twist.linear.y = 0.0;
     odom.twist.twist.linear.z = 0.0;
 
-    odom.pose.pose.position.x = last_odom_msg_.pose.pose.position.x + last_odom_msg_.twist.twist.linear.x * delta_t.seconds();
-    odom.pose.pose.position.y = last_odom_msg_.pose.pose.position.y + last_odom_msg_.twist.twist.linear.y * delta_t.seconds();
+    odom.pose.pose.position.x = last_odom_msg_.pose.pose.position.x + last_odom_msg_.twist.twist.linear.x * delta_t.seconds() * cos(pose_orie_z);
+    odom.pose.pose.position.y = last_odom_msg_.pose.pose.position.y + last_odom_msg_.twist.twist.linear.x * delta_t.seconds() * sin(pose_orie_z);
     odom.pose.pose.position.z = 0.142176;
     tf2::Quaternion q;
     q.setRPY(0, 0, pose_orie_z);
@@ -247,18 +206,7 @@ WH_Fcruiser::on_motor_received(const sgd_msgs::msg::Serial::SharedPtr msg)
 
     // TODO: covariance
 
-    //geometry_msgs::msg::TransformStamped odom_tf;
-    //odom_tf.header.stamp = now();
-    //odom_tf.header.frame_id = "odom";
-    //odom_tf.child_frame_id = "base_link";
-
-    //odom_tf.transform.translation.x = odom.pose.pose.position.x;
-    //odom_tf.transform.translation.y = odom.pose.pose.position.y;
-    //odom_tf.transform.translation.z = odom.pose.pose.position.z;
-    //odom_tf.transform.rotation = odom.pose.pose.orientation;
-
     pub_odom_->publish(odom);
-    //tf_broadcaster_->sendTransform(odom_tf);
     last_odom_msg_ = odom;
 
     publish_battery_state(v/100.0);
@@ -267,25 +215,13 @@ WH_Fcruiser::on_motor_received(const sgd_msgs::msg::Serial::SharedPtr msg)
 void
 WH_Fcruiser::on_cmd_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg)
 {
-    // speed and turn speed to rotations
-    double w_r = (msg->linear.x + (0.355 * msg->angular.z)) / 0.68;
-    double w_l = (2 * msg->linear.x) / 0.68 - w_r;
+    int speed = round(msg->linear.x * 100);
+    int steer = round(msg->angular.z * 100);
 
-    // set new reference to controller
-    double r = 173 * 0.68 * w_r;
-    double l = 173 * 0.68 * w_l;
-
-    double factor = (abs(r) > abs(l) ? abs(max_speed_/r) : abs(max_speed_/l));
-    if (abs(r) > max_speed_ || abs(l) > max_speed_)
-    {
-        r *= factor;
-        l *= factor;
-    }
-    
-    // TODO Vorzeichen anpassen
-    RCLCPP_INFO(get_logger(), "cmd_vel, ref: %f, %f, %f, %f", msg->linear.x, msg->angular.z, r, l);
-    wheel_r_controller_->set_reference(r);
-    wheel_l_controller_->set_reference(l);
+    sgd_msgs::msg::Serial serial;
+    serial.header.stamp = now();
+    serial.msg = std::to_string(speed) + "," + std::to_string(steer);
+    pub_motor_->publish(serial);
 }
 
 }
@@ -293,7 +229,7 @@ WH_Fcruiser::on_cmd_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg)
 int main(int argc, char const *argv[])
 {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<nav_sgd::WH_Fcruiser>();
+    auto node = std::make_shared<sgd_hardware_drivers::WH_Fcruiser>();
     rclcpp::spin(node->get_node_base_interface());
     rclcpp::shutdown();
 

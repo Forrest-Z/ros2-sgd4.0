@@ -50,7 +50,7 @@ def generate_launch_description():
     # TODO(orduno) Substitute with `PushNodeRemapping`
     #              https://github.com/ros2/launch_ros/issues/56
     remappings = [('/tf', 'tf'),
-                  ('/tf_static', 'tf_static')]
+                  ('/tf_staticwaypoint_follower', 'tf_static')]
 
     # Create our own temporary YAML files that include substitutions
     param_substitutions = {
@@ -145,20 +145,6 @@ def generate_launch_description():
             output='screen',
             parameters=[configured_params],
             remappings=remappings),
-
-        # Navigation test nodes
-        #Node(
-        #    package='sgd_lc',
-        #    executable='waypoint_follower',
-        #    name='waypoint_follower',
-        #    output='screen',
-        #    parameters=[{'out_topic': 'cmd_vel'},
-        #    		    {'speed_kp': 0.2},
-        #                {'speed_ki': 0.1},
-        #    		    {'turn_kp': 0.5},
-        #                {'turn_ki': 0.1},
-        #                {'max_speed': 0.3},
-        #    		    {'use_sim_time': use_sim_time}]),
 
         Node(
             package='sgd_global_planner',

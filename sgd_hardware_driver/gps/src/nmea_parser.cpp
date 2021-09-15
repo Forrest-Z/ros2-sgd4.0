@@ -28,7 +28,7 @@ Nmea_Parser::Nmea_Parser(std::string xml_file)
             }
             sentence_ids_.insert(std::make_pair(get_attribute_value(node, "name"), v));       
         }
-    }  
+    }
     msg_counter_ = 0;  
 }
 

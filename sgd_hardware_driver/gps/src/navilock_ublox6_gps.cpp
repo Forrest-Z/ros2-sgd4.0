@@ -23,7 +23,7 @@ Navilock_UBlox6_GPS::~Navilock_UBlox6_GPS()
 nav2_util::CallbackReturn
 Navilock_UBlox6_GPS::on_configure(const rclcpp_lifecycle::State & state)
 {
-    RCLCPP_INFO(get_logger(), "Configuring");
+    RCLCPP_DEBUG(get_logger(), "Configuring");
     time_at_start_ = round(now().nanoseconds() / 1.0E6);
     std::string time = std::to_string(time_at_start_); // time in millis
 
@@ -31,7 +31,6 @@ Navilock_UBlox6_GPS::on_configure(const rclcpp_lifecycle::State & state)
     init_parameters();
     init_pub_sub();
     init_transforms();
-    RCLCPP_INFO(get_logger(), "Xml-File: %s", xml_file_.c_str());
     nmea_parser_ = std::shared_ptr<Nmea_Parser>(new Nmea_Parser(xml_file_));
 
     out_gps_.open(output_folder_ + "/gps_" + time + ".log", std::ios::out | std::ios::trunc);
@@ -42,7 +41,7 @@ Navilock_UBlox6_GPS::on_configure(const rclcpp_lifecycle::State & state)
 nav2_util::CallbackReturn
 Navilock_UBlox6_GPS::on_activate(const rclcpp_lifecycle::State & state) 
 {
-    RCLCPP_INFO(get_logger(), "Activating");
+    RCLCPP_DEBUG(get_logger(), "Activating");
     publisher_->on_activate();
     return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -83,7 +82,7 @@ Navilock_UBlox6_GPS::init_parameters()
 void
 Navilock_UBlox6_GPS::init_pub_sub()
 {
-    RCLCPP_INFO(get_logger(), "Init pub sub");
+    RCLCPP_DEBUG(get_logger(), "Init pub sub");
     std::string serial_topic = "serial_" + port_.substr(port_.find_last_of("/")+1);
 
     publisher_ = this->create_publisher<sensor_msgs::msg::NavSatFix>("gps", default_qos);
@@ -91,15 +90,14 @@ Navilock_UBlox6_GPS::init_pub_sub()
         serial_topic, default_qos, std::bind(&Navilock_UBlox6_GPS::read_msg, this, std::placeholders::_1));
 
     gps_counter_ = 0;
-    RCLCPP_INFO(get_logger(), "Kurz vor Ende");
-    RCLCPP_INFO(get_logger(), "Initialised publisher on topic %s and subscriber on topic %s.",
+    RCLCPP_DEBUG(get_logger(), "Initialised publisher on topic %s and subscriber on topic %s.",
             "gps", serial_topic.c_str());
 }
 
 void
 Navilock_UBlox6_GPS::init_transforms()
 {
-    RCLCPP_INFO(get_logger(), "Init transforms");
+    RCLCPP_DEBUG(get_logger(), "Init transforms");
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(rclcpp_node_);
 }
 

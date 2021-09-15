@@ -25,8 +25,8 @@ find_package(rclcpp_lifecycle REQUIRED)
 include_directories(include)
 
 # add executable
-add_executable(wh_f-cruiser src/wh_f-cruiser.cpp)
-ament_target_dependencies(wh_f-cruiser
+add_executable(wh_fcruiser src/wh_fcruiser.cpp)
+ament_target_dependencies(wh_fcruiser
   rclcpp
   sgd_msgs
   geometry_msgs
@@ -38,7 +38,7 @@ ament_target_dependencies(wh_f-cruiser
 )
 
 install(
-  TARGETS wh_f-cruiser
+  TARGETS wh_fcruiser
   DESTINATION lib/${PROJECT_NAME})
   
 install(

@@ -94,7 +94,7 @@ Global_Planner_OSM::init_pub_sub()
     waypoint_follower_action_client_ = 
         rclcpp_action::create_client<nav2_msgs::action::FollowWaypoints>(
         client_node_,
-        "follow_waypoints");
+        "waypoint_follower");
     waypoint_follower_goal_ = nav2_msgs::action::FollowWaypoints::Goal();
 
     server_timeout_ = std::chrono::milliseconds(10);
@@ -232,7 +232,7 @@ Global_Planner_OSM::computePath(const std::shared_ptr<geometry_msgs::msg::PointS
             }
             else
             {
-                publish_marker_array(&waypoints, publisher_waypoints_, 1.0, 1.0, 0.0);
+                publish_marker_array(&waypoints, publisher_waypoints_, 0.3, 1.0, 0.0);
                 start_waypoint_following(&waypoints);
             }
             

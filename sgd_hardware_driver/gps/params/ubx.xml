@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ubx>
+
+<!-- 
+	0: genau eine Zahl
+	c: genau ein Zeichen
+	+: ein oder mehrmals das vorige Token
+	?: 0 oder ein Mal das vorige Token
+	*: 0 oder mehrmals das vorige Token
+	\: escape character
+ -->
+
+	<class name="NAV" id="0x01">
+
+		<message name="NAV-AOPTSTATUS" id="0x60" parse="false">
+			<param name="iTOW" format="U4"/>
+			<param name="config" format="U1"/>
+			<param name="status" format="U1"/>
+			<param name="reserved0" format="U1"/>
+			<param name="reserved1" format="U1"/>
+			<param name="avail" format="U4"/>
+			<param name="reserved2" format="U4"/>
+			<param name="reserved3" format="U4"/>
+		</message>
+
+		<message name="NAV-CLOCK" id="0x22" parse="false">
+			<param name="iTOW" format="U4"/>
+			<param name="clkB" format="I4"/>
+			<param name="clkD" format="I4"/>
+			<param name="tAcc" format="U4"/>
+			<param name="fAcc" format="U4"/>
+		</message>
+
+		<message name="NAV-DGPS" id="0x31" parse="false">
+			<param name="iTOW" format="U4"/>
+			<param name="age" format="I4"/>
+			<param name="baseId" format="I2"/>
+			<param name="baseHealth" format="I2"/>
+			<param name="numCh" format="U1"/>
+			<param name="status" format="U1"/>
+			<param name="reserved1" format="U2"/>
+			<!-- start of repeated block-->
+			<param name="svid" format="U1"/>
+			<param name="flags" format="U1"/>
+			<param name="ageC" format="U2"/>
+			<param name="prc" format="R4"/>
+			<param name="prrc" format="R4"/>
+			<!-- end of repeated block-->
+		</message>
+
+		<message name="NAV-DOP" id="0x04" parse="true">
+			<param name="iTOW" format="U4"/>
+			<param name="gDOP" format="U2"/>
+			<param name="pDOP" format="U2"/>
+			<param name="tDOP" format="U2"/>
+			<param name="vDOP" format="U2"/>
+			<param name="hDOP" format="U2"/>
+			<param name="nDOP" format="U2"/>
+			<param name="eDOP" format="U2"/>
+		</message>
+
+		<message name="NAV-EKFSTATUS" id="0x40" parse="false">
+			<param name="pulses" format="I4"/>
+			<param name="period" format="I4"/>
+			<param name="gyroMean" format="U4"/>
+			<param name="temperature" format="I2"/>
+			<param name="direction" format="I1"/>
+			<param name="calibStatus" format="X1"/>
+			<param name="pulseScale" format="I4"/>
+			<param name="gyroBias" format="I4"/>
+			<param name="gyroScale" format="I4"/>
+			<param name="accPulseScale" format="I2"/>
+			<param name="accGyroBias" format="I2"/>
+			<param name="accGyroScale" format="I2"/>
+			<param name="measUsed" format="X1"/>
+			<param name="reserved2" format="U1"/>
+		</message>
+
+		<message name="NAV-POSECEF" id="0x01" parse="false">
+		</message>
+
+		<message name="NAV-POSLLH" id="0x02" parse="true">
+			<param name="iTOW" format="U4"/>
+			<param name="lon" format="I4"/>
+			<param name="lat" format="I4"/>
+			<param name="height" format="I4"/>
+			<param name="hMSL" format="I4"/>
+			<param name="hAcc" format="U4"/>
+			<param name="vAcc" format="U4"/>
+		</message>
+
+		<message name="NAV-SBAS" id="0x32" parse="false">
+		</message>
+
+		<message name="NAV-SOL" id="0x06" parse="false">
+		</message>
+
+		<message name="NAV-STATUS" id="0x03" parse="false">
+			<param name="iTOW" format="U4"/>
+			<param name="gpsFix" format="U1"/>
+			<param name="flags" format="X1"/>
+			<param name="fixStat" format="X1"/>
+			<param name="flags2" format="X1"/>
+			<param name="ttff" format="U4"/>
+			<param name="msss" format="U4"/>
+		</message>
+
+		<message name="NAV-SVINFO" id="0x30" parse="false">
+		</message>
+
+		<message name="NAV-TIMEGPS" id="0x20" parse="false">
+		</message>
+
+		<message name="NAV-TIMEUTC" id="0x21" parse="false">
+		</message>
+
+		<message name="NAV-VELECEF" id="0x11" parse="false">
+		</message>
+
+		<message name="NAV-VELNED" id="0x12" parse="false">
+		</message>
+	
+	</class>
+
+</ubx>
