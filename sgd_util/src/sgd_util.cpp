@@ -4,11 +4,14 @@
 namespace sgd_util
 {
 
+#define ORIG_LAT 53.55526851472951
+#define ORIG_LON 10.021989122747957
+
 std::pair<double, double>
 WGS84_to_local(double lat, double lon)
 {
-  double x = (lon - 10.021944) * 66269.83554449;
-  double y = (lat - 53.555833) * 111293.78937166;
+  double x = (lon - ORIG_LON) * 66269.83554449;
+  double y = (lat - ORIG_LAT) * 111293.78937166;
 
   return std::make_pair(x,y);
 }
@@ -16,8 +19,11 @@ WGS84_to_local(double lat, double lon)
 std::pair<double, double>
 local_to_WGS84(double x, double y)
 {
-  double lat = y / 111293.78937166 + 53.555833;
-  double lon = x / 66269.83554449 + 10.021944;
+  // Nullpunkt: 53.55526851472951, 10.021989122747957
+
+  double dist_lat = 6378137 * 3.14159 / 180;
+  double lat = y / dist_lat + ORIG_LAT;
+  double lon = x / (dist_lat * cos(ORIG_LAT/180*3.14159)) + ORIG_LON;
 
   return std::make_pair(lat, lon);
 }

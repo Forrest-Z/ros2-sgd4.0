@@ -20,7 +20,6 @@ find_package(nav2_util REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
-find_package(sgd_msgs REQUIRED)
 
 include_directories(include)
 
@@ -29,20 +28,6 @@ ament_target_dependencies(sgd_util
   geometry_msgs
   tf2
   tf2_geometry_msgs)
-
-add_executable(serial src/serial.cpp)
-ament_target_dependencies(serial
-  rclcpp
-  rclcpp_lifecycle
-  nav2_util
-  sgd_msgs)
-
-add_executable(serial_mock src/serial_mock.cpp)
-ament_target_dependencies(serial_mock
-  rclcpp
-  rclcpp_lifecycle
-  nav2_util
-  sgd_msgs)
 
 add_executable(logger src/logger.cpp)
 ament_target_dependencies(logger
@@ -58,7 +43,7 @@ target_include_directories(sgd_util
     $<INSTALL_INTERFACE:include>)
 
 install(
-  TARGETS serial serial_mock logger
+  TARGETS logger
   DESTINATION lib/${PROJECT_NAME})
 
 ament_export_targets(export_sgd_util HAS_LIBRARY_TARGET)
@@ -69,16 +54,6 @@ install(
   DESTINATION include/)
 
 install(
-  DIRECTORY launch
-  DESTINATION share/${PROJECT_NAME}
-)
-
-install(
-  DIRECTORY log
-  DESTINATION share/${PROJECT_NAME}
-)
-
-install(
   TARGETS sgd_util
   EXPORT export_sgd_util
   LIBRARY DESTINATION lib
@@ -86,8 +61,6 @@ install(
   RUNTIME DESTINATION bin
   INCLUDES DESTINATION include
 )
-
-
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

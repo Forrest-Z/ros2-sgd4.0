@@ -26,7 +26,6 @@ from nav2_common.launch import RewrittenYaml
 def generate_launch_description():
     # Get the launch directory
     bringup_dir = get_package_share_directory('sgd_bringup')
-    nav_dir = get_package_share_directory('navigation')
 
     namespace = LaunchConfiguration('namespace')
     use_sim_time = LaunchConfiguration('use_sim_time')
@@ -35,7 +34,8 @@ def generate_launch_description():
     default_bt_xml_filename = LaunchConfiguration('default_bt_xml_filename')
     map_subscribe_transient_local = LaunchConfiguration('map_subscribe_transient_local')
 
-    lifecycle_nodes = ['controller_server',
+    lifecycle_nodes = ['subsum_controller',
+                       'controller_server',
                        'planner_server',
                        'recoveries_server',
                        'bt_navigator',
@@ -50,7 +50,7 @@ def generate_launch_description():
     # TODO(orduno) Substitute with `PushNodeRemapping`
     #              https://github.com/ros2/launch_ros/issues/56
     remappings = [('/tf', 'tf'),
-                  ('/tf_static', 'tf_static')]
+                  ('/tf_staticwaypoint_follower', 'tf_static')]
 
     # Create our own temporary YAML files that include substitutions
     param_substitutions = {
@@ -98,8 +98,18 @@ def generate_launch_description():
             description='Whether to set the map subscriber QoS to transient local'),
 
         Node(
+            package='sgd_controller',
+            executable='subsum_controller',
+            name='subsum_controller',
+            output='screen',
+            parameters=[
+                {'topic_layer9': 'cmd_vel'}
+            ]),
+
+        Node(
             package='nav2_controller',
             executable='controller_server',
+            name='controller_server',
             output='screen',
             parameters=[configured_params],
             remappings=remappings),
@@ -137,12 +147,15 @@ def generate_launch_description():
             remappings=remappings),
 
         Node(
-            package='navigation',
+            package='sgd_global_planner',
             executable='global_planner',
             name='osm_planner',
             output='screen',
             parameters=[
-                {'map_file': os.path.join(nav_dir, 'maps', '3_lohmuehlenpark.nav')}]),
+                {'waypoints_topic': 'waypoints'},
+                {'clicked_point_topic': 'clicked_point'},
+                {'port': 8080},
+                {'ip_address': '127.0.0.1'}]),
 
         Node(
             package='nav2_lifecycle_manager',

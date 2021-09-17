@@ -48,17 +48,9 @@
     <color rgba="1.0 1.0 1.0 1.0"/>
   </material>
 
-  <link name="base_footprint"/>
-
-  <joint name="base_joint" type="fixed">
-    <parent link="base_footprint"/>
-    <child link="base_link" />
-    <origin xyz="0 0 0.1524" rpy="0 0 0"/>
-  </joint>
-
   <link name="base_link">
     <visual>
-      <origin xyz="0.3576 0 0.1" rpy="0 0 0"/>
+      <origin xyz="0.3576 0 0.1524" rpy="0 0 0"/>
       <geometry>
         <!--box size="0.7152 0.628 0.2"/-->
         <box size="0.7152 0.1 0.2"/>
@@ -82,7 +74,7 @@
   <joint name="wheel_left_joint" type="continuous">
     <parent link="base_link"/>
     <child link="wheel_left_link"/>
-    <origin xyz="0 0.3493 0" rpy="-1.57 0 0"/>
+    <origin xyz="0 0.3493 -0.05" rpy="-1.57 0 0"/>
     <axis xyz="0 0 1"/>
   </joint>
 
@@ -90,14 +82,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <cylinder length="0.056" radius="0.1523"/>
+        <cylinder length="0.056" radius="0.1082"/>
       </geometry>
       <material name="dark"/>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <cylinder length="0.056" radius="0.1523"/>
+        <cylinder length="0.056" radius="0.1082"/>
       </geometry>
     </collision>
     <inertial>
@@ -111,7 +103,7 @@
   <joint name="wheel_right_joint" type="continuous">
     <parent link="base_link"/>
     <child link="wheel_right_link"/>
-    <origin xyz="0 -0.3493 0" rpy="-1.57 0 0"/>
+    <origin xyz="0 -0.3493 -0.05" rpy="-1.57 0 0"/>
     <axis xyz="0 0 1"/>
   </joint>
 
@@ -119,14 +111,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <cylinder length="0.056" radius="0.1523"/>
+        <cylinder length="0.056" radius="0.1082"/>
       </geometry>
       <material name="dark"/>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <cylinder length="0.056" radius="0.1523"/>
+        <cylinder length="0.056" radius="0.1082"/>
       </geometry>
     </collision>
     <inertial>
@@ -147,13 +139,13 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <sphere radius="0.15" />
+        <sphere radius="0.1082" />
       </geometry>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <sphere radius="0.15" />
+        <sphere radius="0.1082" />
       </geometry>
     </collision>
     <inertial>
@@ -194,7 +186,7 @@
   <joint name="scan_joint" type="fixed">
     <parent link="base_link"/>
     <child link="base_scan"/>
-    <origin xyz="0.6 0 0.3" rpy="0 0 0"/>
+    <origin xyz="0.6 0 0.4" rpy="3.14159 0 0"/>
   </joint>
 
   <link name="base_scan">

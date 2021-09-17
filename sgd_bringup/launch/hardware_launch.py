@@ -26,7 +26,7 @@ from nav2_common.launch import RewrittenYaml
 def generate_launch_description():
     # Get the launch directory
     bringup_dir = get_package_share_directory('sgd_bringup')
-    sgd_util_dir = get_package_share_directory('sgd_util')
+    sgd_comm_dir = get_package_share_directory('sgd_comm')
 
     namespace = LaunchConfiguration('namespace')
     use_sim_time = LaunchConfiguration('use_sim_time')
@@ -37,12 +37,12 @@ def generate_launch_description():
     feather_port = LaunchConfiguration('feather_port')
     esp_port = LaunchConfiguration('esp_port')
 
-    lifecycle_nodes = ['gps_serial',
-                       'gps_sensor',
+    lifecycle_nodes = [#'gps_serial',
+                       #'ublox6_gps',
                        'esp_serial',
                        'imu_bno055',
-                       'wheel_driver']
-    #                   'feather_serial',
+                       'wh_fcruiser',
+                       'feather_serial']
     #                   'capacitive_touch',
     #                   'laser_1d',
 
@@ -63,14 +63,20 @@ def generate_launch_description():
         'use_sim_time': use_sim_time,
         'autostart': autostart,
         'gps_port': '/dev/ttyACM0',
-        'esp_port': '/dev/ttyUSB1',
-        'feather_port': '/dev/ttyACM1'}
+        'esp_port': '/dev/ttyUSB0',
+        'feather_port': '/dev/ttyACM0'}
 
     configured_params = RewrittenYaml(
             source_file=params_file,
             root_key=namespace,
             param_rewrites=param_substitutions,
             convert_types=True)
+
+    config = os.path.join(
+        bringup_dir,
+        'params',
+        'sick_tim_5xx.yaml'
+        )
 
     return LaunchDescription([
         # Set env var to print messages to stdout immediately
@@ -100,16 +106,16 @@ def generate_launch_description():
 
     	DeclareLaunchArgument(
 	        'feather_port',
-	        default_value='/dev/ttyACM1',
+	        default_value='/dev/ttyACM0',
 	        description='Port to communicate with feather M0'),
 
         DeclareLaunchArgument(
 	        'esp_port',
-	        default_value='/dev/ttyUSB1',
+	        default_value='/dev/ttyUSB0',
 	        description='Port to communicate with ESP8266'),
 
         Node(
-            package="sgd_util",
+            package="sgd_comm",
             executable="serial",
             name="gps_serial",
             output="screen",
@@ -122,12 +128,12 @@ def generate_launch_description():
                  "raw": True,
                  "sframe": '\n',
                  "stframe": '\n',
-                 "log": True}]),
+                 "log": False}]),
 
         Node(
             package="gps",
             executable="navilock_ublox6_gps",
-            name="gps_sensor",
+            name="ublox6_gps",
             output="screen",
             emulate_tty=True,
             parameters=[
@@ -136,7 +142,7 @@ def generate_launch_description():
 
         # Create nodes for capacitive touch and laser 1D
         Node(
-            package="sgd_util",
+            package="sgd_comm",
             executable="serial",
             name="feather_serial",
             output="screen",
@@ -149,7 +155,17 @@ def generate_launch_description():
                 "raw": False,
                 "sframe": '$',
                 "stframe": '\n',
-                "log": True}]),
+                "log": False,
+                'use_sim_time': use_sim_time}]),
+
+        Node(
+            package='imu',
+            executable='imu_bno055',
+            name='imu_bno055',
+            output='screen',
+            parameters=[{'port': esp_port,
+                         'config_mode': False,
+            		     'use_sim_time': use_sim_time}]),
 
         Node(
             package="cap_touch",
@@ -171,9 +187,8 @@ def generate_launch_description():
             parameters=[
                 {"port": feather_port}]),
 
-        # Create nodes for motor and TODO: IMU
         Node(
-            package='sgd_util',
+            package='sgd_comm',
             executable='serial',
             name='esp_serial',
             output='screen',
@@ -184,21 +199,13 @@ def generate_launch_description():
                          'raw': False,
                          'sframe': '$',
                          'stframe': '\n',
-                         'log': True}]),
-        
-        Node(
-            package='imu',
-            executable='imu_bno055',
-            name='imu_bno055',
-            output='screen',
-            parameters=[{'port': esp_port,
-                         'config_mode': False,
-            		     'use_sim_time': use_sim_time}]),
+                         'log': False,
+                         'use_sim_time': use_sim_time}]),
 
         Node(
-            package='sgd_lc',
-            executable='wheel_driver',
-            name='wheel_driver',
+            package='motorcontroller',
+            executable='wh_fcruiser',
+            name='wh_fcruiser',
             output='screen',
             parameters=[{'port': esp_port},
             		 {'motor_kp': 0.1},
@@ -213,6 +220,12 @@ def generate_launch_description():
             parameters=[{'output_folder': os.path.join('/home/ipp/dev_ws','log')}]),
                      
         # TODO: Create nodes for lidar
+        Node(
+            package='sick_scan2',
+            name = 'sick_scan2',
+            executable='sick_generic_caller',
+            output='screen',
+            parameters = [config]),
 
         Node(
             package='nav2_lifecycle_manager',

@@ -17,8 +17,9 @@ Betriebssystem | Ubuntu 20.04 LTS 64 bit
 Paket | Link | required
 ------|------|---------
 ROS2 Foxy | - | required
-Navigation 2 | - | included in ROS 2
+Navigation 2 | - | required
 sick_scan2 | [sick_scan2](https://github.com/SICKAG/sick_scan2) | required
+robot_localization | [robot_localization](https://github.com/cra-ros-pkg/robot_localization/tree/ros2) | required
 Gazebo 11 | [Gazebo](http://gazebosim.org/tutorials?tut=ros2_installing&cat=connect_ros) | optional
 
 ## Installation ROS2 Foxy
@@ -106,6 +107,23 @@ In den Ubuntu Einstellungen muss nun noch eine neue Kabelgebundene Netzwerkverbi
 
 ![ip config 2](/doc/ip_config2.png)
 
+## Installation Robot Localization Package
+
+Erstellen eines neues Workspace `robot_localization_ws` im *home* Ordner. Anschließend klonen des robot_localization Github Repositories. Achtung: Es muss der ROS2 Branch gewählt werden. Bevor das Paket gebaut werden kann, müssen weitere Pakete installiert werden:
+
+Paket | Link
+------|-----
+Geographic Info | [geographic_info](https://github.com/ros-geographic-info/geographic_info/tree/ros2)
+Unique Identifier Messages | [UUID](https://github.com/ros2/unique_identifier_msgs)
+GeographicLib | [GeographicLib](https://geographiclib.sourceforge.io/html/index.html)
+
+Die beiden Github Repositories werden wie schon bei robot_localization in den Workspace geklont. Die GeographicLib muss heruntergeladen werden und anschließend anhand der [Anleitung ](https://geographiclib.sourceforge.io/html/install.html) installiert werden. Anschließend können auch die geklonten Repositories gebaut werden.
+
+```
+cd ~/robot_localization_ws
+colcon build --symlink-install
+```
+
 ## Installation Gazebo 11
 Gazebo wird für die Arbeit mit dem Blindenhund nicht benötigt, ist jedoch sinnvoll, um neue Funktionen zuerst simulieren zu können und sie erst bei erfolgreicher Simulation auf dem Blindenhund zu testen.
 
@@ -133,8 +151,14 @@ Um den Pfad automatisch bei jedem neuen Terminalfenster zu setzen, kann der Befe
 
 **git clone**
 Usage: `git clone [url]`
+Alternative: `git clone --branch [branch] [url]`
 
 Obtain a new repository from an existing URL
+
+**git checkout**
+Usage: `git checkout [branch]`
+
+Checkout another branch from current repository.
 
 **git add**
 Usage: `git add [file]`
@@ -148,6 +172,7 @@ Record or snapshot staged files permanently in the version history.
 
 **git push**
 Usage: `git push`
+Alternative: `git push <origin> <branch>`
 
 Send committed changes to repository.
 

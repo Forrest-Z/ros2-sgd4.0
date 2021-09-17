@@ -1,3 +1,52 @@
+amcl:
+  ros__parameters:
+    use_sim_time: True
+    alpha1: 0.2
+    alpha2: 0.2
+    alpha3: 0.2
+    alpha4: 0.2
+    alpha5: 0.2
+    base_frame_id: "base_link"
+    beam_skip_distance: 0.5
+    beam_skip_error_threshold: 0.9
+    beam_skip_threshold: 0.3
+    do_beamskip: false
+    global_frame_id: "map"
+    lambda_short: 0.1
+    laser_likelihood_max_dist: 2.0
+    laser_max_range: 25.0
+    laser_min_range: -1.0
+    laser_model_type: "likelihood_field"
+    max_beams: 60
+    max_particles: 2000
+    min_particles: 500
+    odom_frame_id: "odom"
+    pf_err: 0.05
+    pf_z: 0.99
+    recovery_alpha_fast: 0.0
+    recovery_alpha_slow: 0.0
+    resample_interval: 1
+    robot_model_type: "differential"
+    save_pose_rate: 0.5
+    sigma_hit: 0.2
+    tf_broadcast: true
+    transform_tolerance: 1.0
+    update_min_a: 0.2
+    update_min_d: 0.25
+    z_hit: 0.5
+    z_max: 0.05
+    z_rand: 0.5
+    z_short: 0.05
+    scan_topic: scan
+
+amcl_map_client:
+  ros__parameters:
+    use_sim_time: True
+
+amcl_rclcpp_node:
+  ros__parameters:
+    use_sim_time: True
+
 bt_navigator:
   ros__parameters:
     use_sim_time: False
@@ -186,7 +235,7 @@ global_costmap:
 map_server:
   ros__parameters:
     use_sim_time: False
-    yaml_filename: "sgd_world.yaml"
+    yaml_filename: "map_slam.yaml"
 
 map_saver:
   ros__parameters:
@@ -235,49 +284,12 @@ robot_state_publisher:
   ros__parameters:
     use_sim_time: False
 
-gps_serial:
-  ros__parameters:
-    use_sim_time: False
-    port: "/dev/ttyACM0"
-    baud_rate: 9600
-    read_write: "ro"
-
-gps_sensor:
-  ros_parameters:
-    use_sim_time: false
-    port: "/dev/ttyACM0"
-    xml_file: "/home/ipp/dev_ws/src/ros2-sgd4.0/sensors/gps/data/nmea.xml"
-
-feather_serial:
-  ros_parameters:
-    use_sim_time: false
-    port: "/dev/ttyACM1"
-    baud_rate: 115200
-    read_write: "ro"
-
-capacitive_touch:
-  ros_parameters:
-    use_sim_time: false
-    port: "/dev/ttyACM1"
-    thresh: 2000
-    filter_i: 4
-
-laser_1d:
+wh_fcruiser:
   ros_parameters:
     use_sim_time: False
-    port: "/dev/ttyACM1"
-
-esp_serial:
-  ros_parameters:
-    use_sim_time: False
-    port: "/dev/ttyUSB0"
-    baud_rate: 115200
-    read_write: "rw"
-
-wheel_driver:
-  ros_parameters:
-    use_sim_time: False
-    port: "/dev/ttyUSB0"
-    motor_kp: 0.1
-    max_speed: 200.0
+    odom_topic: "odom"
+    battery_state_topic: "battery"
+    vel_twist_topic: "cmd_vel"
+    wheel_separation: 0.71
+    wheel_circumference: 0.68
 

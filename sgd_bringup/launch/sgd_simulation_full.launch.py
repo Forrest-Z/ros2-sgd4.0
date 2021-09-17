@@ -78,7 +78,7 @@ def generate_launch_description():
 
     declare_map_yaml_cmd = DeclareLaunchArgument(
         'map',
-        default_value=os.path.join(bringup_dir, 'maps', 'sgd_world.yaml'),
+        default_value=os.path.join(bringup_dir, 'maps', 'map_slam.yaml'),
         description='Full path to map file to load')
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
@@ -99,7 +99,7 @@ def generate_launch_description():
         description='Full path to the behavior tree xml file to use')
 
     declare_autostart_cmd = DeclareLaunchArgument(
-        'autostart', default_value='true',
+        'autostart', default_value='false',
         description='Automatically startup the nav2 stack')
         
     declare_rsp_urdf_cmd = DeclareLaunchArgument(
@@ -128,7 +128,7 @@ def generate_launch_description():
 
     declare_simulator_cmd = DeclareLaunchArgument(
         'headless',
-        default_value='True',
+        default_value='False',
         description='Whether to execute gzclient)')
 
     declare_world_cmd = DeclareLaunchArgument(
@@ -137,15 +137,14 @@ def generate_launch_description():
         #              https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/91
         # default_value=os.path.join(get_package_share_directory('turtlebot3_gazebo'),
         #                            'worlds/turtlebot3_worlds/waffle.model'),
-        default_value=os.path.join(bringup_dir, 'worlds', 'sgd.model'),
-        #default_value=os.path.join(bringup_dir, 'worlds', 'blindenhund_simulation.world'),
+        default_value=os.path.join(bringup_dir, 'worlds', 'model_static.model'),
         description='Full path to world model file to load')
 
     # Specify the actions
     start_gazebo_server_cmd = ExecuteProcess(
         condition=IfCondition(use_simulator),
         cmd=['gzserver', '-s', 'libgazebo_ros_init.so', world],
-        cwd=[launch_dir], output='screen')
+        cwd=[launch_dir], output={'both': 'log'})
 
     start_gazebo_client_cmd = ExecuteProcess(
         condition=IfCondition(PythonExpression([use_simulator, ' and not ', headless])),
@@ -182,23 +181,34 @@ def generate_launch_description():
                           'use_namespace': 'False',
                           'rviz_config': rviz_config_file}.items())
 
-    bringup_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(launch_dir, 'bringup_launch.py')),
-        launch_arguments={'namespace': namespace,
-                          'use_namespace': use_namespace,
-                          'slam': slam,
-                          'map': map_yaml_file,
-                          'use_sim_time': use_sim_time,
-                          'params_file': params_file,
-                          'default_bt_xml_filename': default_bt_xml_filename,
-                          'autostart': autostart}.items())
-    
-    sensors_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(launch_dir, 'sgd_sensors.launch.py')),
-        launch_arguments={'namespace': namespace,
-                          'map': map_yaml_file,
-                          'use_sim_time': use_sim_time,
-                          'params_file': params_file}.items())
+    localization_cmd = IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(launch_dir, 'localization_launch.py')),
+            condition=IfCondition(PythonExpression(['not ', slam])),
+            launch_arguments={'namespace': namespace,
+                            'map': map_yaml_file,
+                            'use_sim_time': use_sim_time,
+                            'autostart': autostart,
+                            'params_file': params_file,
+                            'use_lifecycle_mgr': 'false'}.items())
+
+    navigation_cmd = IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(launch_dir, 'navigation_launch.py')),
+            launch_arguments={'namespace': namespace,
+                            'use_sim_time': use_sim_time,
+                            'autostart': autostart,
+                            'params_file': params_file,
+                            'default_bt_xml_filename': default_bt_xml_filename,
+                            'use_lifecycle_mgr': 'false',
+                            'map_subscribe_transient_local': 'true'}.items())
+
+    start_lifecycle_cmd = Node(
+        package='sgd_lifecycle_manager',
+        executable='lifecycle_manager',
+        name='lifecycle',
+        namespace=namespace,
+        output='screen',
+        emulate_tty=True,
+        parameters=[{"launch_file": os.path.join(bringup_dir, 'params', 'launch_sim.xml')}])
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -223,12 +233,13 @@ def generate_launch_description():
 
     # Add any conditioned actions
     ld.add_action(start_gazebo_server_cmd)
-    ld.add_action(start_gazebo_client_cmd)
+    ld.add_action(start_gazebo_client_cmd)  
 
     # Add the actions to launch all of the navigation nodes
     ld.add_action(start_robot_state_publisher_cmd)
     ld.add_action(rviz_cmd)
-    ld.add_action(bringup_cmd)
-    ld.add_action(sensors_cmd)
+    ld.add_action(localization_cmd)
+    ld.add_action(navigation_cmd)
+    ld.add_action(start_lifecycle_cmd)
 
     return ld
