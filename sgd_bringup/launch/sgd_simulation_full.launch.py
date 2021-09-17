@@ -201,6 +201,15 @@ def generate_launch_description():
                             'use_lifecycle_mgr': 'false',
                             'map_subscribe_transient_local': 'true'}.items())
 
+    start_lifecycle_cmd = Node(
+        package='sgd_lifecycle_manager',
+        executable='lifecycle_manager',
+        name='lifecycle',
+        namespace=namespace,
+        output='screen',
+        emulate_tty=True,
+        parameters=[{"launch_file": os.path.join(bringup_dir, 'params', 'launch_sim.xml')}])
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -231,5 +240,6 @@ def generate_launch_description():
     ld.add_action(rviz_cmd)
     ld.add_action(localization_cmd)
     ld.add_action(navigation_cmd)
+    ld.add_action(start_lifecycle_cmd)
 
     return ld

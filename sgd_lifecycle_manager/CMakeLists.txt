@@ -14,6 +14,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
+find_package(nav2_util REQUIRED)
 find_package(rapidxml REQUIRED)
 
 include_directories(include)
@@ -23,6 +24,7 @@ set(executable_name lifecycle_manager)
 set(dependencies
   rclcpp
   lifecycle_msgs
+  nav2_util
   rapidxml
 )
 

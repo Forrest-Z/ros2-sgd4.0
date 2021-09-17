@@ -37,7 +37,6 @@ Initial_Pose_Estimator::on_configure(const rclcpp_lifecycle::State & state)
 
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
-    init_pub_sub();
 
     return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -50,6 +49,7 @@ Initial_Pose_Estimator::on_activate(const rclcpp_lifecycle::State & state)
     imu_good = false;
     gps_good = false;
     initial_pose_set = false;
+    init_pub_sub();
     pub_initial_pose_->on_activate();
 
     return nav2_util::CallbackReturn::SUCCESS;

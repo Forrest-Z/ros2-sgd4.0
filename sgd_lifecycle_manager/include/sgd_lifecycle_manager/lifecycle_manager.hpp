@@ -1,7 +1,6 @@
 #ifndef SGD_LIFECYCLE__LIFECYCLE_MANAGER_HPP_
 #define SGD_LIFECYCLE__LIFECYCLE_MANAGER_HPP_
 
-#include <unordered_map>
 #include <fstream>
 #include <iostream>
 
@@ -17,6 +16,21 @@ using lifecycle_msgs::msg::Transition;
 namespace sgd_lifecycle
 {
 
+struct lifecycle_node
+{
+    std::string node_name;
+    uint8_t state;
+    rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr srv_client;
+    std::vector<std::string> depends;
+};
+
+struct group
+{
+    std::string group_name;
+    std::vector<std::string> node_names;
+};
+
+
 class Lifecycle_Manager : public rclcpp::Node
 {
 
@@ -28,12 +42,19 @@ protected:
     // parameters
     std::string launch_file;
 
-    void read_xml_file(rapidxml::xml_node<> *node);
+    std::vector<group> launch_groups;
+
+    void read_xml_file(rapidxml::xml_node<> *node, group *g = nullptr);
     rapidxml::xml_node<> * root;
-    std::unordered_map<std::string, uint8_t> states;
+    std::vector<lifecycle_node> lifecycle_nodes;
 
     //! \brief Init subscriber
     void init_sub();
+    rclcpp::TimerBase::SharedPtr timer_;
+
+    bool change_state(uint8_t transition_id, lifecycle_node &lfnode);
+    bool all_nodes_active();
+    bool is_node_active(std::string node_name);
 };
 
 }
