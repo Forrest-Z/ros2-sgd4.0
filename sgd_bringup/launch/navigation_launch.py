@@ -50,7 +50,7 @@ def generate_launch_description():
     # TODO(orduno) Substitute with `PushNodeRemapping`
     #              https://github.com/ros2/launch_ros/issues/56
     remappings = [('/tf', 'tf'),
-                  ('/tf_staticwaypoint_follower', 'tf_static')]
+                  ('/tf_static', 'tf_static')]
 
     # Create our own temporary YAML files that include substitutions
     param_substitutions = {
@@ -74,11 +74,11 @@ def generate_launch_description():
             description='Top-level namespace'),
 
         DeclareLaunchArgument(
-            'use_sim_time', default_value='false',
+            'use_sim_time', default_value='true',
             description='Use simulation (Gazebo) clock if true'),
 
         DeclareLaunchArgument(
-            'autostart', default_value='true',
+            'autostart', default_value='false',
             description='Automatically startup the nav2 stack'),
 
         DeclareLaunchArgument(
@@ -89,22 +89,21 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'default_bt_xml_filename',
             default_value=os.path.join(
-                get_package_share_directory('nav2_bt_navigator'),
-                'behavior_trees', 'navigate_w_replanning_and_recovery.xml'),
+                bringup_dir,'behavior_trees', 'navigate_w_replanning_and_recovery_sgd.xml'),
             description='Full path to the behavior tree xml file to use'),
 
         DeclareLaunchArgument(
             'map_subscribe_transient_local', default_value='false',
             description='Whether to set the map subscriber QoS to transient local'),
 
-        Node(
-            package='sgd_controller',
-            executable='subsum_controller',
-            name='subsum_controller',
-            output='screen',
-            parameters=[
-                {'topic_layer9': 'cmd_vel'}
-            ]),
+        #Node(
+        #    package='sgd_controller',
+        #    executable='subsum_controller',
+        #    name='subsum_controller',
+        #    output='screen',
+        #    parameters=[
+        #        {'topic_layer9': 'cmd_vel'}
+        #    ]),
 
         Node(
             package='nav2_controller',
@@ -146,24 +145,24 @@ def generate_launch_description():
             parameters=[configured_params],
             remappings=remappings),
 
-        Node(
-            package='sgd_global_planner',
-            executable='global_planner',
-            name='osm_planner',
-            output='screen',
-            parameters=[
-                {'waypoints_topic': 'waypoints'},
-                {'clicked_point_topic': 'clicked_point'},
-                {'port': 8080},
-                {'ip_address': '127.0.0.1'}]),
+        #Node(
+        #    package='sgd_global_planner',
+        #    executable='global_planner',
+        #    name='osm_planner',
+        #    output='screen',
+        #    parameters=[
+        #        {'waypoints_topic': 'waypoints'},
+        #        {'clicked_point_topic': 'clicked_point'},
+        #        {'port': 8080},
+        #        {'ip_address': '127.0.0.1'}]),
 
-        Node(
-            package='nav2_lifecycle_manager',
-            executable='lifecycle_manager',
-            name='lifecycle_manager_navigation',
-            output='screen',
-            parameters=[{'use_sim_time': use_sim_time},
-                        {'autostart': autostart},
-                        {'node_names': lifecycle_nodes}]),
+        #Node(
+        #    package='nav2_lifecycle_manager',
+        #    executable='lifecycle_manager',
+        #    name='lifecycle_manager_navigation',
+        #    output='screen',
+        #    parameters=[{'use_sim_time': use_sim_time},
+        #                {'autostart': autostart},
+        #                {'node_names': lifecycle_nodes}]),
 
     ])

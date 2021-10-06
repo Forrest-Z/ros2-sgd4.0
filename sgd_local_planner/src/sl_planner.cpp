@@ -43,27 +43,30 @@
 #include <memory>
 #include "nav2_util/node_utils.hpp"
 
-#include "nav2_straightline_planner/straight_line_planner.hpp"
+#include "sgd_local_planner/sl_planner.hpp"
 
-namespace nav2_straightline_planner
+namespace sgd_local_planner
 {
 
 void StraightLine::configure(
-  const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-  std::string name, std::shared_ptr<tf2_ros::Buffer> tf,
-  std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros)
+  rclcpp_lifecycle::LifecycleNode::SharedPtr parent,
+    std::string name, std::shared_ptr<tf2_ros::Buffer> tf,
+    std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros)
 {
-  node_ = parent.lock();
+  node_ = parent;
   name_ = name;
   tf_ = tf;
   costmap_ = costmap_ros->getCostmap();
   global_frame_ = costmap_ros->getGlobalFrameID();
 
   // Parameter initialization
-  nav2_util::declare_parameter_if_not_declared(
-    node_, name_ + ".interpolation_resolution", rclcpp::ParameterValue(
-      0.1));
+  node_->declare_parameter(name_ + ".interpolation_resolution", rclcpp::ParameterValue(0.1));
+  node_->declare_parameter(name_ + ".min_radius", rclcpp::ParameterValue(0.5));
+  node_->declare_parameter(name_ + ".max_radius", rclcpp::ParameterValue(5.0));
+
   node_->get_parameter(name_ + ".interpolation_resolution", interpolation_resolution_);
+  node_->get_parameter(name_ + ".min_radius", min_radius_);
+  node_->get_parameter(name_ + ".max_radius", max_radius_);
 }
 
 void StraightLine::cleanup()
@@ -119,6 +122,7 @@ nav_msgs::msg::Path StraightLine::createPlan(
   double x_increment = (goal.pose.position.x - start.pose.position.x) / total_number_of_loop;
   double y_increment = (goal.pose.position.y - start.pose.position.y) / total_number_of_loop;
 
+  auto t = node_->now();
   for (int i = 0; i < total_number_of_loop; ++i) {
     geometry_msgs::msg::PoseStamped pose;
     pose.pose.position.x = start.pose.position.x + x_increment * i;
@@ -128,12 +132,24 @@ nav_msgs::msg::Path StraightLine::createPlan(
     pose.pose.orientation.y = 0.0;
     pose.pose.orientation.z = 0.0;
     pose.pose.orientation.w = 1.0;
-    pose.header.stamp = node_->now();
+    pose.header.stamp = t;
     pose.header.frame_id = global_frame_;
     global_path.poses.push_back(pose);
   }
 
-  global_path.poses.push_back(goal);
+  // im header der goal pose steht die Systemzeit und der Pfad wird abgelehnt.
+  // copy goal to new pose to set correct time -> fix this bug
+  geometry_msgs::msg::PoseStamped pose;
+  pose.pose.position.x = goal.pose.position.x;
+  pose.pose.position.y = goal.pose.position.y;
+  pose.pose.position.z = 0.0;
+  pose.pose.orientation.x = goal.pose.orientation.x;
+  pose.pose.orientation.y = goal.pose.orientation.y;
+  pose.pose.orientation.z = goal.pose.orientation.z;
+  pose.pose.orientation.w = goal.pose.orientation.w;
+  pose.header.stamp = t;
+  pose.header.frame_id = global_frame_;
+  global_path.poses.push_back(pose);
 
   return global_path;
 }
@@ -141,4 +157,4 @@ nav_msgs::msg::Path StraightLine::createPlan(
 }  // namespace nav2_straightline_planner
 
 #include "pluginlib/class_list_macros.hpp"
-PLUGINLIB_EXPORT_CLASS(nav2_straightline_planner::StraightLine, nav2_core::GlobalPlanner)
+PLUGINLIB_EXPORT_CLASS(sgd_local_planner::StraightLine, nav2_core::GlobalPlanner)

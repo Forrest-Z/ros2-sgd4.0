@@ -68,11 +68,11 @@ def generate_launch_description():
             description='Full path to map yaml file to load'),
 
         DeclareLaunchArgument(
-            'use_sim_time', default_value='false',
+            'use_sim_time', default_value='true',
             description='Use simulation (Gazebo) clock if true'),
 
         DeclareLaunchArgument(
-            'autostart', default_value='true',
+            'autostart', default_value='false',
             description='Automatically startup the nav2 stack'),
 
         DeclareLaunchArgument(
@@ -88,13 +88,13 @@ def generate_launch_description():
             parameters=[configured_params],
             remappings=remappings),
 
-        Node(
-            package='gps',
-            executable='gps_transform',
-            name='gps_transform',
-            output='screen',
-            parameters=[{'use_sim_time': use_sim_time}],
-        ),
+        #Node(
+        #    package='gps',
+        #    executable='gps_transform',
+        #    name='gps_transform',
+        #    output='screen',
+        #    parameters=[{'use_sim_time': use_sim_time}],
+        #),
 
         Node(
             package='nav2_amcl',
@@ -134,12 +134,12 @@ def generate_launch_description():
         #                {'use_sim_time': use_sim_time}],
         #    remappings=remappings),
 
-        Node(
-            package='nav2_lifecycle_manager',
-            executable='lifecycle_manager',
-            name='lifecycle_manager_localization',
-            output='screen',
-            parameters=[{'use_sim_time': use_sim_time},
-                        {'autostart': autostart},
-                        {'node_names': lifecycle_nodes}])
+        #Node(
+        #    package='nav2_lifecycle_manager',
+        #    executable='lifecycle_manager',
+        #    name='lifecycle_manager_localization',
+        #    output='screen',
+        #    parameters=[{'use_sim_time': use_sim_time},
+        #                {'autostart': autostart},
+        #                {'node_names': lifecycle_nodes}])
     ])

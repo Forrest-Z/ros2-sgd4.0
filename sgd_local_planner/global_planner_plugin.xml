@@ -1,5 +1,5 @@
-<library path="nav2_straightline_planner_plugin">
-	<class name="nav2_straightline_planner/StraightLine" type="nav2_straightline_planner::StraightLine" base_class_type="nav2_core::GlobalPlanner">
-	  <description>This is an example plugin which produces straight path.</description>
+<library path="sgd_local_planner_plugin">
+	<class name="sgd_local_planner/StraightLine" type="sgd_local_planner::StraightLine" base_class_type="nav2_core::GlobalPlanner">
+	  <description>Plugin which generates straight line path.</description>
 	</class>
 </library>

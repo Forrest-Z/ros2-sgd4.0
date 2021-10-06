@@ -38,8 +38,8 @@
  * https://navigation.ros.org/tutorials/docs/writing_new_nav2planner_plugin.html
  *********************************************************************/
 
-#ifndef NAV2_STRAIGHTLINE_PLANNER__STRAIGHT_LINE_PLANNER_HPP_
-#define NAV2_STRAIGHTLINE_PLANNER__STRAIGHT_LINE_PLANNER_HPP_
+#ifndef SGD_LOCAL_PLANNER__STRAIGHT_LINE_PLANNER_HPP_
+#define SGD_LOCAL_PLANNER__STRAIGHT_LINE_PLANNER_HPP_
 
 #include <string>
 #include <memory>
@@ -54,7 +54,7 @@
 #include "nav2_util/lifecycle_node.hpp"
 #include "nav2_costmap_2d/costmap_2d_ros.hpp"
 
-namespace nav2_straightline_planner
+namespace sgd_local_planner
 {
 
 class StraightLine : public nav2_core::GlobalPlanner
@@ -65,7 +65,7 @@ public:
 
   // plugin configure
   void configure(
-    const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
+    rclcpp_lifecycle::LifecycleNode::SharedPtr parent,
     std::string name, std::shared_ptr<tf2_ros::Buffer> tf,
     std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros) override;
 
@@ -96,7 +96,10 @@ private:
   // The global frame of the costmap
   std::string global_frame_, name_;
 
+  // parameters
   double interpolation_resolution_;
+  double min_radius_;
+  double max_radius_;
 };
 
 }  // namespace nav2_straightline_planner

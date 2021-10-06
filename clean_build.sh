@@ -4,10 +4,10 @@ echo "The script you are running has basename `basename "$0"`, dirname `dirname 
 VAR1=`pwd`
 
 cd ~/dev_ws/build
-rm -r *
+rm -r !(rapidxml)
 
 cd ~/dev_ws/install
-rm -r *
+rm -r !(rapidxml)
 
 echo "All install and build files deleted"
 

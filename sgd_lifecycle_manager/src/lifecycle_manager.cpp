@@ -29,8 +29,11 @@ Lifecycle_Manager::Lifecycle_Manager():
         }
     }
 
-    while (!all_nodes_active())
+    int retries = 0;
+    rclcpp::WallRate loop_rate(10);
+    while (!all_nodes_active() && retries < 10)
     {
+        retries++;
         for (auto it = lifecycle_nodes.begin(); it != lifecycle_nodes.end(); it++)
         {
             if (it->state == Transition::TRANSITION_ACTIVATE)   continue;
@@ -50,6 +53,7 @@ Lifecycle_Manager::Lifecycle_Manager():
                 else
                 {
                     RCLCPP_WARN(get_logger(), "Could not activate node %s", it->node_name.c_str());
+                    return;
                 }
             }
             else
@@ -57,10 +61,14 @@ Lifecycle_Manager::Lifecycle_Manager():
                 RCLCPP_DEBUG(get_logger(), "Node %s waiting for dependencies to become active.", it->node_name.c_str());
             }
         }
+        if (!loop_rate.sleep())
+        {
+            RCLCPP_INFO(get_logger(), "Lifecycle Manager missed frequency.");
+        }
+        // TODO timeout
     }
 
     RCLCPP_INFO(get_logger(), "All nodes active.");
-    rclcpp::shutdown();
 }
 
 Lifecycle_Manager::~Lifecycle_Manager()

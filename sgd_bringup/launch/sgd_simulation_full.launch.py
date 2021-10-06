@@ -93,6 +93,9 @@ def generate_launch_description():
 
     declare_bt_xml_cmd = DeclareLaunchArgument(
         'default_bt_xml_filename',
+        #default_value=os.path.join(
+        #    get_package_share_directory('sgd_bringup'),
+        #    'behavior_trees', 'navigate_w_replanning_and_recovery_sgd.xml'),
         default_value=os.path.join(
             get_package_share_directory('nav2_bt_navigator'),
             'behavior_trees', 'navigate_w_replanning_and_recovery.xml'),
@@ -128,7 +131,7 @@ def generate_launch_description():
 
     declare_simulator_cmd = DeclareLaunchArgument(
         'headless',
-        default_value='False',
+        default_value='True',
         description='Whether to execute gzclient)')
 
     declare_world_cmd = DeclareLaunchArgument(
@@ -155,7 +158,7 @@ def generate_launch_description():
     #ros_playback_cmd = ExecuteProcess(
     #    cmd=['ros2', 'bag', 'record',
     #         '-o', 'playback',
-    #         '/imu', '/gps', '/odom'],
+    #         '/imu', '/gps', '/odom', 'amcl_pose'],
     #    output='screen'
     #)
 

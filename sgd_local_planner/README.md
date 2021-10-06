@@ -1,3 +1,10 @@
-# Local Planner
+# Straight Line Planner with Robot State control
 
-Der Local Planner ist für die Pfadplanung und Hindernisvermeidung im nahen Umfeld des Shared Guide Dog zuständig.
+The Straight line planner is a plugin for the Nav2 Planner server. The Straight Line Planner plans routes based on the direct connections of the start and destination points.
+
+
+## Output
+
+Topics:
+* nav_msgs/msg/Path
+* sgd_msgs/msg/RobotState
