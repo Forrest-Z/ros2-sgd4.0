@@ -1,42 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?> 
 <launch>
-    <group name="hardware">
-        <node name="gps_serial" />
-        <node name="ublox6_gps">
-            <depend node="gps_serial" />
-        </node>
-
-        <node name="esp_serial" />
-        <node name="wh_fcruiser">
-            <depend node="esp_serial" />
-        </node>
-
-        <node name="feather_serial" />
-        <node name="imu_bno055">
-            <depend node="feather_serial" />
-        </node>
-        <node name="capacitive_touch">
-            <depend node="feather_serial" />
-        </node>
-        <node name="laser_1d">
-            <depend node="feather_serial" />
-        </node>
-    </group>
-
+<!-- localization nodes -->
     <node name="map_server" />
-    <node name="amcl">
-        <depend group="hardware" />
-    </node>
-    <node name="initial_pose_estimator">
-        <depend group="hardware" />
-    </node>
+    <!--node name="amcl" /-->
 
+<!-- hardware nodes -->
+    <node name="esp_serial" />
+    <node name="wh_fcruiser" />
+
+<!-- navigation nodes -->
     <node name="subsum_controller" />
     <node name="controller_server" />
     <node name="planner_server" />
     <node name="recoveries_server" />
     <node name="bt_navigator" />
     <node name="waypoint_follower" />
-    <node name="osm_planner" />
+    <!--node name="osm_planner" / -->
+    <!--node name="initial_pose_estimator" /-->
+    <!--node name="lidar_obstacle_checker" /-->
 
 </launch>

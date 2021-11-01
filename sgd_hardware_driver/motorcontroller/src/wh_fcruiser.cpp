@@ -170,7 +170,7 @@ WH_Fcruiser::on_motor_received(const sgd_msgs::msg::Serial::SharedPtr msg)
     {
         //time = std::stoi(matches[1]);       // in millis
         meas_r_ = std::stod(matches[2]);
-        meas_l_ = -1*std::stod(matches[3]);
+        meas_l_ = std::stod(matches[3]);
         v = std::stoi(matches[4]);
     } else { return; }
 
@@ -215,8 +215,8 @@ WH_Fcruiser::on_motor_received(const sgd_msgs::msg::Serial::SharedPtr msg)
 void
 WH_Fcruiser::on_cmd_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg)
 {
-    int speed = round(msg->linear.x * 100);
-    int steer = round(msg->angular.z * 100);
+    int speed = round(msg->linear.x * 150);
+    int steer = round(msg->angular.z * 150);
 
     sgd_msgs::msg::Serial serial;
     serial.header.stamp = now();

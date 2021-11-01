@@ -8,7 +8,7 @@ using namespace std::chrono_literals;   // if a timer is used
 Lifecycle_Manager::Lifecycle_Manager():
     Node("lifecycle_manager")
 {
-    launch_file = declare_parameter<std::string>("launch_file", "/params/launch/launch.xml");
+    launch_file = declare_parameter<std::string>("launch_file", "/params/launch.xml");
 
     // read launch xml file
     std::ifstream t(launch_file);

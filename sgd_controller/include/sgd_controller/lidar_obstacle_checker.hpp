@@ -1,19 +1,18 @@
 
-#ifndef NAV_SGD_SUBSUM_CONTROLLER_HPP_
-#define NAV_SGD_SUBSUM_CONTROLLER_HPP_
+#ifndef NAV_SGD_OBSTACLE_CHECKER_HPP_
+#define NAV_SGD_OBSTACLE_CHECKER_HPP_
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "nav2_util/lifecycle_node.hpp"
 
 #include "geometry_msgs/msg/twist.hpp"
+#include "sensor_msgs/msg/laser_scan.hpp"
 
 namespace nav_sgd
 {
 
-#define NUM_LAYERS 10
-
-class Subsum_Controller : public nav2_util::LifecycleNode
+class Lidar_Obstacle_Checker : public nav2_util::LifecycleNode
 {
 
 protected:
@@ -25,24 +24,25 @@ protected:
     nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
 
     //! \brief Init parameters
-    std::vector<std::string> in_topics_;
-    std::string out_topic_;
+    std::string scan_topic_;
+    std::string cmd_vel_contr_topic_;
+    std::string cmd_vel_topic_;
 
     //! \brief Init Publisher and subscriber
     void init_pub_sub();
     rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
     rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::Twist>::SharedPtr pub_cmd_vel;
-    std::vector<rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr> subscriber;
 
-    // layer data
-    int active_layer;
-    std::vector<double> last_time_received_;
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel_contr_;
+    rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub_scan_;
 
-    void on_cm_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg, int layer);
+    void on_cmd_vel_contr_received(const geometry_msgs::msg::Twist::SharedPtr msg);
+    void on_scan_received(const sensor_msgs::msg::LaserScan::SharedPtr msg);
 
+    geometry_msgs::msg::Twist last_cmd_vel_;
 public:
-    Subsum_Controller();
-    ~Subsum_Controller();
+    Lidar_Obstacle_Checker();
+    ~Lidar_Obstacle_Checker();
 };
 
 

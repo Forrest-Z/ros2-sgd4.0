@@ -8,21 +8,15 @@ using std::placeholders::_1;
 using namespace std::chrono_literals; 
 
 Subsum_Controller::Subsum_Controller() 
-        : nav2_util::LifecycleNode("subsum_controller", "", true)
+        : nav2_util::LifecycleNode("subsum_controller", "", true),
+          in_topics_{"cmd_vel_lidar", "cmd_vel_nav2"}
 {
     RCLCPP_DEBUG(get_logger(), "Creating");
 
     // Add parameters
-    add_parameter("topic_layer0", rclcpp::ParameterValue(""));
-    add_parameter("topic_layer1", rclcpp::ParameterValue(""));
-    add_parameter("topic_layer2", rclcpp::ParameterValue(""));
-    add_parameter("topic_layer3", rclcpp::ParameterValue(""));
-    add_parameter("topic_layer4", rclcpp::ParameterValue(""));
-    add_parameter("topic_layer5", rclcpp::ParameterValue(""));
-    add_parameter("topic_layer6", rclcpp::ParameterValue(""));
-    add_parameter("topic_layer7", rclcpp::ParameterValue(""));
-    add_parameter("topic_layer8", rclcpp::ParameterValue(""));
-    add_parameter("topic_layer9", rclcpp::ParameterValue(""));
+
+    declare_parameter("move_topics", in_topics_);
+    declare_parameter("sgd_move_topic", rclcpp::ParameterValue("sgd_move_base"));
 
 }
 
@@ -37,13 +31,22 @@ Subsum_Controller::on_configure(const rclcpp_lifecycle::State & state)
     RCLCPP_DEBUG(get_logger(), "Configure");
 
     // init
-    init_parameters();
+    //init_parameters();
+    get_parameter("move_topics", in_topics_);
+    get_parameter("sgd_move_topic", out_topic_);
+
+    if (in_topics_.size() < 1 || out_topic_.length() < 1)
+    {
+        RCLCPP_ERROR(get_logger(), "Could not initialize input or output topics.");
+        return nav2_util::CallbackReturn::FAILURE;
+    }
+
     init_pub_sub();
 
-    active_layer = NUM_LAYERS - 1;
-    for (uint8_t i = 0; i < NUM_LAYERS; i++)
+    active_layer = in_topics_.size() - 1;
+    for (uint8_t i = 0; i < in_topics_.size(); i++)
     {
-        last_time_received[i] = 0.0;
+        last_time_received_.push_back(0.0);
     }
 
     return nav2_util::CallbackReturn::SUCCESS;
@@ -84,45 +87,33 @@ Subsum_Controller::on_shutdown(const rclcpp_lifecycle::State & state)
 void
 Subsum_Controller::init_pub_sub()
 {
-    pub_cmd_vel = this->create_publisher<geometry_msgs::msg::Twist>("cmd_veltrn", default_qos);
+    pub_cmd_vel = this->create_publisher<geometry_msgs::msg::Twist>("sgd_move_base", default_qos);
 
-    for (uint8_t i = 0; i < layer_topics.size(); i++)
-    {   
+    for (uint8_t i = 0; i < in_topics_.size(); i++)
+    {
         std::function<void(std::shared_ptr<geometry_msgs::msg::Twist>)> fnc = std::bind(
             &Subsum_Controller::on_cm_vel_received, this, std::placeholders::_1, (int)i);
         //sub_input_ = node->create_subscription<sensor_msgs::msg::Imu>("input", fnc);
-        subscriber.push_back(this->create_subscription<geometry_msgs::msg::Twist>(layer_topics.at(i), default_qos,
+        RCLCPP_INFO(get_logger(), "Create subscription for topic %s on layer %i", in_topics_.at(i).c_str(), i);
+        subscriber.push_back(this->create_subscription<geometry_msgs::msg::Twist>(in_topics_.at(i), default_qos,
                             fnc));
-    }
-}
-
-void
-Subsum_Controller::init_parameters()
-{
-    for (uint8_t i = 0; i < NUM_LAYERS; i++)
-    {
-        std::string param;
-        get_parameter("topic_layer" + std::to_string(i), param);
-
-        if (param.length() > 1)
-        {
-            layer_topics.push_back(param);
-        }
     }
 }
 
 void
 Subsum_Controller::on_cm_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg, int layer)
 {
-    double t = now().nanoseconds() / 1000.0;
-    last_time_received[layer] = t;   // save time in milliseconds
+    double t = now().nanoseconds() / 1000000.0; // current time in milliseconds
+    last_time_received_[layer] = t;
 
     // get currently active layer
-    for (int8_t i = 0; i < layer; i++)
+    for (int8_t i = 0; i <= layer; i++)
     {
+        //RCLCPP_INFO(get_logger(), "Layer: %i, Last received: %f, Time: %f", layer, last_time_received_[i], t);
         // check time since last msg received
-        if (t - last_time_received[i] < 0.1)
+        if (t - last_time_received_[i] < 1000)   // time in milliseconds
         {
+            if (i != active_layer)  RCLCPP_INFO(get_logger(), "Change active layer to layer %i", i);
             active_layer = i;
             break;
         }
@@ -130,6 +121,7 @@ Subsum_Controller::on_cm_vel_received(const geometry_msgs::msg::Twist::SharedPtr
 
     if (layer <= active_layer)
     {
+        if (layer != active_layer)  RCLCPP_INFO(get_logger(), "Change active layer to layer %i", layer);
         active_layer = layer;
         pub_cmd_vel->publish(*msg);
     }

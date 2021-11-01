@@ -15,6 +15,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 include_directories(include)
 
@@ -26,8 +28,16 @@ ament_target_dependencies(subsum_controller
   nav2_util
 )
 
+add_executable(lidar_obstacle_checker src/lidar_obstacle_checker.cpp)
+ament_target_dependencies(lidar_obstacle_checker
+  rclcpp
+  geometry_msgs
+  nav2_util
+  sensor_msgs
+)
+
 install(
-  TARGETS subsum_controller
+  TARGETS subsum_controller lidar_obstacle_checker
   DESTINATION lib/${PROJECT_NAME})
   
 install(

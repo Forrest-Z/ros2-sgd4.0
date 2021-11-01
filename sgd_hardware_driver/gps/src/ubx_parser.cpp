@@ -15,18 +15,23 @@ Ubx_Parser::Ubx_Parser(std::string xml_file)
 
     root = osm.first_node(0);
     
-    for (rapidxml::xml_node<> *node = root->first_node("sentenceId"); node; node = node->next_sibling())
+    for (rapidxml::xml_node<> *cls = root->first_node("class"); cls; cls = cls->next_sibling())
     {
-        if (get_attribute_value(node, "parse") == "true")
+        for (rapidxml::xml_node<> *msg = cls->first_node("message"); msg; msg = msg->next_sibling())
+        {
+            /* code */
+        }
+        
+        if (get_attribute_value(cls, "parse") == "true")
         {
             std::vector<NMEA_PARAM> v;
-            for (rapidxml::xml_node<> *n = node->first_node(); n; n = n->next_sibling())
+            for (rapidxml::xml_node<> *n = cls->first_node(); n; n = n->next_sibling())
             {
                 std::string s(n->value());
                 NMEA_PARAM p(get_attribute_value(n, "name"), get_attribute_value(n, "type"), s);
                 v.push_back(p);
             }
-            sentence_ids_.insert(std::make_pair(get_attribute_value(node, "name"), v));
+            sentence_ids_.insert(std::make_pair(get_attribute_value(cls, "name"), v));
         }
     }  
     msg_counter_ = 0;  

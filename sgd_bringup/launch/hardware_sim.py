@@ -37,18 +37,6 @@ def generate_launch_description():
     feather_port = LaunchConfiguration('feather_port')
     esp_port = LaunchConfiguration('esp_port')
 
-    lifecycle_nodes = ['wh_fcruiser', 'esp_serial']
-                       #'gps_sensor',
-                       #'esp_serial',
-                       #'imu_bno055',
-                       #'wh_fcruiser',
-                       #'feather_serial']
-    #                   'capacitive_touch',
-    #                   'laser_1d',
-
-   # lifecycle_nodes = ['esp_serial',
-   #                    'imu_bno055']
-
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
     # https://github.com/ros/geometry2/issues/32
@@ -208,9 +196,9 @@ def generate_launch_description():
             name='wh_fcruiser',
             output='screen',
             parameters=[{'port': esp_port},
-            		 {'odom_topic': 'odom_hardware'},
+            		 {'odom_topic': 'odom'},
             		 {'battery_state_topic': 'battery'},
-                     {'vel_twist_topic': 'cmd_vel'},
+                     {'vel_twist_topic': 'sgd_move_base'},
             		 {'use_sim_time': use_sim_time}]),
 
         Node(
@@ -226,14 +214,5 @@ def generate_launch_description():
             name = 'sick_scan2',
             executable='sick_generic_caller',
             output='screen',
-            parameters = [config]),
-
-        Node(
-            package='nav2_lifecycle_manager',
-            executable='lifecycle_manager',
-            name='lifecycle_manager_hardware',
-            output='screen',
-            parameters=[{'use_sim_time': use_sim_time},
-                        {'autostart': autostart},
-                        {'node_names': lifecycle_nodes}]),
+            parameters = [config])
     ])

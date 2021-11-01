@@ -1,6 +1,6 @@
 #include "gps/navilock_ublox6_gps.hpp"
 
-namespace sgd_sensors
+namespace sgd_hardware
 {
 
 using namespace std::chrono_literals;   // if a timer is used
@@ -187,7 +187,7 @@ Navilock_UBlox6_GPS::time_to_string()
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<sgd_sensors::Navilock_UBlox6_GPS>();
+    auto node = std::make_shared<sgd_hardware::Navilock_UBlox6_GPS>();
     rclcpp::spin(node->get_node_base_interface());
     rclcpp::shutdown();
 }

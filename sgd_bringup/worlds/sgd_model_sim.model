@@ -2996,7 +2996,7 @@
         <pose>0.3576 0 0.1082 0 0 0</pose>
         <inertial>
           <pose>0 0 0 0 0 0</pose>
-          <mass>4</mass>
+          <mass>1</mass>
           <inertia>
             <ixx>0.1</ixx>
             <ixy>0</ixy>
@@ -3348,7 +3348,7 @@
           </ray>
           <plugin name="sick_laserscan" filename="libgazebo_ros_ray_sensor.so">
             <ros>
-                <remapping>~/out:=scan</remapping>
+                <remapping>~/out:=scan_sim</remapping>
             </ros>
             <output_type>sensor_msgs/LaserScan</output_type>
             <frame_name>base_scan</frame_name>
@@ -3471,7 +3471,7 @@
 
         <command_topic>cmd_vel</command_topic> <!-- hard coded -->
 
-        <publish_odom>true</publish_odom>
+        <publish_odom>false</publish_odom>
         <publish_odom_tf>false</publish_odom_tf>
         <publish_wheel_tf>false</publish_wheel_tf>
 

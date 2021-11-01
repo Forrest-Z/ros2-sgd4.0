@@ -19,7 +19,7 @@
 #include "rapidxml/rapidxml.hpp"
 #include "gps/nmea_param.hpp"
 
-namespace sgd_sensors
+namespace sgd_hardware
 {
 
 class Nmea_Parser

@@ -13,7 +13,9 @@
 #include "gps/nmea_parser.hpp"
 #include "sgd_util/sgd_util.hpp"
 
-namespace sgd_sensors
+#include "ubx_parser.hpp"
+
+namespace sgd_hardware
 {
 
 class Navilock_UBlox6_GPS : public nav2_util::LifecycleNode

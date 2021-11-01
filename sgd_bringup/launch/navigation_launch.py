@@ -83,7 +83,7 @@ def generate_launch_description():
 
         DeclareLaunchArgument(
             'params_file',
-            default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
+            default_value=os.path.join(bringup_dir, 'params', 'simulation_params.yaml'),
             description='Full path to the ROS2 parameters file to use'),
 
         DeclareLaunchArgument(
@@ -96,14 +96,19 @@ def generate_launch_description():
             'map_subscribe_transient_local', default_value='false',
             description='Whether to set the map subscriber QoS to transient local'),
 
-        #Node(
-        #    package='sgd_controller',
-        #    executable='subsum_controller',
-        #    name='subsum_controller',
-        #    output='screen',
-        #    parameters=[
-        #        {'topic_layer9': 'cmd_vel'}
-        #    ]),
+        Node(
+            package='sgd_controller',
+            executable='subsum_controller',
+            name='subsum_controller',
+            output='screen',
+            parameters=[configured_params]),
+
+        Node(
+            package='sgd_controller',
+            executable='lidar_obstacle_checker',
+            name='lidar_obstacle_checker',
+            output='screen',
+            parameters=[configured_params]),
 
         Node(
             package='nav2_controller',
@@ -145,16 +150,12 @@ def generate_launch_description():
             parameters=[configured_params],
             remappings=remappings),
 
-        #Node(
-        #    package='sgd_global_planner',
-        #    executable='global_planner',
-        #    name='osm_planner',
-        #    output='screen',
-        #    parameters=[
-        #        {'waypoints_topic': 'waypoints'},
-        #        {'clicked_point_topic': 'clicked_point'},
-        #        {'port': 8080},
-        #        {'ip_address': '127.0.0.1'}]),
+        Node(
+            package='sgd_global_planner',
+            executable='global_planner',
+            name='osm_planner',
+            output='screen',
+            parameters=[configured_params]),
 
         #Node(
         #    package='nav2_lifecycle_manager',

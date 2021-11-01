@@ -83,23 +83,26 @@ def generate_launch_description():
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
-        default_value='true',
+        default_value='false',
         description='Use simulation (Gazebo) clock if true')
 
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
-        default_value=os.path.join(bringup_dir, 'params', 'simulation_params.yaml'),
+        default_value=os.path.join(bringup_dir, 'params', 'sgd_params.yaml'),
         description='Full path to the ROS2 parameters file to use for all launched nodes')
 
     declare_bt_xml_cmd = DeclareLaunchArgument(
         'default_bt_xml_filename',
+        #default_value=os.path.join(
+        #    get_package_share_directory('sgd_bringup'),
+        #    'behavior_trees', 'navigate_w_replanning_and_recovery_sgd.xml'),
         default_value=os.path.join(
             get_package_share_directory('nav2_bt_navigator'),
             'behavior_trees', 'navigate_w_replanning_and_recovery.xml'),
         description='Full path to the behavior tree xml file to use')
 
     declare_autostart_cmd = DeclareLaunchArgument(
-        'autostart', default_value='true',
+        'autostart', default_value='false',
         description='Automatically startup the nav2 stack')
         
     declare_rsp_urdf_cmd = DeclareLaunchArgument(
@@ -128,7 +131,7 @@ def generate_launch_description():
 
     declare_simulator_cmd = DeclareLaunchArgument(
         'headless',
-        default_value='False',
+        default_value='True',
         description='Whether to execute gzclient)')
 
     declare_world_cmd = DeclareLaunchArgument(
@@ -137,7 +140,7 @@ def generate_launch_description():
         #              https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/91
         # default_value=os.path.join(get_package_share_directory('turtlebot3_gazebo'),
         #                            'worlds/turtlebot3_worlds/waffle.model'),
-        default_value=os.path.join(bringup_dir, 'worlds', 'model_static.model'),
+        default_value=os.path.join(bringup_dir, 'worlds', 'sgd_model_sim.model'),
         description='Full path to world model file to load')
 
     # Specify the actions
@@ -155,7 +158,7 @@ def generate_launch_description():
     #ros_playback_cmd = ExecuteProcess(
     #    cmd=['ros2', 'bag', 'record',
     #         '-o', 'playback',
-    #         '/imu', '/gps', '/odom'],
+    #         '/imu', '/gps', '/odom', 'amcl_pose'],
     #    output='screen'
     #)
 
@@ -208,6 +211,15 @@ def generate_launch_description():
                           'use_sim_time': use_sim_time,
                           'params_file': params_file}.items())
 
+    start_lifecycle_cmd = Node(
+        package='sgd_lifecycle_manager',
+        executable='lifecycle_manager',
+        name='lifecycle',
+        namespace=namespace,
+        output='screen',
+        emulate_tty=True,
+        parameters=[{"launch_file": os.path.join(bringup_dir, 'params', 'launch.xml')}])
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -239,5 +251,6 @@ def generate_launch_description():
     ld.add_action(localization_cmd)
     ld.add_action(navigation_cmd)
     ld.add_action(hardware_sim_cmd)
+    ld.add_action(start_lifecycle_cmd)
 
     return ld

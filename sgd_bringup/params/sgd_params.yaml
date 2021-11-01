@@ -1,6 +1,6 @@
 amcl:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: False
     alpha1: 0.2
     alpha2: 0.2
     alpha3: 0.2
@@ -120,10 +120,10 @@ controller_server:
       # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
       acc_lim_x: 2.5
       acc_lim_y: 0.0
-      acc_lim_theta: 3.2
+      acc_lim_theta: 1.6
       decel_lim_x: -2.5
       decel_lim_y: 0.0
-      decel_lim_theta: -3.2
+      decel_lim_theta: -1.6
       vx_samples: 20
       vy_samples: 5
       vtheta_samples: 20
@@ -246,14 +246,12 @@ map_saver:
 
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 20.0
+    expected_planner_frequency: 10.0
     use_sim_time: False
     planner_plugins: ["GridBased"]
     GridBased:
-      plugin: "nav2_navfn_planner/NavfnPlanner"
-      tolerance: 0.5
-      use_astar: false
-      allow_unknown: true
+      plugin: "sgd_local_planner/StraightLine"
+      interpolation_resolution: 0.1
 
 planner_server_rclcpp_node:
   ros__parameters:
@@ -284,12 +282,8 @@ robot_state_publisher:
   ros__parameters:
     use_sim_time: False
 
-wh_fcruiser:
-  ros_parameters:
-    use_sim_time: False
-    odom_topic: "odom"
-    battery_state_topic: "battery"
-    vel_twist_topic: "cmd_vel"
-    wheel_separation: 0.71
-    wheel_circumference: 0.68
-
+subsum_controller:
+  ros__parameters:
+    move_topics: ["cmd_vel"]
+    sgd_move_topic: "sgd_move_base"
+    use_sim_time: True

@@ -351,7 +351,7 @@ void GazeboRosDiffDrive::Load(gazebo::physics::ModelPtr _model, sdf::ElementPtr 
   impl_->last_update_time_ = _model->GetWorld()->SimTime();
 
   impl_->cmd_vel_sub_ = impl_->ros_node_->create_subscription<geometry_msgs::msg::Twist>(
-    "cmd_vel", qos.get_subscription_qos("cmd_vel", rclcpp::QoS(1)),
+    "sgd_move_base", qos.get_subscription_qos("sgd_move_base", rclcpp::QoS(1)),
     std::bind(&GazeboRosDiffDrivePrivate::OnCmdVel, impl_.get(), std::placeholders::_1));
 
   RCLCPP_INFO(

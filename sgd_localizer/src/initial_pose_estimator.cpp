@@ -142,8 +142,6 @@ Initial_Pose_Estimator::init_pub_sub()
     
     pub_initial_pose_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(initial_pose_topic_, default_qos);
 
-    //timer_ = this->create_wall_timer(100ms, std::bind(&Simple_Gps_Localizer::kalman_filter, this));
-
     RCLCPP_DEBUG(get_logger(), "Initialised subscriber on topic %s and %s.",
             gps_topic_.c_str(), imu_topic_.c_str());
 }

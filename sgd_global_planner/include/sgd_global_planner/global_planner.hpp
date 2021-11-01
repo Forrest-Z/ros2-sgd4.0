@@ -30,13 +30,13 @@
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/create_timer_ros.h"
 #include "rclcpp_action/rclcpp_action.hpp"
-//#include "nav2_util/geometry_utils.hpp"
 #include "visualization_msgs/msg/marker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "nav2_msgs/action/follow_waypoints.hpp"
 #include "sgd_msgs/srv/compute_path.hpp"
 #include "sgd_util/sgd_util.hpp"
+#include "nav_msgs/msg/path.hpp"
 
 namespace nav_sgd
 {
@@ -81,7 +81,7 @@ protected:
     //! \brief Init Publisher and subscriber
     void init_pub_sub();
     rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-    rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_waypoints_;
+    rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>::SharedPtr publisher_path_;
     rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr sub_clicked_point_;
 
     //! \brief Init transforms
@@ -115,17 +115,9 @@ protected:
 
     //! \brief
     //! \param data pointer to vector with points to publish
-    //! \param r color channel red, default value 0.0
-    //! \param g color channel green, default value 0.8
-    //! \param b color channel blue, default value 0.0
-    //! \param a color channel alpha, default value 1.0
     void publish_marker_array(std::vector<POSE> * data,
-        std::shared_ptr<rclcpp::Publisher<visualization_msgs::msg::MarkerArray>> publisher,
-        float size=0.5f, float r=0.0f, float g=0.8f, float b=0.0f, float a=1.0f);
-
-    //! \brief clear all markers published by the specified publisher
-    void clear_marker_array(std::shared_ptr<rclcpp::Publisher<visualization_msgs::msg::MarkerArray>> publisher);
-
+        std::shared_ptr<rclcpp::Publisher<nav_msgs::msg::Path>> publisher);
+    
     //! \brief Start waypoint following
     //! \param poses vector of waypoints
     void start_waypoint_following(std::vector<POSE> * waypoints);

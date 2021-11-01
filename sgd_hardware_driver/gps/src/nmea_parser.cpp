@@ -2,7 +2,7 @@
 #include "gps/nmea_parser.hpp"
 #include <memory>
 
-namespace sgd_sensors
+namespace sgd_hardware
 {
 
 Nmea_Parser::Nmea_Parser(std::string xml_file)

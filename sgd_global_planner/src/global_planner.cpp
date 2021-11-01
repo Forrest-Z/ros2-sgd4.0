@@ -13,10 +13,10 @@ Global_Planner_OSM::Global_Planner_OSM():
     RCLCPP_DEBUG(get_logger(), "Creating");
 
     // Add parameters
-    add_parameter("waypoints_topic", rclcpp::ParameterValue("waypoints"));
-    add_parameter("clicked_point_topic", rclcpp::ParameterValue("clicked_point"));
-    add_parameter("port", rclcpp::ParameterValue(8080));
-    add_parameter("ip_address", rclcpp::ParameterValue("127.0.0.1"));
+    declare_parameter("waypoints_topic", rclcpp::ParameterValue("global_plan"));
+    declare_parameter("clicked_point_topic", rclcpp::ParameterValue("clicked_point"));
+    declare_parameter("port", rclcpp::ParameterValue(8080));
+    declare_parameter("ip_address", rclcpp::ParameterValue("127.0.0.1"));
 }
 
 Global_Planner_OSM::~Global_Planner_OSM()
@@ -42,7 +42,7 @@ nav2_util::CallbackReturn
 Global_Planner_OSM::on_activate(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Activating");
-    publisher_waypoints_->on_activate();
+    publisher_path_->on_activate();
 
     return wait_for_transform();
 }
@@ -80,7 +80,7 @@ Global_Planner_OSM::init_parameters()
 void
 Global_Planner_OSM::init_pub_sub()
 {
-    publisher_waypoints_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(waypoints_topic_, default_qos);
+    publisher_path_ = this->create_publisher<nav_msgs::msg::Path>(waypoints_topic_, default_qos);
 
     sub_clicked_point_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
         clicked_point_topic_, default_qos, std::bind(&Global_Planner_OSM::computePath, this, _1));
@@ -204,7 +204,7 @@ Global_Planner_OSM::computePath(const std::shared_ptr<geometry_msgs::msg::PointS
     s.append("  \"dest\": [" + to_string(dest.first) + "," + to_string(dest.second) + "],\n");
     s.append("  \"address\": \"\"\n}");
     
-    RCLCPP_INFO(get_logger(), "Send message %s", s.c_str());
+    //RCLCPP_INFO(get_logger(), "Send message %s", s.c_str());
     send(sock , s.c_str() , s.length() , 0 );
     s.clear();
 
@@ -232,7 +232,7 @@ Global_Planner_OSM::computePath(const std::shared_ptr<geometry_msgs::msg::PointS
             }
             else
             {
-                publish_marker_array(&waypoints, publisher_waypoints_, 0.3, 1.0, 0.0);
+                publish_marker_array(&waypoints, publisher_path_);
                 start_waypoint_following(&waypoints);
             }
             
@@ -248,86 +248,34 @@ Global_Planner_OSM::computePath(const std::shared_ptr<geometry_msgs::msg::PointS
 void
 Global_Planner_OSM::publish_marker_array(
     std::vector<POSE> * data,
-    std::shared_ptr<rclcpp::Publisher<visualization_msgs::msg::MarkerArray>> publisher,
-    float size, float r, float g, float b, float a)
+    std::shared_ptr<rclcpp::Publisher<nav_msgs::msg::Path>> publisher)
 {
     std::vector<POSE>::iterator it;
-    visualization_msgs::msg::MarkerArray marker_array;
+    nav_msgs::msg::Path path_;
 
-    int i = 0;
+    path_.header.frame_id = "/map";
+    path_.header.stamp = this->get_clock()->now();
+
     for (it = data->begin(); it != data->end(); ++it)
     {
-        visualization_msgs::msg::Marker marker;
-        marker.header.frame_id = "/map";
-        marker.header.stamp = this->get_clock()->now();
-        marker.ns = "mapdata";
-        marker.id = i++;
-        marker.type = visualization_msgs::msg::Marker::CUBE;
-        marker.action = visualization_msgs::msg::Marker::ADD;
-
         auto p = *it;
         auto xy = sgd_util::WGS84_to_local(p.lat, p.lon);
 
-        marker.pose.position.x = xy.first;
-        marker.pose.position.y = xy.second;
-        marker.pose.position.z = 0.0;
-        marker.pose.orientation.x = 0.0;
-        marker.pose.orientation.y = 0.0;
-        marker.pose.orientation.z = 0.0;
-        marker.pose.orientation.w = 1.0;
+        geometry_msgs::msg::PoseStamped pose;
+        pose.header = path_.header;
 
-        marker.scale.x = size;
-        marker.scale.y = size;
-        marker.scale.z = size;
+        pose.pose.position.x = xy.first;
+        pose.pose.position.y = xy.second;
+        pose.pose.position.z = 0.0;
+        pose.pose.orientation.x = 0.0;
+        pose.pose.orientation.y = 0.0;
+        pose.pose.orientation.z = 0.0;
+        pose.pose.orientation.w = 1.0;
 
-        marker.color.r = r;
-        marker.color.g = g;
-        marker.color.b = b;
-        marker.color.a = a;
-        
-        marker.lifetime = rclcpp::Duration(0);
-
-        marker_array.markers.push_back(marker);
+        path_.poses.push_back(pose);
     }
 
-    publisher->publish(marker_array);
-}
-
-void
-Global_Planner_OSM::clear_marker_array(std::shared_ptr<rclcpp::Publisher<visualization_msgs::msg::MarkerArray>> publisher)
-{
-    RCLCPP_DEBUG(this->get_logger(), "Clear all markers.");
-
-    visualization_msgs::msg::MarkerArray marker_array;
-    visualization_msgs::msg::Marker marker;
-    marker.header.frame_id = "/map";
-    marker.header.stamp = this->get_clock()->now();
-    marker.ns = "mapdata";
-    marker.id = 0;
-    marker.type = visualization_msgs::msg::Marker::CUBE;
-    marker.action = visualization_msgs::msg::Marker::DELETEALL;
-
-    marker.pose.position.x = 0.0;
-    marker.pose.position.y = 0.0;
-    marker.pose.position.z = 0.0;
-    marker.pose.orientation.x = 0.0;
-    marker.pose.orientation.y = 0.0;
-    marker.pose.orientation.z = 0.0;
-    marker.pose.orientation.w = 1.0;
-
-    marker.scale.x = 1.0;
-    marker.scale.y = 1.0;
-    marker.scale.z = 1.0;
-
-    marker.color.r = 0.0;
-    marker.color.g = 0.0;
-    marker.color.b = 1.0;
-    marker.color.a = 1.0;
-    
-    marker.lifetime = rclcpp::Duration(0);
-
-    marker_array.markers.push_back(marker);
-    publisher->publish(marker_array);
+    publisher->publish(path_);
 }
 
 void
@@ -407,7 +355,6 @@ Global_Planner_OSM::get_waypoints_from_msg(std::string waypoints_)
     
     return waypoints;
 }
-
 
 }   // namespace nav_sgd
 
