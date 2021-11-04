@@ -92,32 +92,32 @@ Lidar_Obstacle_Checker::on_scan_received(const sensor_msgs::msg::LaserScan::Shar
 {
     // check scan for point with distance < 0.5m
     // publish new cmd_vel
-    float angle_ = msg->angle_min;
+    float angle_ = msg->angle_min - msg->angle_increment;
     float angle_max = msg->angle_max;
     float incr_ = msg->angle_increment;
 
-    float last_dist_ = msg->range_max;
+    int last_dist_ = 0;
 
     int i = 0;
     for (float dist : msg->ranges)
     {
         angle_ += incr_;
         // ignore all distances > maximum distance and < minimum distance
-        if (dist > msg->range_max || dist < msg->range_min || abs(angle_) > 0.7854)
+        if (dist > msg->range_max || dist < msg->range_min || abs(angle_) > M_PI/12)
         {
-            last_dist_ = msg->range_max;
+            last_dist_ = 0;
             continue;
         }
 
-        if (abs(sin(angle_) * dist) < 1.0)
-        {
+        //if (abs(sin(angle_) * dist) < 1.0)
+        //{
             i++;
             // relevant point
-            double x_dist_ = cos(angle_) * dist;
-            if (x_dist_ < 1.0)
+            //double x_dist_ = cos(angle_) * dist;
+            if (dist < 0.5)
             {
-                //RCLCPP_INFO(get_logger(), "Distance is smaller than 1m.");
-                if (last_dist_ < 1.0)
+                last_dist_ = last_dist_ > 5 ? last_dist_ : last_dist_ + 1;
+                if (last_dist_ > 5)
                 {
                     //RCLCPP_INFO(get_logger(), "Publish command to stop.");
                     double speed = 0.0;
@@ -136,11 +136,12 @@ Lidar_Obstacle_Checker::on_scan_received(const sensor_msgs::msg::LaserScan::Shar
             //}
             else
             {
-                double speed_ = 0.5 * x_dist_ - 0.25;
+                double speed_ = 0.5 * dist - 0.25;
+                last_dist_ = last_dist_ < 1 ? 0 : last_dist_-1;
             }
 
-            last_dist_ = x_dist_;
-        }
+            
+       // }
     }
     //RCLCPP_INFO(get_logger(), "Found %i relevant scan points.", i);
 }

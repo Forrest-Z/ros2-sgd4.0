@@ -53,6 +53,7 @@
 #include "nav2_util/robot_utils.hpp"
 #include "nav2_util/lifecycle_node.hpp"
 #include "nav2_costmap_2d/costmap_2d_ros.hpp"
+#include "tf2/LinearMath/Quaternion.h"
 
 namespace sgd_local_planner
 {
@@ -100,6 +101,7 @@ private:
   double interpolation_resolution_;
   double min_radius_;
   double max_radius_;
+  double radius_;
 };
 
 }  // namespace nav2_straightline_planner

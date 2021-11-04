@@ -157,13 +157,26 @@ def generate_launch_description():
             output='screen',
             parameters=[configured_params]),
 
-        #Node(
-        #    package='nav2_lifecycle_manager',
-        #    executable='lifecycle_manager',
-        #    name='lifecycle_manager_navigation',
-        #    output='screen',
-        #    parameters=[{'use_sim_time': use_sim_time},
-        #                {'autostart': autostart},
-        #                {'node_names': lifecycle_nodes}]),
+        Node(
+            package='sgd_comm',
+            executable='serial',
+            name='rx8r_serial',
+            output='screen',
+            parameters=[{'port': '/dev/ttyACM0',
+            		     'baud_rate': 115200,
+            		     'read_write': 'ro',
+                         'logfile': os.path.join('/home/ipp/dev_ws','log','serial_rx8r.log'),
+                         'raw': False,
+                         'sframe': '$',
+                         'stframe': '\n',
+                         'log': False,
+                         'use_sim_time': use_sim_time}]),
+
+        Node(
+            package='frsky_rx8r',
+            executable='frsky_rx8r',
+            name='frsky_rx8r',
+            output='screen',
+            parameters=[configured_params])
 
     ])

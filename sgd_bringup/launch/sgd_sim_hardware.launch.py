@@ -97,8 +97,8 @@ def generate_launch_description():
         #    get_package_share_directory('sgd_bringup'),
         #    'behavior_trees', 'navigate_w_replanning_and_recovery_sgd.xml'),
         default_value=os.path.join(
-            get_package_share_directory('nav2_bt_navigator'),
-            'behavior_trees', 'navigate_w_replanning_and_recovery.xml'),
+            get_package_share_directory('sgd_bringup'),
+            'behavior_trees', 'navigate_w_replanning_and_recovery_sgd.xml'),
         description='Full path to the behavior tree xml file to use')
 
     declare_autostart_cmd = DeclareLaunchArgument(

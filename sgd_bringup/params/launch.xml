@@ -5,8 +5,10 @@
     <!--node name="amcl" /-->
 
 <!-- hardware nodes -->
-    <node name="esp_serial" />
-    <node name="wh_fcruiser" />
+    <!--node name="esp_serial" />
+    <node name="wh_fcruiser" /-->
+    <node name="rx8r_serial" />
+    <node name="frsky_rx8r" />
 
 <!-- navigation nodes -->
     <node name="subsum_controller" />

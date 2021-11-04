@@ -4,6 +4,10 @@
     <node name="map_server" />
     <node name="amcl" />
 
+<!-- receiver -->
+    <node name="rx8r_serial" />
+    <node name="frsky_rx8r" />
+
 <!-- navigation nodes -->
     <node name="subsum_controller" />
     <node name="controller_server" />

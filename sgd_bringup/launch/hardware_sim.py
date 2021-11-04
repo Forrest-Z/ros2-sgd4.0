@@ -36,6 +36,7 @@ def generate_launch_description():
     gps_port = LaunchConfiguration('gps_port')
     feather_port = LaunchConfiguration('feather_port')
     esp_port = LaunchConfiguration('esp_port')
+    rx8r_port = LaunchConfiguration('rx8r_port')
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
@@ -52,7 +53,8 @@ def generate_launch_description():
         'autostart': autostart,
         'gps_port': '/dev/ttyACM0',
         'esp_port': '/dev/ttyUSB0',
-        'feather_port': '/dev/ttyACM0'}
+        'feather_port': '/dev/ttyACM0',
+        'rx8r_port': '/dev/ttyACM0'}
 
     configured_params = RewrittenYaml(
             source_file=params_file,
@@ -101,6 +103,11 @@ def generate_launch_description():
 	        'esp_port',
 	        default_value='/dev/ttyUSB0',
 	        description='Port to communicate with ESP8266'),
+
+        DeclareLaunchArgument(
+            'rx8r_port',
+            default_value='/dev/ttyACM0',
+            description='FrSky port'),
 
         Node(
             package="sgd_comm",
@@ -214,5 +221,6 @@ def generate_launch_description():
             name = 'sick_scan2',
             executable='sick_generic_caller',
             output='screen',
-            parameters = [config])
+            parameters = [config]),
+
     ])

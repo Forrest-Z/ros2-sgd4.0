@@ -63,10 +63,12 @@ void StraightLine::configure(
   node_->declare_parameter(name_ + ".interpolation_resolution", rclcpp::ParameterValue(0.1));
   node_->declare_parameter(name_ + ".min_radius", rclcpp::ParameterValue(0.5));
   node_->declare_parameter(name_ + ".max_radius", rclcpp::ParameterValue(5.0));
+  node_->declare_parameter(name_ + ".radius", rclcpp::ParameterValue(2.0));
 
   node_->get_parameter(name_ + ".interpolation_resolution", interpolation_resolution_);
   node_->get_parameter(name_ + ".min_radius", min_radius_);
   node_->get_parameter(name_ + ".max_radius", max_radius_);
+  node_->get_parameter(name_ + ".radius", radius_);
 }
 
 void StraightLine::cleanup()
@@ -99,15 +101,15 @@ nav_msgs::msg::Path StraightLine::createPlan(
   // Checking if the goal and start state is in the global frame
   if (start.header.frame_id != global_frame_) {
     RCLCPP_ERROR(
-      node_->get_logger(), "Planner will only except start position from %s frame",
-      global_frame_.c_str());
+      node_->get_logger(), "Planner will only except start position from %s frame and not from %s",
+      global_frame_.c_str(), start.header.frame_id);
     return global_path;
   }
 
   if (goal.header.frame_id != global_frame_) {
     RCLCPP_INFO(
-      node_->get_logger(), "Planner will only except goal position from %s frame",
-      global_frame_.c_str());
+      node_->get_logger(), "Planner will only except goal position from %s frame and not from %s",
+      global_frame_.c_str(), goal.header.frame_id);
     return global_path;
   }
 
@@ -121,6 +123,28 @@ nav_msgs::msg::Path StraightLine::createPlan(
     interpolation_resolution_;
   double x_increment = (goal.pose.position.x - start.pose.position.x) / total_number_of_loop;
   double y_increment = (goal.pose.position.y - start.pose.position.y) / total_number_of_loop;
+
+  // angle from start to goal
+  tf2::Quaternion q_start_, q_goal_;
+  tf2::fromMsg(start.pose.orientation, q_start_);
+  tf2::fromMsg(goal.pose.orientation, q_goal_);
+
+  // compute start vector: x = a + l*b
+  // a = start pose
+  // b = (cos(z), sin(z))
+
+  double ang = atan2(goal.pose.position.y - start.pose.position.y,
+                    goal.pose.position.x - start.pose.position.x) - q_start_.getAngle();
+
+  // Mittelpunkt des Kreises
+  double ang_rot_ = ((ang > 0 && ang < M_PI) || ang < -M_PI) ? M_PI/2 : -M_PI/2;
+  double mx_ = cos(q_start_.getAngle() + ang_rot_) * radius_ + start.pose.position.y;
+  double my_ = sin(q_start_.getAngle() + ang_rot_) * radius_ + start.pose.position.x;
+  
+  // Schnittpunkt zwischen Kreis und Tangente zu goal
+  
+
+  RCLCPP_INFO(node_->get_logger(), "Kreismittelpunkt: (%f, %f)", mx_, my_);
 
   auto t = node_->now();
   for (int i = 0; i < total_number_of_loop; ++i) {

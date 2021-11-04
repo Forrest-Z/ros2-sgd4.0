@@ -94,7 +94,7 @@ Global_Planner_OSM::init_pub_sub()
     waypoint_follower_action_client_ = 
         rclcpp_action::create_client<nav2_msgs::action::FollowWaypoints>(
         client_node_,
-        "waypoint_follower");
+        "FollowWaypoints");
     waypoint_follower_goal_ = nav2_msgs::action::FollowWaypoints::Goal();
 
     server_timeout_ = std::chrono::milliseconds(10);
@@ -253,12 +253,13 @@ Global_Planner_OSM::publish_marker_array(
     std::vector<POSE>::iterator it;
     nav_msgs::msg::Path path_;
 
-    path_.header.frame_id = "/map";
+    path_.header.frame_id = "map";
     path_.header.stamp = this->get_clock()->now();
 
-    for (it = data->begin(); it != data->end(); ++it)
+    geometry_msgs::msg::PoseStamped last_p_;
+    tf2::Quaternion angle_to_last_p_;
+    for (auto p : *data)
     {
-        auto p = *it;
         auto xy = sgd_util::WGS84_to_local(p.lat, p.lon);
 
         geometry_msgs::msg::PoseStamped pose;
@@ -267,14 +268,21 @@ Global_Planner_OSM::publish_marker_array(
         pose.pose.position.x = xy.first;
         pose.pose.position.y = xy.second;
         pose.pose.position.z = 0.0;
+
         pose.pose.orientation.x = 0.0;
         pose.pose.orientation.y = 0.0;
         pose.pose.orientation.z = 0.0;
         pose.pose.orientation.w = 1.0;
 
+        double angle = atan2(pose.pose.position.y - last_p_.pose.position.y,
+                    pose.pose.position.x - last_p_.pose.position.x);
+        angle_to_last_p_.setRPY(0, 0, angle);
+        last_p_ = pose;
         path_.poses.push_back(pose);
     }
 
+    RCLCPP_INFO(get_logger(), "Angle from last point: %f", angle_to_last_p_.getAngle());
+    path_.poses.back().pose.orientation = tf2::toMsg(angle_to_last_p_);
     publisher->publish(path_);
 }
 
@@ -301,7 +309,7 @@ Global_Planner_OSM::start_waypoint_following(std::vector<POSE> * waypoints)
         auto xy = sgd_util::WGS84_to_local(p.lat, p.lon);
 
         ps.header.stamp = rclcpp::Clock().now();
-        ps.header.frame_id = "0";
+        ps.header.frame_id = "map";
         ps.pose.position.x = xy.first;
         ps.pose.position.y = xy.second;
         ps.pose.position.z = 0.0;

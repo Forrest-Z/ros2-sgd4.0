@@ -281,7 +281,7 @@ robot_state_publisher:
 
 subsum_controller:
   ros__parameters:
-    move_topics: ["cmd_vel_lidar", "cmd_vel"]
+    move_topics: ["cmd_vel_master", "cmd_vel_lidar", "cmd_vel_frsky", "cmd_vel"]
     sgd_move_topic: "sgd_move_base"
     use_sim_time: True
 
@@ -299,3 +299,10 @@ osm_planner:
     clicked_point_topic: "clicked_point"
     port: 8080
     ip_address: "127.0.0.1"
+
+frsky_rx8r:
+  ros__parameters:
+    use_sim_time: False
+    port: "/dev/ttyACM0"
+    max_vel: 0.5
+    max_rot_vel: 0.5

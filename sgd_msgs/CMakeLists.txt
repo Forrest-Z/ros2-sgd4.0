@@ -18,6 +18,7 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
 set(msg_files
+  "msg/Light.msg"
   "msg/Path.msg"
   "msg/Serial.msg"
   "msg/Touch.msg"
