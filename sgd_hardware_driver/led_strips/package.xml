@@ -1,17 +1,16 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>laser1d</name>
-  <version>0.0.1</version>
-  <description>Package for one dimensional laser scanner.</description>
-  <maintainer email="pascal.stahr@haw-hamburg.de">Pascal Stahr</maintainer>
-  <license>Apache License 2.0</license>
+  <name>led_strips</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+  <maintainer email="miguel.martinezgenis@haw-hamburg.de">miguel</maintainer>
+  <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+
   <depend>rclcpp</depend>
   <depend>sgd_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>rclcpp_lifecycle</depend>
   <depend>nav2_util</depend>
 
   <test_depend>ament_lint_auto</test_depend>

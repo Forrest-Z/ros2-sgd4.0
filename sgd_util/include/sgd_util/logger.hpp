@@ -7,32 +7,23 @@
 #include <fstream>
 
 #include "rclcpp/rclcpp.hpp"
-#include "rclcpp_lifecycle/lifecycle_node.hpp"
-#include "nav2_util/lifecycle_node.hpp"
 
 #include "nav_msgs/msg/odometry.hpp"
 #include "sensor_msgs/msg/imu.hpp"
+#include "sensor_msgs/msg/laser_scan.hpp"
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
 
 namespace sgd_util
 {
 
-class Logger : public nav2_util::LifecycleNode
+class Logger : public rclcpp::Node
 {
 public:
   Logger();
   ~Logger();
 
 protected:
-  // Implement the lifecycle interface
-  nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
-  nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
-  nav2_util::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
-  nav2_util::CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
-  nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
-
   //! \brief Init parameters
-  void init_parameters();
   std::string imu_topic_;
   std::string odom_topic_;
   std::string gps_topic_;
@@ -45,12 +36,13 @@ protected:
   //! \brief Init publisher and subscriber
   void init_pub_sub();
   rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub_imu_;
   rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr sub_gps_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_;
 
   double time_at_start_;
-  void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg_);
+  std::string scan_filename_;
+  void imu_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg_);
   void gps_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg_);
   void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg_);
 

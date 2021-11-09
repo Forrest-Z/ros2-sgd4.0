@@ -37,6 +37,7 @@ def generate_launch_description():
     feather_port = LaunchConfiguration('feather_port')
     esp_port = LaunchConfiguration('esp_port')
     rx8r_port = LaunchConfiguration('rx8r_port')
+    led_strip_port = LaunchConfiguration('led_strip_port');
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
@@ -53,8 +54,9 @@ def generate_launch_description():
         'autostart': autostart,
         'gps_port': '/dev/ttyACM0',
         'esp_port': '/dev/ttyUSB0',
-        'feather_port': '/dev/ttyACM0',
-        'rx8r_port': '/dev/ttyACM0'}
+        'feather_port': '/dev/ttyACM1',
+        'rx8r_port': '/dev/ttyACM0',
+        'led_strip_port': '/dev/ttyACM2'}
 
     configured_params = RewrittenYaml(
             source_file=params_file,
@@ -86,8 +88,8 @@ def generate_launch_description():
 
         DeclareLaunchArgument(
             'params_file',
-            default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
-            description='Full path to the ROS2 parameters file to use'),
+            default_value=os.path.join(bringup_dir, 'params', 'sgd_params.yaml'),
+            description='Full path to the ROS2 parameters file to use for all launched nodes'),
 
         DeclareLaunchArgument(
 	        'gps_port',
@@ -96,7 +98,7 @@ def generate_launch_description():
 
     	DeclareLaunchArgument(
 	        'feather_port',
-	        default_value='/dev/ttyACM0',
+	        default_value='/dev/ttyACM1',
 	        description='Port to communicate with feather M0'),
 
         DeclareLaunchArgument(
@@ -108,6 +110,11 @@ def generate_launch_description():
             'rx8r_port',
             default_value='/dev/ttyACM0',
             description='FrSky port'),
+
+        DeclareLaunchArgument(
+            'led_strip_port',
+            default_value='/dev/ttyACM2',
+            description='LED Strip port'),
 
         Node(
             package="sgd_comm",
@@ -179,8 +186,7 @@ def generate_launch_description():
             name="laser_1d",
             output="screen",
             emulate_tty=True,
-            parameters=[
-                {"port": feather_port}]),
+            parameters=[configured_params]),
 
         Node(
             package='sgd_comm',
@@ -206,6 +212,7 @@ def generate_launch_description():
             		 {'odom_topic': 'odom'},
             		 {'battery_state_topic': 'battery'},
                      {'vel_twist_topic': 'sgd_move_base'},
+                     {'kp': 0.25},
             		 {'use_sim_time': use_sim_time}]),
 
         Node(
@@ -214,7 +221,33 @@ def generate_launch_description():
             name='logger',
             output='screen',
             parameters=[{'output_folder': os.path.join('/home/ipp/dev_ws','log')}]),
-                     
+        
+        Node(
+            package="sgd_comm",
+            executable="serial",
+            name="led_serial",
+            output="screen",
+            emulate_tty=True,
+            parameters=[
+                {"port": led_strip_port,
+                "baud_rate": 115200,
+                "read_write": "ro",
+                "logfile": os.path.join('/home/ipp/dev_ws','log','serial_led.log'),
+                "raw": False,
+                "sframe": '$',
+                "stframe": '\n',
+                "log": False,
+                'use_sim_time': use_sim_time}]),
+
+        Node(
+            package='led_strips',
+            executable='led_strip',
+            name='led_strip',
+            output='screen',
+            parameters=[{'port': led_strip_port,
+                         'input_topic': 'lights',
+            		     'use_sim_time': use_sim_time}]),
+
         # TODO: Create nodes for lidar
         Node(
             package='sick_scan2',

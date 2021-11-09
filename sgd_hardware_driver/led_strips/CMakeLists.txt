@@ -1,9 +1,14 @@
 cmake_minimum_required(VERSION 3.5)
-project(laser1d)
+project(led_strips)
+
+# Default to C99
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 99)
+endif()
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 14)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -14,23 +19,20 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sgd_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
 find_package(nav2_util REQUIRED)
 
 include_directories(include)
 
-add_executable(laser_1d src/laser_1d.cpp)
-ament_target_dependencies(laser_1d
+add_executable(led_strip src/led_node.cpp)
+ament_target_dependencies(led_strip
     rclcpp
     sgd_msgs
-    geometry_msgs
     rclcpp_lifecycle
     nav2_util
 )
 
 install(TARGETS
-laser_1d
+  led_strip
   RUNTIME DESTINATION lib/${PROJECT_NAME})
   
 install(

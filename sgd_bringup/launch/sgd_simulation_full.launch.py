@@ -102,7 +102,7 @@ def generate_launch_description():
         description='Full path to the behavior tree xml file to use')
 
     declare_autostart_cmd = DeclareLaunchArgument(
-        'autostart', default_value='false',
+        'autostart', default_value='True',
         description='Automatically startup the nav2 stack')
         
     declare_rsp_urdf_cmd = DeclareLaunchArgument(
@@ -184,6 +184,14 @@ def generate_launch_description():
                           'use_namespace': 'False',
                           'rviz_config': rviz_config_file}.items())
 
+    slam_cmd = IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(launch_dir, 'slam_launch.py')),
+            condition=IfCondition(slam),
+            launch_arguments={'namespace': namespace,
+                            'use_sim_time': use_sim_time,
+                            'autostart': autostart,
+                            'params_file': params_file}.items())
+
     localization_cmd = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'localization_launch.py')),
             condition=IfCondition(PythonExpression(['not ', slam])),
@@ -241,6 +249,7 @@ def generate_launch_description():
     # Add the actions to launch all of the navigation nodes
     ld.add_action(start_robot_state_publisher_cmd)
     ld.add_action(rviz_cmd)
+    ld.add_action(slam_cmd)
     ld.add_action(localization_cmd)
     ld.add_action(navigation_cmd)
     ld.add_action(start_lifecycle_cmd)

@@ -5,10 +5,14 @@
     <!--node name="amcl" /-->
 
 <!-- hardware nodes -->
-    <!--node name="esp_serial" />
-    <node name="wh_fcruiser" /-->
+    <node name="esp_serial" />
+    <node name="wh_fcruiser" />
+    <node name="feather_serial" />
+    <node name="laser_1d" />
     <node name="rx8r_serial" />
     <node name="frsky_rx8r" />
+    <!--node name="led_serial" />
+    <node name="led_strip" /-->
 
 <!-- navigation nodes -->
     <node name="subsum_controller" />
@@ -19,6 +23,6 @@
     <node name="waypoint_follower" />
     <!--node name="osm_planner" / -->
     <!--node name="initial_pose_estimator" /-->
-    <!--node name="lidar_obstacle_checker" /-->
+    <node name="lidar_obstacle_checker" />
 
 </launch>

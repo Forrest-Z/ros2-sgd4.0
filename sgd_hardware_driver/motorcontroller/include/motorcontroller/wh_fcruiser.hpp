@@ -45,12 +45,15 @@ protected:
   std::string vel_twist_topic_;
   double wheel_separation_;
   double wheel_circum_;
+  double kp_;
 
   //! \brief Init publisher and subscriber
   void init_pub_sub();
   std::regex regex_;
-  double batt_volt_ = 0.0;
+  //double batt_volt_ = 0.0;
   rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
+  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::TimerBase::SharedPtr timer_vol_;
   rclcpp_lifecycle::LifecyclePublisher<sgd_msgs::msg::Serial>::SharedPtr pub_motor_;
   rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
   rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::BatteryState>::SharedPtr pub_battery_;
@@ -59,10 +62,16 @@ protected:
 
   double pose_orie_z;
   nav_msgs::msg::Odometry last_odom_msg_;
+  geometry_msgs::msg::Twist last_cmd_vel_;
+  double last_speed_ = 0.0, last_steer_ = 0.0;
+  double rec_speed_, rec_steer_;
+  double batt_volt_;
   
-  void publish_battery_state(double voltage);
+  void publish_battery_state();
   void on_motor_received(const sgd_msgs::msg::Serial::SharedPtr msg);
   void on_cmd_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg);
+  double cmd_vel_seconds_;
+  void publish_motor_cmd();
 };
 
 }   // namespace sgd_hardware_drivers

@@ -281,7 +281,7 @@ robot_state_publisher:
 
 subsum_controller:
   ros__parameters:
-    move_topics: ["cmd_vel_master", "cmd_vel_lidar", "cmd_vel_frsky", "cmd_vel"]
+    move_topics: ["cmd_vel_master", "cmd_vel_lidar", "cmd_vel_frsky", "cmd_vel_contr"]
     sgd_move_topic: "sgd_move_base"
     use_sim_time: True
 
@@ -304,5 +304,13 @@ frsky_rx8r:
   ros__parameters:
     use_sim_time: False
     port: "/dev/ttyACM0"
-    max_vel: 0.5
+    max_vel: 0.8
     max_rot_vel: 0.5
+
+laser1d:
+  ros__parameters:
+    use_sim_time: false
+    port: "/dev/ttyACM1"
+    min_range: 0.25
+    max_range: 1.0
+    max_vel_percent: 150

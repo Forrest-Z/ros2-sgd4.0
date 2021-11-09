@@ -8,9 +8,11 @@ Laser_1D::Laser_1D():
 {
     RCLCPP_DEBUG(get_logger(), "Creating");
 
-    add_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
-    add_parameter("msg_regex", rclcpp::ParameterValue("Laser:(\\d*),R:(\\d*),S:(\\d*),P:(\\d*\\.\\d*),A:(\\d*\\.\\d*)"));
-
+    declare_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
+    declare_parameter("msg_regex", rclcpp::ParameterValue("Laser:(\\d*),R:(\\d*),S:(\\d*),P:(\\d*\\.\\d*),A:(\\d*\\.\\d*)"));
+    declare_parameter("min_range", rclcpp::ParameterValue(0.1));
+    declare_parameter("max_range", rclcpp::ParameterValue(1.5));
+    declare_parameter("max_vel_percent", rclcpp::ParameterValue(150));
 }
  
 Laser_1D::~Laser_1D()
@@ -68,22 +70,30 @@ Laser_1D::init_parameters()
 {
     get_parameter("port", port_);
     get_parameter("msg_regex", msg_regex_);
+    get_parameter("min_range", min_range_);
+    get_parameter("max_range", max_range_);
+    get_parameter("max_vel_percent", max_vel_percent_);
+
+    m_ = (-max_vel_percent_) / (max_range_ - min_range_);
+    b_ = -m_ * max_range_;
 }
 
 void
 Laser_1D::init_pub_sub()
 {
     std::string serial_topic = "serial_" + port_.substr(port_.find_last_of("/")+1);
-    subscriber_ = this->create_subscription<sgd_msgs::msg::Serial>(serial_topic, default_qos,
-            std::bind(&Laser_1D::on_msg_received, this, std::placeholders::_1));
-    publisher_ = this->create_publisher<sensor_msgs::msg::Range>("laser_1d", default_qos);
+    sub_serial_ = this->create_subscription<sgd_msgs::msg::Serial>(serial_topic, default_qos,
+            std::bind(&Laser_1D::on_serial_received, this, std::placeholders::_1));
+    sub_cmd_vel_ = this->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", default_qos,
+            std::bind(&Laser_1D::on_cmd_vel_received, this, std::placeholders::_1));
+    publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel_contr", default_qos);
 
     RCLCPP_DEBUG(get_logger(), "Initialised publisher on topic %s and subscriber on topic %s.",
-            serial_topic.c_str(), 'laser_1d');
+            serial_topic.c_str(), "cmd_vel_contr");
 }
 
 void
-Laser_1D::on_msg_received(const sgd_msgs::msg::Serial::SharedPtr msg_)
+Laser_1D::on_serial_received(const sgd_msgs::msg::Serial::SharedPtr msg_)
 {
     // {Laser: <time>,R: <range>,S: <status>,P: <peak_count_rate>,A: <ambient_count_rate>}
     // Parse message and save values
@@ -103,13 +113,17 @@ Laser_1D::on_msg_received(const sgd_msgs::msg::Serial::SharedPtr msg_)
         //a = std::stoi(matches[5]);
     } else { return; }
 
-    sensor_msgs::msg::Range laser_msg;
-    laser_msg.header.stamp.sec = floor(time / 1000);
-    laser_msg.radiation_type = sensor_msgs::msg::Range::INFRARED;
-    laser_msg.min_range = 0.0f;
-    laser_msg.max_range = 150.0f;
-    laser_msg.range = r / 10.0f;
-    publisher_->publish(laser_msg);
+    vel_modifier_ = set_vel_modifier(r / 1000.0);
+    RCLCPP_INFO(get_logger(), "Measured: %f, set vel modifier: %f", r/1000.0, vel_modifier_);
+}
+
+void
+Laser_1D::on_cmd_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg_)
+{
+    msg_->linear.x *= vel_modifier_;
+    msg_->angular.z *= vel_modifier_;
+
+    publisher_->publish(*msg_);
 }
 
 }   // namespace

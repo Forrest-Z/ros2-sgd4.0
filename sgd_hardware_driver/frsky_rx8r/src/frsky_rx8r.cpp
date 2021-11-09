@@ -118,6 +118,7 @@ FrSky_RX8R::on_msg_received(const sgd_msgs::msg::Serial::SharedPtr msg)
     }
     // send first two channels as movement
     pub_cmd_vel(channels[0], channels[1], channels[7]);
+    pub_light(channels[2], channels[5]);
 }
 
 void
@@ -156,18 +157,60 @@ FrSky_RX8R::pub_light(int ch3, int ch6)
     ch3 -= 992;
     ch6 -= 992;
 
-    int rgb[3];
-
     ch3 = abs(ch3) < 20 ? 2 : ch3 > 0;
     ch6 = abs(ch6) < 20 ? 2 : ch6 > 0;
 
-    if (ch3 == lights_l_ && ch6 == lights_r_)
+    sgd_msgs::msg::Light light_msg_;
+    std::vector<unsigned char> rgb = {0,0,0};
+
+    int mode = -1;
+    if (ch3 != lights_l_)
+    {
+        mode = ch3;
+        lights_l_ = ch3;
+        light_msg_.strip = sgd_msgs::msg::Light::LEFT;
+    }
+    else if (ch6 != lights_r_)
+    {
+        mode = ch6;
+        lights_r_ = ch6;
+        light_msg_.strip = sgd_msgs::msg::Light::RIGHT;
+    }
+    else
     {
         return;
     }
+    light_msg_.mode = mode;
+
+    switch (mode)
+    {
+    case sgd_msgs::msg::Light::FILL:
+        rgb[0] = 255;
+        break;
+    
+    case sgd_msgs::msg::Light::BLINK:
+        rgb[0] = 255;
+        rgb[1] = 165;
+        break;
+
+    case sgd_msgs::msg::Light::WAFT:
+        rgb[2] = 255;
+        break;
+
+    case sgd_msgs::msg::Light::RUN:
+        light_msg_.rgb[1] = 255;
+        break;
+
+    default:
+        break;
+    }
+
+    light_msg_.rgb = rgb;
+    publish_light_->publish(light_msg_);
+
 }
 
-}   // namespace
+}   // namespace sgd_hardware_drivers
 
 int main(int argc, char **argv)
 {

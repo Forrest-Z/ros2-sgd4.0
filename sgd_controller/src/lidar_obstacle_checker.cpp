@@ -103,7 +103,7 @@ Lidar_Obstacle_Checker::on_scan_received(const sensor_msgs::msg::LaserScan::Shar
     {
         angle_ += incr_;
         // ignore all distances > maximum distance and < minimum distance
-        if (dist > msg->range_max || dist < msg->range_min || abs(angle_) > M_PI/12)
+        if (dist > msg->range_max || dist < msg->range_min || abs(angle_) > M_PI/6)
         {
             last_dist_ = 0;
             continue;
@@ -114,10 +114,10 @@ Lidar_Obstacle_Checker::on_scan_received(const sensor_msgs::msg::LaserScan::Shar
             i++;
             // relevant point
             //double x_dist_ = cos(angle_) * dist;
-            if (dist < 0.5)
+            if (dist < 0.8)
             {
-                last_dist_ = last_dist_ > 5 ? last_dist_ : last_dist_ + 1;
-                if (last_dist_ > 5)
+                last_dist_ = last_dist_ > 8 ? last_dist_ : last_dist_ + 1;
+                if (last_dist_ >= 8)
                 {
                     //RCLCPP_INFO(get_logger(), "Publish command to stop.");
                     double speed = 0.0;
@@ -136,8 +136,8 @@ Lidar_Obstacle_Checker::on_scan_received(const sensor_msgs::msg::LaserScan::Shar
             //}
             else
             {
-                double speed_ = 0.5 * dist - 0.25;
-                last_dist_ = last_dist_ < 1 ? 0 : last_dist_-1;
+                double speed_ = 0.8 * dist - 0.25;
+                last_dist_ = last_dist_ < 2 ? 0 : last_dist_-2;
             }
 
             

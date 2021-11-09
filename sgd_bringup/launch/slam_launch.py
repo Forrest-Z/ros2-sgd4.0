@@ -57,16 +57,16 @@ def generate_launch_description():
 
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
-        default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
+        default_value=os.path.join(bringup_dir, 'params', 'sgd_params.yaml'),
         description='Full path to the ROS2 parameters file to use for all launched nodes')
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
-        default_value='true',
+        default_value='False',
         description='Use simulation (Gazebo) clock if true')
 
     declare_autostart_cmd = DeclareLaunchArgument(
-        'autostart', default_value='true',
+        'autostart', default_value='True',
         description='Automatically startup the nav2 stack')
 
     # Nodes launching commands
@@ -76,14 +76,22 @@ def generate_launch_description():
 
     start_map_saver_server_cmd = Node(
             package='nav2_map_server',
-            node_executable='map_saver_server',
+            executable='map_saver_server',
             output='screen',
             parameters=[configured_params])
 
+    start_ekf_odom_cmd = Node(
+            package='robot_localization',
+            executable='ekf_node',
+            name='ekf_filter_node_odom',
+            output='screen',
+            parameters=[{os.path.join(bringup_dir, 'params', 'dual_ekf.yaml')},
+                        {'use_sim_time': use_sim_time}])
+
     start_lifecycle_manager_cmd = Node(
             package='nav2_lifecycle_manager',
-            node_executable='lifecycle_manager',
-            node_name='lifecycle_manager_slam',
+            executable='lifecycle_manager',
+            name='lifecycle_manager_slam',
             output='screen',
             parameters=[{'use_sim_time': use_sim_time},
                         {'autostart': autostart},
@@ -102,6 +110,7 @@ def generate_launch_description():
 
     # Running Map Saver Server
     ld.add_action(start_map_saver_server_cmd)
+    ld.add_action(start_ekf_odom_cmd)
     ld.add_action(start_lifecycle_manager_cmd)
 
     return ld

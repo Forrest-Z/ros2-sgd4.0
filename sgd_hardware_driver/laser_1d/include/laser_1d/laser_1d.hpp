@@ -6,7 +6,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "nav2_util/lifecycle_node.hpp"
-#include "sensor_msgs/msg/range.hpp"
+#include "geometry_msgs/msg/twist.hpp"
 #include "sgd_msgs/msg/serial.hpp"
 
 namespace sgd_sensors
@@ -30,15 +30,27 @@ protected:
     void init_parameters();
     std::string port_;
     std::string msg_regex_;
+    double min_range_;
+    double max_range_;
+    int max_vel_percent_;
+    double m_, b_;
 
     //! \brief Init Publisher and subscriber
     void init_pub_sub();
     rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-    rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::Range>::SharedPtr publisher_;
-    rclcpp::Subscription<sgd_msgs::msg::Serial>::SharedPtr subscriber_;
+    rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::Twist>::SharedPtr publisher_;
+    rclcpp::Subscription<sgd_msgs::msg::Serial>::SharedPtr sub_serial_;
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel_;
 
     std::regex regex_;
-    void on_msg_received(const sgd_msgs::msg::Serial::SharedPtr msg_);
+    void on_serial_received(const sgd_msgs::msg::Serial::SharedPtr msg_);
+    void on_cmd_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg_);
+    double vel_modifier_ = 1.0;
+
+    inline double set_vel_modifier(double range)
+    {
+        return (range > max_range_ || range < min_range_) ? (range > max_range_) * max_vel_percent_ : range * m_ + b_;
+    }
 };
 
 }

@@ -65,7 +65,7 @@
 
     <model name="blindenhund">
       <pose>12.5 -76.5 0.15 0.0 0.0 0.0</pose>
-      <link name="base_footprint"/>
+      <!--link name="base_footprint"/-->
 
       <link name="base_link">
         <pose>0.3576 0 0.1524 0 0 0</pose>
@@ -490,11 +490,11 @@
         </sensor>
       </link>
 
-      <joint name="base_joint" type="fixed">
+      <!--joint name="base_joint" type="fixed">
         <parent>base_footprint</parent>
         <child>base_link</child>
         <pose>0 0 0 0 0 0</pose>
-      </joint>
+      </joint-->
 
       <joint name="wheel_left_joint" type="revolute">
         <parent>base_link</parent>
@@ -533,7 +533,7 @@
       </joint>
       
       <joint name="imu_joint" type="fixed">
-        <parent>base_footprint</parent>
+        <parent>base_link</parent>
         <child>imu_link</child>
         <pose>0 0 0 0 0 0</pose>
       </joint>
@@ -550,15 +550,15 @@
         <max_wheel_torque>20</max_wheel_torque>
         <max_wheel_acceleration>0.2</max_wheel_acceleration>
 
-        <command_topic>cmd_veltrn</command_topic>
+        <command_topic>cmd_vel</command_topic>
 
         <publish_odom>true</publish_odom>
-        <publish_odom_tf>true</publish_odom_tf>
+        <publish_odom_tf>false</publish_odom_tf>
         <publish_wheel_tf>false</publish_wheel_tf>
 
         <odometry_topic>odom</odometry_topic>
         <odometry_frame>odom</odometry_frame>
-        <robot_base_frame>base_footprint</robot_base_frame>
+        <robot_base_frame>base_link</robot_base_frame>
       </plugin>
 
       <plugin name="turtlebot3_joint_state" filename="libgazebo_ros_joint_state_publisher.so">
