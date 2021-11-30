@@ -18,7 +18,7 @@
 #include <queue>
 #include <list>
 
-#include "rapidxml/rapidxml.hpp"
+#include "tinyxml2.h"
 #include "a_star_users.hpp"
 
 namespace nav_sgd
@@ -30,8 +30,8 @@ class A_Star
 //! \brief Struct to hold node id, latitude and longitude
 struct NODE
 {
-    rapidxml::xml_node<char> *xml_node;
-    rapidxml::xml_node<char> *parent_xml_node;
+    tinyxml2::XMLElement * xml_node;
+    tinyxml2::XMLElement * parent_xml_node;
     double f,g,h;
 };
 
@@ -51,13 +51,13 @@ private:
 
     //! \brief Read and parse xml file
     //! \returns Root node of xml document
-    rapidxml::xml_node<>* read_nav_file();
+    tinyxml2::XMLElement * read_nav_file();
 
-    rapidxml::xml_node<char>* get_node_from_lat_lon(rapidxml::xml_node<>* root, double const lat, double const lon);
-    void trace_path(std::unordered_map<rapidxml::xml_node<char> *, rapidxml::xml_node<char> *> closedList, rapidxml::xml_node<char> * dest);
-    double calc_cost_factor(rapidxml::xml_node<char> *node);
-    double distance_node_to_node(rapidxml::xml_node<char> *start, rapidxml::xml_node<char> *dest);
-    bool isDestination(rapidxml::xml_node<char> *pos, rapidxml::xml_node<char> *dest);
+    tinyxml2::XMLElement * get_node_from_lat_lon(tinyxml2::XMLElement * root, double const lat, double const lon);
+    void trace_path(std::unordered_map<tinyxml2::XMLElement *, tinyxml2::XMLElement *> closedList, tinyxml2::XMLElement * dest);
+    double calc_cost_factor(tinyxml2::XMLElement *node);
+    double distance_node_to_node(tinyxml2::XMLElement *start, tinyxml2::XMLElement *dest);
+    bool isDestination(tinyxml2::XMLElement *pos, tinyxml2::XMLElement *dest);
     
 public:
     A_Star(std::string osm_map_file, std::string users_file);
@@ -81,9 +81,9 @@ int
 A_Star::compute_path(double start_lat, double start_lon, double end_lat, double end_lon, std::string username)
 {
     // read nav file and try to find start and destination node
-    rapidxml::xml_node<>* root = read_nav_file();
-    rapidxml::xml_node<char> *start_node = get_node_from_lat_lon(root, start_lat, start_lon);
-    rapidxml::xml_node<char> *dest_node = get_node_from_lat_lon(root, end_lat, end_lon);
+    auto root = read_nav_file();
+    auto start_node = get_node_from_lat_lon(root, start_lat, start_lon);
+    auto dest_node = get_node_from_lat_lon(root, end_lat, end_lon);
 
     // set user
     users->set_user(username);
@@ -91,7 +91,7 @@ A_Star::compute_path(double start_lat, double start_lon, double end_lat, double 
     // create open list and closed list
     auto compare = [](NODE a, NODE b) {return a.f > b.f;};
     std::priority_queue<NODE, std::vector<NODE>, decltype(compare)> openList(compare);
-    std::unordered_map<rapidxml::xml_node<char> *, rapidxml::xml_node<char> *> closedList;
+    std::unordered_map<tinyxml2::XMLElement *, tinyxml2::XMLElement *> closedList;
 
     // Initialise parameters of starting node
     NODE d;
@@ -108,7 +108,7 @@ A_Star::compute_path(double start_lat, double start_lon, double end_lat, double 
     {
         NODE olistData = openList.top();
 
-        rapidxml::xml_node<char> *pos = olistData.xml_node;
+        tinyxml2::XMLElement * pos = olistData.xml_node;
 
         // Remove this node from the open list
         openList.pop();
@@ -122,13 +122,15 @@ A_Star::compute_path(double start_lat, double start_lon, double end_lat, double 
             break;
         }
 
-        for (rapidxml::xml_node<> *nd = pos->first_node("nd"); nd; nd = nd->next_sibling("nd"))
+        tinyxml2::XMLElement * nd = pos->FirstChildElement("nd");
+        while (nd)
         {
-            long pos_id = strtol(nd->first_attribute("ref")->value(), NULL, 10);
+            long pos_id = strtol(nd->Attribute("ref"), NULL, 10);
 
-            for (rapidxml::xml_node<> *np = root->first_node("node"); np; np = np->next_sibling())
+            tinyxml2::XMLElement * np = root->FirstChildElement("node");
+            while (np)
             {
-                if ( strtol(np->first_attribute("id")->value(), NULL, 10) == pos_id )
+                if (strtol(np->Attribute("id"), NULL, 10) == pos_id)
                 {
                     // If successor is already on the closed list ignore it.
                     if (closedList.find(np) != closedList.end()) continue;
@@ -144,7 +146,11 @@ A_Star::compute_path(double start_lat, double start_lon, double end_lat, double 
 
                     break;
                 }
+
+                np = np->NextSiblingElement();
             }
+
+            nd = nd->NextSiblingElement();
         }
         closedList.insert(std::make_pair(olistData.xml_node, olistData.parent_xml_node));
     }
@@ -165,30 +171,33 @@ A_Star::compute_path(double start_lat, double start_lon, double end_lat, double 
     //response->routeid = 123456;
 }
 
-rapidxml::xml_node<>*
+tinyxml2::XMLElement *
 A_Star::read_nav_file()
 {   
-    //RCLCPP_DEBUG(this->get_logger(), "Parse xml");
-    std::ifstream t(map_file_);
+    tinyxml2::XMLDocument doc;
+    doc.LoadFile(map_file_.c_str());
 
-    auto buffer = std::vector<char>((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-    buffer.push_back('\0');
-    rapidxml::xml_document<> osm;
-    osm.parse<0>(&buffer[0]);
+    // check error
+    if (doc.ErrorID())
+    {
+        std::cerr << doc.ErrorStr();
+        return;
+    }
 
-    return osm.first_node("nodelist");
+    return doc.RootElement();
 }
 
-rapidxml::xml_node<char>*
-A_Star::get_node_from_lat_lon(rapidxml::xml_node<>* root, const double lat, const double lon)
+tinyxml2::XMLElement *
+A_Star::get_node_from_lat_lon(tinyxml2::XMLElement * root, const double lat, const double lon)
 {
-    rapidxml::xml_node<char> *nnode = nullptr;
+    tinyxml2::XMLElement * nnode = nullptr;
     double lastDist = 10000.0;
 
-    for (rapidxml::xml_node<> *node = root->first_node("node"); node; node = node->next_sibling())
+    tinyxml2::XMLElement * node = root->FirstChildElement("node");
+    while (node)
     {
-        double lat_ = strtod(node->first_attribute("lat")->value(), NULL);
-        double lon_ = strtod(node->first_attribute("lon")->value(), NULL);
+        double lat_ = strtod(node->Attribute("lat"), NULL);
+        double lon_ = strtod(node->Attribute("lon"), NULL);
 
         double lastDist_;
         if((lastDist_ = std::sqrt(std::pow(lat_ - lat, 2) + std::pow(lon_ - lon, 2))) < lastDist )
@@ -197,6 +206,8 @@ A_Star::get_node_from_lat_lon(rapidxml::xml_node<>* root, const double lat, cons
             
             nnode = node;
         }
+
+        node = node->NextSiblingElement();
     }
 
     if (lastDist == 10000.0)
@@ -208,46 +219,48 @@ A_Star::get_node_from_lat_lon(rapidxml::xml_node<>* root, const double lat, cons
 }
 
 bool
-A_Star::isDestination(rapidxml::xml_node<char> *pos, rapidxml::xml_node<char> *dest)
+A_Star::isDestination(tinyxml2::XMLElement * pos, tinyxml2::XMLElement * dest)
 {
     //RCLCPP_DEBUG(this->get_logger(),"Check if node with id %s equals desination node (id: %s).",
     //    pos->first_attribute("id")->value(),
     //    dest->first_attribute("id")->value());
-    return (pos->first_attribute("id")->value() == dest->first_attribute("id")->value());
+    return (pos->Attribute("id") == dest->Attribute("id"));
 }
 
 double
-A_Star::distance_node_to_node(rapidxml::xml_node<char> *start, rapidxml::xml_node<char> *dest)
+A_Star::distance_node_to_node(tinyxml2::XMLElement * start, tinyxml2::XMLElement * dest)
 {
-    double start_lat = strtod(start->first_attribute("lat")->value(), NULL);
-    double start_lon = strtod(start->first_attribute("lon")->value(), NULL);
-    double dest_lat = strtod(dest->first_attribute("lat")->value(), NULL);
-    double dest_lon = strtod(dest->first_attribute("lon")->value(), NULL);
+    double start_lat = strtod(start->Attribute("lat"), NULL);
+    double start_lon = strtod(start->Attribute("lon"), NULL);
+    double dest_lat = strtod(dest->Attribute("lat"), NULL);
+    double dest_lon = strtod(dest->Attribute("lon"), NULL);
 
     return std::sqrt( std::pow(start_lat - dest_lat, 2.0) + std::pow(start_lon - dest_lon, 2.0) );
 }
 
 double
-A_Star::calc_cost_factor(rapidxml::xml_node<char> *node)
+A_Star::calc_cost_factor(tinyxml2::XMLElement * node)
 {
     // gehe durch alle child nodes 
     // -> get name and value
     double f = 0;
-    for (rapidxml::xml_node<> *n = node->first_node("node"); n; n = n->next_sibling())
+    tinyxml2::XMLElement * n = node->FirstChildElement("node");
+    while (n)
     {
-        f += users->calculate_factor(n->name(), n->value());
+        f += users->calculate_factor(n->Value(), n->ToText()->Value());
+        n = n->NextSiblingElement();
     }
     return f <= 0 ? 1E6 : f;
 }
 
 void
-A_Star::trace_path(std::unordered_map<rapidxml::xml_node<char> *, rapidxml::xml_node<char> *> closedList,
-        rapidxml::xml_node<char> * dest)
+A_Star::trace_path(std::unordered_map<tinyxml2::XMLElement *, tinyxml2::XMLElement *> closedList,
+        tinyxml2::XMLElement * dest)
 {
     if (!waypoints.empty()) waypoints.clear();
 
-    rapidxml::xml_node<char> *pid, *id;
-    std::stack<rapidxml::xml_node<char> *> path;
+    tinyxml2::XMLElement *pid, *id;
+    std::stack<tinyxml2::XMLElement *> path;
     pid = dest;
 
     while (pid != NULL)
@@ -261,16 +274,16 @@ A_Star::trace_path(std::unordered_map<rapidxml::xml_node<char> *, rapidxml::xml_
 
     double lat_, lon_;
     POSE pose;
-    rapidxml::xml_node<char> *nextnode = path.top();
-    pose.lat = strtod(nextnode->first_attribute("lat")->value(), NULL);
-    pose.lon = strtod(nextnode->first_attribute("lon")->value(), NULL);
+    tinyxml2::XMLElement * nextnode = path.top();
+    pose.lat = strtod(nextnode->Attribute("lat"), NULL);
+    pose.lon = strtod(nextnode->Attribute("lon"), NULL);
     path.pop();
 
     while (!path.empty())
     {   
-        rapidxml::xml_node<char> *p = path.top();
-        lat_ = strtod(p->first_attribute("lat")->value(), NULL);
-        lon_ = strtod(p->first_attribute("lon")->value(), NULL);
+        tinyxml2::XMLElement * p = path.top();
+        lat_ = strtod(p->Attribute("lat"), NULL);
+        lon_ = strtod(p->Attribute("lon"), NULL);
         path.pop();
         // Calculate angle from nextnode to p
         // tan = G/A = y/x = lat/lon

@@ -70,7 +70,7 @@ LED_Strip::init_parameters()
 void
 LED_Strip::init_pub_sub()
 {
-    std::string serial_topic = "serial_" + port_.substr(port_.find_last_of("/")+1);
+    std::string serial_topic = "write_" + port_.substr(port_.find_last_of("/")+1);
 
     subscriber_ = this->create_subscription<sgd_msgs::msg::Light>(led_, default_qos,
             std::bind(&LED_Strip::on_msg_received, this, std::placeholders::_1));
@@ -79,6 +79,12 @@ LED_Strip::init_pub_sub()
 
 void
 LED_Strip::on_msg_received(const sgd_msgs::msg::Light::SharedPtr msg)
+{
+    publisher_->publish(compute_msg(msg));
+}
+
+sgd_msgs::msg::Serial
+LED_Strip::compute_msg(const sgd_msgs::msg::Light::SharedPtr msg)
 {
     std::string light_status = "L";
     light_status.append(std::to_string(msg->mode)+",");
@@ -91,14 +97,8 @@ LED_Strip::on_msg_received(const sgd_msgs::msg::Light::SharedPtr msg)
     light_serial.header = msg->header;
     light_serial.msg = light_status;
     
-    publisher_->publish(light_serial);
-
+    return light_serial;
 }
-
-
-
-
-
 
 }
 

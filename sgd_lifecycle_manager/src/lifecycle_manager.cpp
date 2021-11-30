@@ -10,16 +10,18 @@ Lifecycle_Manager::Lifecycle_Manager():
 {
     launch_file = declare_parameter<std::string>("launch_file", "/params/launch.xml");
 
-    // read launch xml file
-    std::ifstream t(launch_file);
-    std::vector<char> buffer = std::vector<char>((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-    buffer.push_back('\0');
-    rapidxml::xml_document<> doc;
-    doc.parse<0>(&buffer[0]);
+    tinyxml2::XMLDocument doc;
+    doc.LoadFile(launch_file.c_str());
 
-    root = doc.first_node(0);   // root element of the xml file
+    if (doc.ErrorID() != 0)
+    {
+        RCLCPP_ERROR(get_logger(), doc.ErrorStr());
+        return;
+    }
+
+    auto root = doc.RootElement();     // <launch>
     read_xml_file(root);
-
+        
     // change node state to configure
     for (auto it = lifecycle_nodes.begin(); it != lifecycle_nodes.end(); it++)
     {
@@ -77,46 +79,33 @@ Lifecycle_Manager::~Lifecycle_Manager()
 }
 
 void
-Lifecycle_Manager::read_xml_file(rapidxml::xml_node<> *node, group *g)
+Lifecycle_Manager::read_xml_file(tinyxml2::XMLElement * node, group *g)
 {
-    for (rapidxml::xml_node<> *nd = node->first_node(); nd; nd = nd->next_sibling())
+    tinyxml2::XMLElement * nd = node->FirstChildElement();
+    while (nd)
     {
-        if (strcmp(nd->name(), "node") == 0)
+        if (strcmp(nd->Value(), "node"))
         {
             lifecycle_node n;
-            n.node_name = nd->first_attribute("name")->value();
+            n.node_name = nd->Attribute("name");
             n.state = State::PRIMARY_STATE_UNCONFIGURED;
             n.srv_client = this->create_client<lifecycle_msgs::srv::ChangeState>(n.node_name + "/change_state");
 
             // add node name to group if 
             if (g != nullptr)   g->node_names.push_back(n.node_name);
 
-            // if node has child with name depends -> add to depends
-            for (rapidxml::xml_node<> *depend = nd->first_node("depend"); depend; depend = depend->next_sibling())
+            auto depend = nd->FirstChildElement("depend");
+            while (depend)
             {
-                if (strcmp(depend->first_attribute()->name(), "node") == 0)
-                {
-                    n.depends.push_back(depend->first_attribute()->value());
-                }
-                else
-                {
-                    // search for group name
-                    for (auto gr : launch_groups)
-                    {
-                        if (strcmp(gr.group_name.c_str(), depend->first_attribute()->name()) == 0)
-                        {
-                            n.depends.insert(n.depends.end(), gr.node_names.begin(), gr.node_names.end());
-                        }
-                    }
-                }
+                // TODO add depending nodes
+                depend = depend->NextSiblingElement("depend");
             }
             lifecycle_nodes.push_back(n);
         }
-        else if (strcmp(nd->name(), "group") == 0)
+        else if (strcmp(nd->Value(), "group"))
         {
-            // create new group
             group g;
-            g.group_name = nd->first_attribute("name")->value();
+            g.group_name = nd->Attribute("name");
 
             read_xml_file(nd, &g);
 
@@ -126,6 +115,7 @@ Lifecycle_Manager::read_xml_file(rapidxml::xml_node<> *node, group *g)
         {
             read_xml_file(nd);
         }
+        nd = nd->NextSiblingElement();
     }
 }
 
@@ -140,7 +130,8 @@ Lifecycle_Manager::change_state(uint8_t transition_id, lifecycle_node &lfnode)
     {
         uint8_t retries = 0;
         while (!lfnode.srv_client->wait_for_service(1s)) {
-            if (!rclcpp::ok()) {
+            if (!rclcpp::ok())
+            {
                 RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
                 return false;
             }
@@ -172,7 +163,10 @@ Lifecycle_Manager::all_nodes_active()
 {
     for (auto n : lifecycle_nodes)
     {
-        if( n.state != Transition::TRANSITION_ACTIVATE )    return false;
+        if( n.state != Transition::TRANSITION_ACTIVATE )
+        {
+            return false;
+        }
     }
     return true;
 }
@@ -182,7 +176,10 @@ Lifecycle_Manager::is_node_active(std::string node_name)
 {
     for (auto n : lifecycle_nodes)
     {
-        if(n.node_name == node_name && n.state == Transition::TRANSITION_ACTIVATE)    return true;
+        if(n.node_name == node_name && n.state == Transition::TRANSITION_ACTIVATE)
+        {
+            return true;
+        }
     }
     return false;
 }

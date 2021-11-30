@@ -15,7 +15,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
-find_package(rapidxml REQUIRED)
+find_package(tinyxml2_vendor REQUIRED)
+find_package(TinyXML2 REQUIRED)
 
 include_directories(include)
 
@@ -25,7 +26,8 @@ set(dependencies
   rclcpp
   lifecycle_msgs
   nav2_util
-  rapidxml
+  tinyxml2_vendor
+  TinyXML2
 )
 
 # add executable

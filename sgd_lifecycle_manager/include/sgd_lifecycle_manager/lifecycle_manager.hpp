@@ -8,7 +8,7 @@
 #include "lifecycle_msgs/srv/change_state.hpp"
 #include "lifecycle_msgs/srv/get_state.hpp"
 
-#include "rapidxml/rapidxml.hpp"
+#include "tinyxml2.h"
 
 using lifecycle_msgs::msg::State;
 using lifecycle_msgs::msg::Transition;
@@ -44,8 +44,7 @@ protected:
 
     std::vector<group> launch_groups;
 
-    void read_xml_file(rapidxml::xml_node<> *node, group *g = nullptr);
-    rapidxml::xml_node<> * root;
+    void read_xml_file(tinyxml2::XMLElement * node, group *g = nullptr);
     std::vector<lifecycle_node> lifecycle_nodes;
 
     //! \brief Init subscriber

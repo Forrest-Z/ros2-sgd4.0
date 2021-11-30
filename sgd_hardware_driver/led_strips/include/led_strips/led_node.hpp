@@ -16,7 +16,6 @@ namespace sgd_hardware_drivers
         LED_Strip();
         ~LED_Strip();
 
-
     protected:
         nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
         nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
@@ -34,6 +33,8 @@ namespace sgd_hardware_drivers
         rclcpp::Subscription<sgd_msgs::msg::Light>::SharedPtr subscriber_;
 
         void on_msg_received(const sgd_msgs::msg::Light::SharedPtr msg);
+
+        sgd_msgs::msg::Serial compute_msg(const sgd_msgs::msg::Light::SharedPtr msg);
         
     };
 }

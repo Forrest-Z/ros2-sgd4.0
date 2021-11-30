@@ -8,7 +8,7 @@
 #include <iostream>
 #include <vector>
 
-#include "rapidxml/rapidxml.hpp"
+#include "tinyxml2.h"
 
 namespace nav_sgd
 {
@@ -51,7 +51,7 @@ private:
     USER default_user;
     USER current_user;
 
-    USER read_user(rapidxml::xml_node<>* user);
+    USER read_user(tinyxml2::XMLElement * user);
 public:
     A_Star_Users(std::string users_file);
     ~A_Star_Users();
@@ -70,20 +70,25 @@ A_Star_Users::A_Star_Users(std::string users_file)
     : users_file_(users_file)
 {
     // read xml
-    std::ifstream t(users_file_);
+    tinyxml2::XMLDocument doc;
+    doc.LoadFile(users_file.c_str());
+    auto root = doc.RootElement();      // <users>
 
-    auto buffer = std::vector<char>((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-    buffer.push_back('\0');
-    rapidxml::xml_document<> doc;
-    doc.parse<0>(&buffer[0]);
-    auto root = doc.first_node("users");
+    // check error
+    if (doc.ErrorID())
+    {
+        // TODO Error handling
+        std::cerr << doc.ErrorStr();
+        return;
+    }
 
     // go through xml and add users
     bool has_default_user = false;
-    for (rapidxml::xml_node<> *np = root->first_node("user"); np; np = np->next_sibling())
+    auto usr = root->FirstChildElement("user");
+    while (usr)
     {
         // new user
-        USER user = read_user(np);
+        USER user = read_user(usr);
         if (user.name.compare("default") == 0)
         {
             has_default_user = true;
@@ -93,7 +98,7 @@ A_Star_Users::A_Star_Users(std::string users_file)
         {
             users.insert(std::pair(user.name, user));
         }
-        
+        usr = usr->NextSiblingElement();
     }
     if (!has_default_user)
     {
@@ -107,26 +112,30 @@ A_Star_Users::~A_Star_Users()
 }
 
 A_Star_Users::USER
-A_Star_Users::read_user(rapidxml::xml_node<>* user)
+A_Star_Users::read_user(tinyxml2::XMLElement * user)
 {
     USER u;
-    u.name = user->first_attribute("name")->value();
+    u.name = user->Attribute("name");
 
-    for (rapidxml::xml_node<> *n = user->first_node(); n; n = n->next_sibling())
+    auto nd = user->FirstChildElement();
+    while (nd)
     {
-        if (n->first_node())
+        if (nd->FirstChildElement())
         {
-            std::string prefix = n->name();
+            std::string prefix = nd->Value();
             // gehe durch alle child nodes
-            for (rapidxml::xml_node<> *nn = n->first_node(); nn; nn = nn->next_sibling())
+            auto nn = nd->FirstChildElement();
+            while (nn)
             {
-                u.add_factor(prefix + ":" + n->name(), n->value());
+                u.add_factor(prefix + ":" + nd->Value(), nd->ToText()->Value());
+                nn = nn->NextSiblingElement();
             }
         }
         else
         {
-            u.add_factor(n->name(), n->value());
+            u.add_factor(nd->Value(), nd->ToText()->Value());
         }
+        nd = nd->NextSiblingElement();
     }
     return u;   
 }

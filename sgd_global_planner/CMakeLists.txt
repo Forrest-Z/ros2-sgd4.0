@@ -23,8 +23,10 @@ find_package(nav2_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(sgd_msgs REQUIRED)
-find_package(rapidxml REQUIRED)
 find_package(sgd_util REQUIRED)
+find_package(tinyxml2_vendor REQUIRED)
+find_package(TinyXML2 REQUIRED)
+
 
 include_directories(include)
 
@@ -39,9 +41,10 @@ ament_target_dependencies(global_planner
   nav_msgs
   nav2_util
   sgd_msgs
-  rapidxml
   sgd_util
   tf2_ros
+  tinyxml2_vendor
+  TinyXML2
 )
 
 add_executable(navigator src/navigator.cpp)
