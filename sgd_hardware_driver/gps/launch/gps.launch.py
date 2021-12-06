@@ -34,8 +34,7 @@ def generate_launch_description():
     
     gps_port = LaunchConfiguration('gps_port')
 
-    lifecycle_nodes = ['gps_serial',
-                       'gps_sensor']
+    lifecycle_nodes = ['gps_sensor']
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
@@ -73,16 +72,16 @@ def generate_launch_description():
 	        default_value='/dev/ttyACM0',
 	        description='Port to communication with gps sensor'),
 
-        Node(
-            package="sgd_util",
-            executable="serial",
-            name="gps_serial",
-            output="screen",
-            emulate_tty=True,
-            parameters=[
-                {"port": gps_port,
-                "baud_rate": 9600,
-                "read_write": "ro"}]),
+        #Node(
+        #    package="sgd_util",
+        #    executable="serial",
+        #    name="gps_serial",
+        #    output="screen",
+        #    emulate_tty=True,
+        #    parameters=[
+        #        {"port": gps_port,
+        #        "baud_rate": 9600,
+        #        "read_write": "ro"}]),
 
         Node(
             package="gps",
@@ -92,9 +91,9 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[
                 {"port": gps_port,
-                 "xml_file": '/home/ipp/dev_ws/src/ros2-sgd4.0/sensors/gps/data/nmea.xml'}]),
+                 "xml_file": '/home/ipp/dev_ws/src/ros2-sgd4.0/sgd_hardware_driver/gps/params/nmea_0183.xml',
+                 "parser_type": 'nmea'}]),
 
-        # TODO: Create nodes for lidar
 
         Node(
             package='nav2_lifecycle_manager',

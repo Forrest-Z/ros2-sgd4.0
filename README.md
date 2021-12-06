@@ -146,6 +146,18 @@ export GAZEBO_MODEL_PATH=~/dev_ws/src/ros2-sgd4.0/sgd_gazebo_sim/models:$GAZEBO_
 
 Um den Pfad automatisch bei jedem neuen Terminalfenster zu setzen, kann der Befehl auch an das Ende der .bashrc gesetzt werden.
 
+# Testing im Shared Guide Dog Projekt
+
+- Trennung von ROS Code und eigenem Code. Das bedeutet, dass in einer ROS Node keine Berechnungen durchgeführt werden, sondern diese in externe Files ausgelagert werden.
+- Durch die Trennung können die Algorithmen mit GTest einfach getestet werden.
+
+# Use COLCON inside Visual Studio Code
+
+Install the package [Colcon Tasks](https://marketplace.visualstudio.com/items?itemName=deitry.colcon-helper) via Extensions Tab (Ctrl+Shift+X) and follow the instructions in the *How to use* section.
+
+In settings tab (Ctrl+,) search for *colcon* and change `Colcon: Colcon Cwd` to `~/home/dev_ws` and `Colcon: Install Type` to `symlinked`.
+
+The last step is to change the command in `tasks.json` to `"colcon"`.
 
 # Useful git commands
 

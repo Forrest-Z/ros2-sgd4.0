@@ -1,0 +1,4 @@
+type: sensor_msgs::msg::NavSatFix
+status::status,, status::service,, latitude,, longitude,, altitude,
+int,, int,, double,, double,, double,
+0,=,1,=,53.6829550,+-1E6,9.7296933,+-1E6,0.0,+-1E6

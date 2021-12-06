@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nmea>
+
+<!-- 
+	0: genau eine Zahl
+	c: genau ein Zeichen
+	+: ein oder mehrmals das vorige Token
+	?: 0 oder ein Mal das vorige Token
+	*: 0 oder mehrmals das vorige Token
+	\: escape character
+ -->
+
+	<!-- GPRMC,105353.000,A,5340.9773,N,00943.7816,E,0.00,182.10,150321,,,A*6F -->
+	<sentenceId name="GPRMC" parse="false">
+		<param type="time">(\d{2})(\d{2})(\d{2}\.\d{3})</param> 		<!-- UTC of pos fix -->
+		<param type="char">c</param> 				<!-- status -->
+		<param type="double64">0000.0000</param> 	<!-- latitude -->
+		<param type="char">c</param> 				<!-- direction -->
+		<param type="double64">00000.0000<param> 	<!-- longitude --> <!-- #### ERROR in this line ####-->
+		<param type="char">c</param> 				<!-- direction -->
+		<param type="double">0.00</param> 			<!-- speed over ground -->
+		<param type="double">0+.00</param> 			<!-- track made good -->
+		<param type="time">ddmmyy</param> 			<!-- UTC date of fix -->
+		<param type="double">0+.00</param> 			<!-- magnetic variation -->
+		<param type="char">c</param> 				<!-- variation sense -->
+		<param type="checksum">c\*cc</param>
+	</sentenceId>
+</nmea>

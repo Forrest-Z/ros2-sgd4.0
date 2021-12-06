@@ -12,7 +12,7 @@
   <depend>sensor_msgs</depend>
   <depend>sgd_util</depend>
   <depend>sgd_msgs</depend>
-  <depend>rapidxml</depend>
+  <depend>TinyXML2</depend>
   <depend>rclcpp_lifecycle</depend>
   <depend>nav2_util</depend>
 
