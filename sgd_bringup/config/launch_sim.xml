@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?> 
 <launch>
 <!-- localization nodes -->
-    <!--node name="map_server" />
-    <node name="amcl" /-->
+    <node name="map_server" />
+    <node name="amcl" />
 
 <!-- receiver -->
-    <node name="rx8r_serial" />
-    <node name="frsky_rx8r" />
+    <!--node name="rx8r_serial" />
+    <node name="frsky_rx8r" /-->
 
 <!-- navigation nodes -->
     <node name="subsum_controller" />
@@ -16,7 +16,7 @@
     <node name="bt_navigator" />
     <node name="waypoint_follower" />
     <node name="osm_planner" />
-    <!--node name="initial_pose_estimator" /-->
-    <node name="lidar_obstacle_checker" />
+    <!--node name="initial_pose_estimator" >
+    <node name="lidar_obstacle_checker" /-->
 
 </launch>

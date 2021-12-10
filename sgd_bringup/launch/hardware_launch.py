@@ -28,75 +28,36 @@ def generate_launch_description():
     bringup_dir = get_package_share_directory('sgd_bringup')
     sgd_comm_dir = get_package_share_directory('sgd_comm')
 
-    namespace = LaunchConfiguration('namespace')
     use_sim_time = LaunchConfiguration('use_sim_time')
-    autostart = LaunchConfiguration('autostart')
     params_file = LaunchConfiguration('params_file')
     
     gps_port = LaunchConfiguration('gps_port')
     feather_port = LaunchConfiguration('feather_port')
     esp_port = LaunchConfiguration('esp_port')
 
-    lifecycle_nodes = [#'gps_serial',
-                       #'ublox6_gps',
-                       'esp_serial',
-                       'imu_bno055',
-                       'wh_fcruiser',
-                       'feather_serial']
-    #                   'capacitive_touch',
-    #                   'laser_1d',
-
-   # lifecycle_nodes = ['esp_serial',
-   #                    'imu_bno055']
-
-    # Map fully qualified names to relative ones so the node's namespace can be prepended.
-    # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
-    # https://github.com/ros/geometry2/issues/32
-    # https://github.com/ros/robot_state_publisher/pull/30
-    # TODO(orduno) Substitute with `PushNodeRemapping`
-    #              https://github.com/ros2/launch_ros/issues/56
-    remappings = [('/tf', 'tf'),
-                  ('/tf_static', 'tf_static')]
-
     # Create our own temporary YAML files that include substitutions
     param_substitutions = {
         'use_sim_time': use_sim_time,
-        'autostart': autostart,
         'gps_port': '/dev/ttyACM0',
         'esp_port': '/dev/ttyUSB0',
         'feather_port': '/dev/ttyACM0'}
 
     configured_params = RewrittenYaml(
             source_file=params_file,
-            root_key=namespace,
             param_rewrites=param_substitutions,
             convert_types=True)
-
-    config = os.path.join(
-        bringup_dir,
-        'params',
-        'sick_tim_5xx.yaml'
-        )
 
     return LaunchDescription([
         # Set env var to print messages to stdout immediately
         SetEnvironmentVariable('RCUTILS_LOGGING_BUFFERED_STREAM', '1'),
  
         DeclareLaunchArgument(
-            'namespace', default_value='',
-            description='Top-level namespace'),
-
-        DeclareLaunchArgument(
             'use_sim_time', default_value='false',
             description='Use simulation (Gazebo) clock if true'),
 
         DeclareLaunchArgument(
-            'autostart', default_value='true',
-            description='Automatically startup the nav2 stack'),
-
-        DeclareLaunchArgument(
             'params_file',
-            default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
+            default_value=os.path.join(bringup_dir, 'config', 'sgd_params.yaml'),
             description='Full path to the ROS2 parameters file to use'),
 
         DeclareLaunchArgument(
@@ -212,27 +173,11 @@ def generate_launch_description():
             		 {'max_speed': 200.0},
             		 {'use_sim_time': use_sim_time}]),
 
-        Node(
-            package='sgd_util',
-            executable='logger',
-            name='logger',
-            output='screen',
-            parameters=[{'output_folder': os.path.join('/home/ipp/dev_ws','log')}]),
-                     
         # TODO: Create nodes for lidar
         Node(
             package='sick_scan2',
             name = 'sick_scan2',
             executable='sick_generic_caller',
             output='screen',
-            parameters = [config]),
-
-        Node(
-            package='nav2_lifecycle_manager',
-            executable='lifecycle_manager',
-            name='lifecycle_manager_hardware',
-            output='screen',
-            parameters=[{'use_sim_time': use_sim_time},
-                        {'autostart': autostart},
-                        {'node_names': lifecycle_nodes}]),
+            parameters = [configured_params])
     ])

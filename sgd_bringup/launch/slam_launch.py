@@ -26,10 +26,8 @@ from nav2_common.launch import RewrittenYaml
 
 def generate_launch_description():
     # Input parameters declaration
-    namespace = LaunchConfiguration('namespace')
     params_file = LaunchConfiguration('params_file')
     use_sim_time = LaunchConfiguration('use_sim_time')
-    autostart = LaunchConfiguration('autostart')
 
     # Variables
     lifecycle_nodes = ['map_saver']
@@ -40,34 +38,30 @@ def generate_launch_description():
     slam_launch_file = os.path.join(slam_toolbox_dir, 'launch', 'online_sync_launch.py')
 
     # Create our own temporary YAML files that include substitutions
-    param_substitutions = {
-        'use_sim_time': use_sim_time}
+    #param_substitutions = {
+    #    'use_sim_time': use_sim_time}
 
-    configured_params = RewrittenYaml(
-        source_file=params_file,
-        root_key=namespace,
-        param_rewrites=param_substitutions,
-        convert_types=True)
+    #configured_params = RewrittenYaml(
+    #    source_file=params_file,
+    #    param_rewrites=param_substitutions,
+    #    convert_types=True)
 
     # Declare the launch arguments
-    declare_namespace_cmd = DeclareLaunchArgument(
-        'namespace',
-        default_value='',
-        description='Top-level namespace')
+    # Change depending on sim = true or sim = false
+    if (sim):
+        params_filepath = os.path.join(bringup_dir, 'config', 'simulation_params.yaml')
+    else:
+        params_filepath = os.path.join(bringup_dir, 'config', 'sgd_params.yaml')
 
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
-        default_value=os.path.join(bringup_dir, 'params', 'sgd_params.yaml'),
+        default_value=params_filepath,
         description='Full path to the ROS2 parameters file to use for all launched nodes')
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
         default_value='False',
         description='Use simulation (Gazebo) clock if true')
-
-    declare_autostart_cmd = DeclareLaunchArgument(
-        'autostart', default_value='True',
-        description='Automatically startup the nav2 stack')
 
     # Nodes launching commands
     start_slam_toolbox_cmd = IncludeLaunchDescription(
@@ -78,32 +72,21 @@ def generate_launch_description():
             package='nav2_map_server',
             executable='map_saver_server',
             output='screen',
-            parameters=[configured_params])
+            parameters=[params_file])
 
     start_ekf_odom_cmd = Node(
             package='robot_localization',
             executable='ekf_node',
             name='ekf_filter_node_odom',
             output='screen',
-            parameters=[{os.path.join(bringup_dir, 'params', 'dual_ekf.yaml')},
+            parameters=[{os.path.join(bringup_dir, 'config', 'dual_ekf.yaml')},
                         {'use_sim_time': use_sim_time}])
-
-    start_lifecycle_manager_cmd = Node(
-            package='nav2_lifecycle_manager',
-            executable='lifecycle_manager',
-            name='lifecycle_manager_slam',
-            output='screen',
-            parameters=[{'use_sim_time': use_sim_time},
-                        {'autostart': autostart},
-                        {'node_names': lifecycle_nodes}])
 
     ld = LaunchDescription()
 
     # Declare the launch options
-    ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_params_file_cmd)
     ld.add_action(declare_use_sim_time_cmd)
-    ld.add_action(declare_autostart_cmd)
 
     # Running SLAM Toolbox
     ld.add_action(start_slam_toolbox_cmd)
@@ -111,6 +94,5 @@ def generate_launch_description():
     # Running Map Saver Server
     ld.add_action(start_map_saver_server_cmd)
     ld.add_action(start_ekf_odom_cmd)
-    ld.add_action(start_lifecycle_manager_cmd)
 
     return ld

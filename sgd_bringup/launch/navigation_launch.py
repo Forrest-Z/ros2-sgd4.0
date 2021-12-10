@@ -27,21 +27,10 @@ def generate_launch_description():
     # Get the launch directory
     bringup_dir = get_package_share_directory('sgd_bringup')
 
-    namespace = LaunchConfiguration('namespace')
     use_sim_time = LaunchConfiguration('use_sim_time')
-    autostart = LaunchConfiguration('autostart')
     params_file = LaunchConfiguration('params_file')
     default_bt_xml_filename = LaunchConfiguration('default_bt_xml_filename')
     map_subscribe_transient_local = LaunchConfiguration('map_subscribe_transient_local')
-
-    lifecycle_nodes = ['subsum_controller',
-                       'controller_server',
-                       'planner_server',
-                       'recoveries_server',
-                       'bt_navigator',
-                       'waypoint_follower',
-                       'osm_planner']
-                       #'logger']
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
@@ -49,19 +38,17 @@ def generate_launch_description():
     # https://github.com/ros/robot_state_publisher/pull/30
     # TODO(orduno) Substitute with `PushNodeRemapping`
     #              https://github.com/ros2/launch_ros/issues/56
-    remappings = [('/tf', 'tf'),
-                  ('/tf_static', 'tf_static')]
+    #remappings = [('/tf', 'tf'),
+    #              ('/tf_static', 'tf_static')]
 
     # Create our own temporary YAML files that include substitutions
     param_substitutions = {
         'use_sim_time': use_sim_time,
         'default_bt_xml_filename': default_bt_xml_filename,
-        'autostart': autostart,
         'map_subscribe_transient_local': map_subscribe_transient_local}
 
     configured_params = RewrittenYaml(
             source_file=params_file,
-            root_key=namespace,
             param_rewrites=param_substitutions,
             convert_types=True)
 
@@ -70,16 +57,8 @@ def generate_launch_description():
         SetEnvironmentVariable('RCUTILS_LOGGING_BUFFERED_STREAM', '1'),
 
         DeclareLaunchArgument(
-            'namespace', default_value='',
-            description='Top-level namespace'),
-
-        DeclareLaunchArgument(
             'use_sim_time', default_value='true',
             description='Use simulation (Gazebo) clock if true'),
-
-        DeclareLaunchArgument(
-            'autostart', default_value='false',
-            description='Automatically startup the nav2 stack'),
 
         DeclareLaunchArgument(
             'params_file',
@@ -103,52 +82,47 @@ def generate_launch_description():
             output='screen',
             parameters=[configured_params]),
 
-        Node(
-            package='sgd_controller',
-            executable='lidar_obstacle_checker',
-            name='lidar_obstacle_checker',
-            output='screen',
-            parameters=[configured_params]),
+        #Node(
+        #    package='sgd_controller',
+        #    executable='lidar_obstacle_checker',
+        #    name='lidar_obstacle_checker',
+        #    output='screen',
+        #    parameters=[configured_params]),
 
         Node(
             package='nav2_controller',
             executable='controller_server',
             name='controller_server',
             output='screen',
-            parameters=[configured_params],
-            remappings=remappings),
+            parameters=[configured_params]),
 
         Node(
             package='nav2_planner',
             executable='planner_server',
             name='planner_server',
             output='screen',
-            parameters=[configured_params],
-            remappings=remappings),
+            parameters=[configured_params]),
 
         Node(
             package='nav2_recoveries',
             executable='recoveries_server',
             name='recoveries_server',
             output='screen',
-            parameters=[configured_params],
-            remappings=remappings),
+            parameters=[configured_params]),
 
         Node(
             package='nav2_bt_navigator',
             executable='bt_navigator',
             name='bt_navigator',
             output='screen',
-            parameters=[configured_params],
-            remappings=remappings),
+            parameters=[configured_params]),
 
         Node(
             package='nav2_waypoint_follower',
             executable='waypoint_follower',
             name='waypoint_follower',
             output='screen',
-            parameters=[configured_params],
-            remappings=remappings),
+            parameters=[configured_params]),
 
         Node(
             package='sgd_global_planner',
@@ -157,26 +131,26 @@ def generate_launch_description():
             output='screen',
             parameters=[configured_params]),
 
-        Node(
-            package='sgd_comm',
-            executable='serial',
-            name='rx8r_serial',
-            output='screen',
-            parameters=[{'port': '/dev/ttyACM0',
-            		     'baud_rate': 115200,
-            		     'read_write': 'ro',
-                         'logfile': os.path.join('/home/ipp/dev_ws','log','serial_rx8r.log'),
-                         'raw': False,
-                         'sframe': '$',
-                         'stframe': '\n',
-                         'log': False,
-                         'use_sim_time': use_sim_time}]),
+        #Node(
+        #    package='sgd_comm',
+        #    executable='serial',
+        #    name='rx8r_serial',
+        #    output='screen',
+        #    parameters=[{'port': '/dev/ttyACM0',
+        #    		     'baud_rate': 115200,
+        #    		     'read_write': 'ro',
+        #                 'logfile': os.path.join('/home/ipp/dev_ws','log','serial_rx8r.log'),
+        #                 'raw': False,
+        #                 'sframe': '$',
+        #                 'stframe': '\n',
+        #                 'log': False,
+        #                 'use_sim_time': use_sim_time}]),
 
-        Node(
-            package='frsky_rx8r',
-            executable='frsky_rx8r',
-            name='frsky_rx8r',
-            output='screen',
-            parameters=[configured_params])
+        #Node(
+        #    package='frsky_rx8r',
+        #    executable='frsky_rx8r',
+        #    name='frsky_rx8r',
+        #    output='screen',
+        #    parameters=[configured_params])
 
     ])

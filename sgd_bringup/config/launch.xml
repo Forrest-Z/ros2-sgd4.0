@@ -11,8 +11,8 @@
     <node name="laser_1d" />
     <node name="rx8r_serial" />
     <node name="frsky_rx8r" />
-    <!--node name="led_serial" />
-    <node name="led_strip" /-->
+    <node name="led_serial" />
+    <node name="led_strip" />
 
 <!-- navigation nodes -->
     <node name="subsum_controller" />
