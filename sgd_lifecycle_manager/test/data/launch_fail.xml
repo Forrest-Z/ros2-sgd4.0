@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<launch>
+<!-- localization nodes -->
+    <node name="map_server" />
+    <node name="amcl" />
+
+<!-- hardware nodes -->
+    <node name="esp_serial" />
+    <node name="wh_fcruiser" />
+    <node name="feather_serial" >   <!-- error-->
+    <node name="laser_1d" />
+    <node name="rx8r_serial" />
+    <nde name="frsky_rx8r" />       <!-- error-->
+    <node name="led_serial" />
+    <node name="led_strip" />
+
+<!-- navigation nodes -->
+    <node name="subsum_controller" />
+    <node name="controller_server" />
+    <node name="planner_server" />
+    <node name="recoveries_server" />
+    <node name="bt_navigator" />
+    <node name="waypoint_follower" />
+    <node name="osm_planner" />
+    <node name="initial_pose_estimator" />
+    <node name="lidar_obstacle_checker" />
+
+</launch>

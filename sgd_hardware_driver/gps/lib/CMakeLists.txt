@@ -43,5 +43,7 @@ enable_testing()
 add_executable(unit_test_nmea_parser test/unit_test_nmea_parser.cpp)
 target_link_libraries(unit_test_nmea_parser gtest_main gps_parser_core)
 
+file(COPY test/data DESTINATION ${CMAKE_BINARY_DIR}/lib/test)
+
 include(GoogleTest)
 gtest_discover_tests(unit_test_nmea_parser)

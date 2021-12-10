@@ -1,3 +1,17 @@
+// Copyright 2021 HAW Hamburg
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "sgd_lifecycle_manager/lifecycle_manager.hpp"
 
 namespace sgd_lifecycle
@@ -8,69 +22,60 @@ using namespace std::chrono_literals;   // if a timer is used
 Lifecycle_Manager::Lifecycle_Manager():
     Node("lifecycle_manager")
 {
-    launch_file = declare_parameter<std::string>("launch_file", "/params/launch.xml");
+    launch_file = declare_parameter<std::string>("launch_file", "/config/launch.xml");
 
-    tinyxml2::XMLDocument doc;
-    doc.LoadFile(launch_file.c_str());
+    LF_Node_Factory lf(launch_file);
+    lf.import_launch_file();
 
-    if (doc.ErrorID() != 0)
-    {
-        RCLCPP_ERROR(get_logger(), doc.ErrorStr());
-        return;
-    }
-
-    auto root = doc.RootElement();     // <launch>
-    read_xml_file(root);
-        
     // change node state to configure
-    for (auto it = lifecycle_nodes.begin(); it != lifecycle_nodes.end(); it++)
+    lifecycle_node * nd;
+    while ((nd = lf.has_node()) != nullptr)
     {
-        if(change_state(Transition::TRANSITION_CONFIGURE, *it))
+        // create client, change state
+        service_clients_.insert({
+            nd->get_node_name(),
+            this->create_client<lifecycle_msgs::srv::ChangeState>(nd->get_node_name() + "/change_state")
+        });
+
+        if(change_state(Transition::TRANSITION_CONFIGURE, nd->get_node_name()))
         {
-            it->state = Transition::TRANSITION_CONFIGURE;
+            nd->state = Transition::TRANSITION_CONFIGURE;
         }
     }
 
     int retries = 0;
     rclcpp::WallRate loop_rate(10);
-    while (!all_nodes_active() && retries < 10)
+    while (lf.get_lowest_state() < Transition::TRANSITION_ACTIVATE && retries < 10)
     {
         retries++;
-        for (auto it = lifecycle_nodes.begin(); it != lifecycle_nodes.end(); it++)
+        lifecycle_node * nd;
+        while ((nd = lf.has_node()) != nullptr)
         {
-            if (it->state == Transition::TRANSITION_ACTIVATE)   continue;
-
-            bool depend_active = true;
-            for (auto n : it->depends)
+            if (nd->state == Transition::TRANSITION_ACTIVATE)
             {
-                depend_active = depend_active && is_node_active(n);
+                continue;
             }
 
-            if (depend_active)
+            if(change_state(Transition::TRANSITION_ACTIVATE, nd->get_node_name()))
             {
-                if(change_state(Transition::TRANSITION_ACTIVATE, *it))
-                {
-                    it->state = Transition::TRANSITION_ACTIVATE;
-                }
-                else
-                {
-                    RCLCPP_WARN(get_logger(), "Could not activate node %s", it->node_name.c_str());
-                    return;
-                }
+                nd->state = Transition::TRANSITION_ACTIVATE;
             }
             else
             {
-                RCLCPP_DEBUG(get_logger(), "Node %s waiting for dependencies to become active.", it->node_name.c_str());
+                RCLCPP_WARN(get_logger(), "Could not activate node %s", nd->get_node_name().c_str());
+                return;
             }
         }
+
         if (!loop_rate.sleep())
         {
             RCLCPP_INFO(get_logger(), "Lifecycle Manager missed frequency.");
         }
-        // TODO timeout
     }
 
     RCLCPP_INFO(get_logger(), "All nodes active.");
+
+    // TODO: create timer and check node state every 5? seconds
 }
 
 Lifecycle_Manager::~Lifecycle_Manager()
@@ -78,58 +83,19 @@ Lifecycle_Manager::~Lifecycle_Manager()
     // Destroy
 }
 
-void
-Lifecycle_Manager::read_xml_file(tinyxml2::XMLElement * node, group *g)
-{
-    tinyxml2::XMLElement * nd = node->FirstChildElement();
-    while (nd)
-    {
-        if (strcmp(nd->Value(), "node"))
-        {
-            lifecycle_node n;
-            n.node_name = nd->Attribute("name");
-            n.state = State::PRIMARY_STATE_UNCONFIGURED;
-            n.srv_client = this->create_client<lifecycle_msgs::srv::ChangeState>(n.node_name + "/change_state");
-
-            // add node name to group if 
-            if (g != nullptr)   g->node_names.push_back(n.node_name);
-
-            auto depend = nd->FirstChildElement("depend");
-            while (depend)
-            {
-                // TODO add depending nodes
-                depend = depend->NextSiblingElement("depend");
-            }
-            lifecycle_nodes.push_back(n);
-        }
-        else if (strcmp(nd->Value(), "group"))
-        {
-            group g;
-            g.group_name = nd->Attribute("name");
-
-            read_xml_file(nd, &g);
-
-            launch_groups.push_back(g);
-        }
-        else
-        {
-            read_xml_file(nd);
-        }
-        nd = nd->NextSiblingElement();
-    }
-}
-
 bool
-Lifecycle_Manager::change_state(uint8_t transition_id, lifecycle_node &lfnode)
+Lifecycle_Manager::change_state(uint8_t transition_id, std::string node_name)
 {
-    RCLCPP_INFO(get_logger(), "Change state for node %s", lfnode.node_name.c_str());
+    RCLCPP_INFO(get_logger(), "Change state for node %s", node_name.c_str());
     auto request = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
     request->transition.id = transition_id;
+
+    auto srv_client = service_clients_.at(node_name);
 
     try
     {
         uint8_t retries = 0;
-        while (!lfnode.srv_client->wait_for_service(1s)) {
+        while (!srv_client->wait_for_service(1s)) {
             if (!rclcpp::ok())
             {
                 RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
@@ -149,38 +115,12 @@ Lifecycle_Manager::change_state(uint8_t transition_id, lifecycle_node &lfnode)
         std::cerr << e.what() << '\n';
     }
 
-    auto result = lfnode.srv_client->async_send_request(request);
+    auto result = srv_client->async_send_request(request);
     if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result) == rclcpp::FutureReturnCode::SUCCESS)
     {
         return result.get()->success;
     }
 
-    return false;
-}
-
-bool
-Lifecycle_Manager::all_nodes_active()
-{
-    for (auto n : lifecycle_nodes)
-    {
-        if( n.state != Transition::TRANSITION_ACTIVATE )
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool
-Lifecycle_Manager::is_node_active(std::string node_name)
-{
-    for (auto n : lifecycle_nodes)
-    {
-        if(n.node_name == node_name && n.state == Transition::TRANSITION_ACTIVATE)
-        {
-            return true;
-        }
-    }
     return false;
 }
 

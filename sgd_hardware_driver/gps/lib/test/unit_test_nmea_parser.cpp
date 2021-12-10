@@ -17,12 +17,12 @@
 
 #include "include/nmea_parser.hpp"
 
-static const std::string BASE_PATH("../../../src/ros2-sgd4.0/sgd_hardware_driver/gps/");
+static std::string BASE_PATH("");
 static const double error = 1/1E6;
 
 TEST(NmeaParserTest, ImportXmlOk)
 {
-  const std::string xml_file = BASE_PATH + "lib/test/data/nmea_ok.xml";
+  const std::string xml_file = BASE_PATH + "/nmea_ok.xml";
   sgd_hardware::Nmea_Parser parser;
   parser.import_xml(xml_file);
 
@@ -31,7 +31,7 @@ TEST(NmeaParserTest, ImportXmlOk)
 
 TEST(NmeaParserTest, ImportXmlBadFormat)
 {
-  const std::string xml_file = BASE_PATH + "lib/test/data/nmea_bad.xml";
+  const std::string xml_file = BASE_PATH + "/nmea_bad.xml";
   sgd_hardware::Nmea_Parser parser;
   parser.import_xml(xml_file);
 
@@ -40,7 +40,7 @@ TEST(NmeaParserTest, ImportXmlBadFormat)
 
 TEST(NmeaParserTest, ParseNmeaMsgOk)
 {
-  const std::string xml_file = BASE_PATH + "lib/test/data/nmea_ok.xml";
+  const std::string xml_file = BASE_PATH + "/nmea_ok.xml";
   sgd_hardware::Nmea_Parser parser;
   parser.import_xml(xml_file);
 
@@ -58,7 +58,11 @@ TEST(NmeaParserTest, ParseNmeaMsgOk)
   EXPECT_NEAR(hdop, 0.9, error);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
+  auto exe = std::string(argv[0]);
+  BASE_PATH = exe.substr(0,exe.find_last_of("/")) + "/test/data";
+
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
