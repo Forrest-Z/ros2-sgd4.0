@@ -1,7 +1,7 @@
 
-#include "sgd_controller/lidar_obstacle_checker.hpp"
+#include "sgd_safety/lidar_obstacle_checker.hpp"
 
-namespace nav_sgd
+namespace sgd_safety
 {
 
 using std::placeholders::_1;
@@ -151,7 +151,7 @@ Lidar_Obstacle_Checker::on_scan_received(const sensor_msgs::msg::LaserScan::Shar
 int main(int argc, char const *argv[])
 {
     rclcpp::init(argc, argv);
-    std::shared_ptr<nav2_util::LifecycleNode> node = std::make_shared<nav_sgd::Lidar_Obstacle_Checker>();
+    std::shared_ptr<nav2_util::LifecycleNode> node = std::make_shared<sgd_safety::Lidar_Obstacle_Checker>();
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Lidar obstacle checker startup completed.");
 

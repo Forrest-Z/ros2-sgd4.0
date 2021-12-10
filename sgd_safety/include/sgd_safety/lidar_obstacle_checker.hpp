@@ -9,7 +9,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 
-namespace nav_sgd
+namespace sgd_safety
 {
 
 class Lidar_Obstacle_Checker : public nav2_util::LifecycleNode

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(sgd_controller)
+project(sgd_safety)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -16,19 +16,21 @@ find_package(rclcpp REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 include_directories(include)
 
 # add executable
-add_executable(subsum_controller src/subsum_controller.cpp)
-ament_target_dependencies(subsum_controller
+add_executable(lidar_obstacle_checker src/lidar_obstacle_checker.cpp)
+ament_target_dependencies(lidar_obstacle_checker
   rclcpp
   geometry_msgs
   nav2_util
+  sensor_msgs
 )
 
 install(
-  TARGETS subsum_controller
+  TARGETS lidar_obstacle_checker
   DESTINATION lib/${PROJECT_NAME})
   
 install(
