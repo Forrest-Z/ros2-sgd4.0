@@ -40,6 +40,7 @@ protected:
     void on_scan_received(const sensor_msgs::msg::LaserScan::SharedPtr msg);
 
     geometry_msgs::msg::Twist last_cmd_vel_;
+    double cmd_vel_time;
 public:
     Lidar_Obstacle_Checker();
     ~Lidar_Obstacle_Checker();
