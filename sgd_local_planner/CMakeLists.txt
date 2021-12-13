@@ -23,26 +23,14 @@ include_directories(
 
 set(library_name ${PROJECT_NAME}_plugin)
 
-#set(dependencies
-#  rclcpp
-#  rclcpp_action
-#  rclcpp_lifecycle
-#  std_msgs
-#  visualization_msgs
-#  nav2_util
-#  nav2_msgs
-#  nav_msgs
-#  geometry_msgs
-#  builtin_interfaces
-#  tf2_ros
-#  nav2_costmap_2d
-#  nav2_core
-#  pluginlib
-#)
-
 add_library(${library_name} SHARED
-  src/sl_planner.cpp
+  src/dubins_planner.cpp
+  src/dubins.cpp
 )
+
+
+##target_link_libraries(${library_name}  ${catkin_LIBRARIES} )
+
 
 ament_target_dependencies(${library_name}
   rclcpp
