@@ -25,7 +25,7 @@ Global_Planner_OSM::~Global_Planner_OSM()
 }
 
 nav2_util::CallbackReturn
-Global_Planner_OSM::on_configure(const rclcpp_lifecycle::State & state)
+Global_Planner_OSM::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Configuring");
 
@@ -39,7 +39,7 @@ Global_Planner_OSM::on_configure(const rclcpp_lifecycle::State & state)
 }
 
 nav2_util::CallbackReturn
-Global_Planner_OSM::on_activate(const rclcpp_lifecycle::State & state)
+Global_Planner_OSM::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Activating");
     publisher_path_->on_activate();
@@ -48,21 +48,21 @@ Global_Planner_OSM::on_activate(const rclcpp_lifecycle::State & state)
 }
 
 nav2_util::CallbackReturn
-Global_Planner_OSM::on_deactivate(const rclcpp_lifecycle::State & state)
+Global_Planner_OSM::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Deactivating");
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
 nav2_util::CallbackReturn
-Global_Planner_OSM::on_cleanup(const rclcpp_lifecycle::State & state)
+Global_Planner_OSM::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Cleanup");
     return nav2_util::CallbackReturn::SUCCESS;
 }
 
 nav2_util::CallbackReturn
-Global_Planner_OSM::on_shutdown(const rclcpp_lifecycle::State & state)
+Global_Planner_OSM::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Shutdown");
     return nav2_util::CallbackReturn::SUCCESS;

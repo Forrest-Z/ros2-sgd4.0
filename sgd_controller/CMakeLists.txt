@@ -28,16 +28,8 @@ ament_target_dependencies(subsum_controller
   nav2_util
 )
 
-add_executable(lidar_obstacle_checker src/lidar_obstacle_checker.cpp)
-ament_target_dependencies(lidar_obstacle_checker
-  rclcpp
-  geometry_msgs
-  nav2_util
-  sensor_msgs
-)
-
 install(
-  TARGETS subsum_controller lidar_obstacle_checker
+  TARGETS subsum_controller
   DESTINATION lib/${PROJECT_NAME})
   
 install(

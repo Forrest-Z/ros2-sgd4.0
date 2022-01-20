@@ -2,9 +2,8 @@ cmake_minimum_required(VERSION 3.5)
 project(sgd_gazebo_sim)
 
 # Default to C++14
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
-endif()
+set(CMAKE_CXX_STANDARD 14)
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # we dont use add_compile_options with pedantic in message packages
   # because the Python C extensions dont comply with it
@@ -22,13 +21,10 @@ if(WIN32)
 endif()
 
 find_package(ament_cmake REQUIRED)
-#find_package(camera_info_manager REQUIRED)
 find_package(gazebo_dev REQUIRED)
 find_package(gazebo_msgs REQUIRED)
 find_package(gazebo_ros REQUIRED)
 find_package(geometry_msgs REQUIRED)
-#find_package(image_transport REQUIRED)
-#find_package(cv_bridge REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -38,8 +34,6 @@ find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(trajectory_msgs REQUIRED)
-
-#link_directories(${gazebo_dev_LIBRARY_DIRS})
 
 option(ENABLE_PROFILER "Enable Ignition Profiler" FALSE)
 if(ENABLE_PROFILER)
@@ -142,7 +136,7 @@ if(ENABLE_PROFILER)
   target_link_libraries(gazebo_ros_p3d ${ignition-common3_LIBRARIES})
 endif()
 
-ament_export_include_directories(include)
+#ament_export_include_directories(include)
 ament_export_dependencies(rclcpp)
 ament_export_dependencies(gazebo_dev)
 ament_export_dependencies(gazebo_msgs)
@@ -169,8 +163,8 @@ ament_environment_hooks("${CMAKE_CURRENT_SOURCE_DIR}/env-hooks/gazebo_plugins.sh
 
 ament_package()
 
-install(DIRECTORY include/
-        DESTINATION include)
+#install(DIRECTORY include/
+#        DESTINATION include)
 
 install(TARGETS
     gazebo_ros_diff_drive

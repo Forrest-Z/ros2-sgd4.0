@@ -26,7 +26,7 @@ namespace sgd_safety
     }
 
     nav2_util::CallbackReturn
-    Lidar_Obstacle_Checker::on_configure(const rclcpp_lifecycle::State & state)
+    Lidar_Obstacle_Checker::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
     {
         RCLCPP_DEBUG(get_logger(), "Configure");
 
@@ -41,7 +41,7 @@ namespace sgd_safety
     }
 
     nav2_util::CallbackReturn
-    Lidar_Obstacle_Checker::on_activate(const rclcpp_lifecycle::State & state)
+    Lidar_Obstacle_Checker::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused)))
     {
         RCLCPP_DEBUG(get_logger(), "Activate");
 
@@ -51,7 +51,7 @@ namespace sgd_safety
     }
 
     nav2_util::CallbackReturn
-    Lidar_Obstacle_Checker::on_deactivate(const rclcpp_lifecycle::State & state)
+    Lidar_Obstacle_Checker::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
     {
         RCLCPP_DEBUG(get_logger(), "Deactivate");
         pub_cmd_vel->on_deactivate();
@@ -59,14 +59,14 @@ namespace sgd_safety
     }
 
     nav2_util::CallbackReturn
-    Lidar_Obstacle_Checker::on_cleanup(const rclcpp_lifecycle::State & state)
+    Lidar_Obstacle_Checker::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
     {
         RCLCPP_DEBUG(get_logger(), "Cleanup");
         return nav2_util::CallbackReturn::SUCCESS;
     }
 
     nav2_util::CallbackReturn
-    Lidar_Obstacle_Checker::on_shutdown(const rclcpp_lifecycle::State & state)
+    Lidar_Obstacle_Checker::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
     {
         RCLCPP_DEBUG(get_logger(), "Shutdown");
         return nav2_util::CallbackReturn::SUCCESS;
@@ -106,7 +106,6 @@ namespace sgd_safety
         // Angles
         float angle_ = msg->angle_min;
         float incr_ = msg->angle_increment;
-        float degrees;
 
         // Robot geometry
         const float robot_width = 0.73;         // Width of the robot in m including the wheels  //FIXME Approximate measurement. Verify!
@@ -150,7 +149,6 @@ namespace sgd_safety
                     obstacle_ocurrences++;
                     if(obstacle_ocurrences > min_ocurrences)        // If certain number of measurements confirmed an obstacle.
                     {
-                        degrees = rad2deg(angle_);
                         distance_nearest_obstacle = current_distance;
                         //RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Distance: %f is smaller than SD %f at %f.", current_distance, safe_distance, degrees);
                         speed = 0.0;
@@ -166,7 +164,6 @@ namespace sgd_safety
                 if(current_distance < distance_nearest_obstacle)
                 {
                     distance_nearest_obstacle = current_distance;
-                    degrees = rad2deg(angle_);
                 }
                 /* This equation calculates the speed at which the robot should move as a function of the distance between the robot and the object. */
                 speed = ((distance_nearest_obstacle - distance_min) / (distance_max - distance_min)) * speed_max;
@@ -199,12 +196,12 @@ namespace sgd_safety
 
     }
 
-}   // namespace sgd_lc
+}   // namespace sgd_safety
 
 int main(int argc, char const *argv[])
 {
     rclcpp::init(argc, argv);
-    std::shared_ptr<nav2_util::LifecycleNode> node = std::make_shared<nav_sgd::Lidar_Obstacle_Checker>();
+    std::shared_ptr<nav2_util::LifecycleNode> node = std::make_shared<sgd_safety::Lidar_Obstacle_Checker>();
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Lidar obstacle checker startup completed.");
 

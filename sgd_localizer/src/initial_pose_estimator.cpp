@@ -31,7 +31,7 @@ Initial_Pose_Estimator::~Initial_Pose_Estimator()
 
 
 nav2_util::CallbackReturn
-Initial_Pose_Estimator::on_configure(const rclcpp_lifecycle::State & state)
+Initial_Pose_Estimator::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Configuring");
 
@@ -42,7 +42,7 @@ Initial_Pose_Estimator::on_configure(const rclcpp_lifecycle::State & state)
 }
 
 nav2_util::CallbackReturn
-Initial_Pose_Estimator::on_activate(const rclcpp_lifecycle::State & state)
+Initial_Pose_Estimator::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Activating");
 
@@ -56,7 +56,7 @@ Initial_Pose_Estimator::on_activate(const rclcpp_lifecycle::State & state)
 }
 
 nav2_util::CallbackReturn
-Initial_Pose_Estimator::on_deactivate(const rclcpp_lifecycle::State & state)
+Initial_Pose_Estimator::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Deactivating");
     pub_initial_pose_->on_deactivate();
@@ -64,7 +64,7 @@ Initial_Pose_Estimator::on_deactivate(const rclcpp_lifecycle::State & state)
 }
 
 nav2_util::CallbackReturn
-Initial_Pose_Estimator::on_cleanup(const rclcpp_lifecycle::State & state)
+Initial_Pose_Estimator::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Cleanup");
     pub_initial_pose_.reset();
@@ -72,7 +72,7 @@ Initial_Pose_Estimator::on_cleanup(const rclcpp_lifecycle::State & state)
 }
 
 nav2_util::CallbackReturn
-Initial_Pose_Estimator::on_shutdown(const rclcpp_lifecycle::State & state)
+Initial_Pose_Estimator::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Shutdown");
     return nav2_util::CallbackReturn::SUCCESS;

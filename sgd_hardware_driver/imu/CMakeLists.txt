@@ -14,6 +14,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
+find_package(diagnostic_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(sgd_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -26,6 +27,7 @@ set(executable_name imu_bno055)
 set(dependencies
   rclcpp
   rclcpp_lifecycle
+  diagnostic_msgs
   nav2_util
   sgd_msgs
   sensor_msgs
