@@ -29,14 +29,14 @@ Installation wie [hier](https://index.ros.org/doc/ros2/Installation/Foxy/Linux-D
 Um ROS bei jedem neuen Terminalfenster automatisch zu sourcen, kann an das Ende der .bashrc folgender Codeblock eingefügt werden.
 
 ```sh
-if [ -f /opt/ros/foxy/setup.bash ]; then
-  . /opt/ros/foxy/setup.bash
+if [ -f /opt/ros/foxy/local_setup.bash ]; then
+  . /opt/ros/foxy/local_setup.bash
 fi
 ```
 
 ## Installation Navigation 2
 
-Es gibt zwei Möglichkeiten Navigation 2 zu installieren. Entweder in einem separaten Workspace oder im dev_ws (angelegt im vorigen Kapitel).
+Es gibt zwei Möglichkeiten Navigation 2 zu installieren. Entweder in einem separaten Workspace oder im dev_ws (wird im nächsten Kapitel wieder verwendet).
 
 Installation wie [hier](https://navigation.ros.org/build_instructions/index.html#build-nav2-for-released-distribution)
 beschrieben.
@@ -50,6 +50,16 @@ git clone https://github.com/ros-planning/navigation2.git --branch foxy-devel
 cd ~/nav2_ws
 rosdep install -y -r -q --from-paths src --ignore-src --rosdistro foxy
 colcon build --symlink-install
+
+source ~/nav2_ws/install/local_setup.bash
+```
+
+Um Navigation 2 bei jedem Terminalstart zu sourcen, den folgenden Codeblock ans Ende der .bashrc einfügen.
+
+```sh
+if [ -f ~/nav2_ws/install/local_setup.bash ]; then
+  source ~/nav2_ws/install/local_setup.bash
+fi
 ```
 
 ## Installation ROS2 for Blindenhund
@@ -61,23 +71,46 @@ mkdir -p ~/dev_ws/src
 cd ~/dev_ws/src
 ```
 
-Anschließend können die Dateien von GitHub geklont und gebaut werden.
+Anschließend können die Dateien von GitHub geklont und gebaut werden. Beim Bauen muss unbedingt darauf geachtet werden, dass nur aus dem `~/dev_ws` Verzeichnis gebaut wird.
 
 ```
+cd ~/dev_ws
 git clone https://github.com/PStahr-HAW/ros2-sgd4.0.git
+rosdep install -y -r -q --from-paths src --ignore-src --rosdistro foxy
 
 colcon build --symlink-install
+```
+
+Wenn der build-Befehl scheitert, kann der folgende Workaround versucht werden:
+
+```
+colcon build --symlink-install --packages-select sgd_msgs
+colcon build --symlink-install --packages-select sgd_util
+colcon build --symlink-install
+```
+
+Anschließend muss noch das Geazebo_Sim Package gebaut werden.
+
+```
 cd ~/dev_ws/src/ros2_sgd4.0/sgd_gazebo_sim/build
 cmake ..
 make
 
-source ~/dev_ws/install/setup.bash
+source ~/dev_ws/install/local_setup.bash
 ```
 
 Um USB Ports ohne root Rechte nutzen zu können, müssen die folgenden Befehle ausgeführt werden.
 ```
 sudo apt remove modemmanager
 sudo adduser $USER dialout
+```
+
+Um ROS2 für den Blindenhund bei jedem Terminalstart zu sourcen, den folgenden Codeblock ans Ende der .bashrc einfügen.
+
+```sh
+if [ -f ~/dev_ws/install/local_setup.bash ]; then
+  source ~/dev_ws/install/local_setup.bash
+fi
 ```
 
 ## Installation sick_scan2
