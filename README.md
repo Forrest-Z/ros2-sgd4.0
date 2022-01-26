@@ -116,11 +116,11 @@ fi
 ## Installation sick_scan2
 Installation der packages wie [hier](https://github.com/SICKAG/sick_scan2) beschrieben. ldmrs Support ist nicht erforderlich.
 
-Nach der Installation muss die Datei config/sick_tim5xx.yaml mit den folgenden Werten angepasst werden.
+Nach der Installation muss die Datei src/sick_scan2/config/sick_tim_5xx.yaml mit den folgenden Werten angepasst werden.
 
 ```
 hostname : "141.22.33.150"
-frame_id : "laser"
+frame_id : "scan"
 scanner_name : "sick_tim_5xx"
 port : 2112
 min_ang : -2.35619449
@@ -134,7 +134,7 @@ Im launch file launch/sick_tim_5xx.launch.py muss sichergestellt werden, dass no
 executable='sick_generic_caller',
 ```
 
-In den Ubuntu Einstellungen muss nun noch eine neue Kabelgebundene Netzwerkverbindung erstellt und eingeschaltet werden.
+Nach den beiden Anpassungen muss das Projekt neu gebaut werden. Zuletzt wird in den Ubuntu Einstellungen noch eine neue Kabelgebundene Netzwerkverbindung erstellt und eingeschaltet.
 
 ![ip config 1](/doc/ip_config1.png)
 
@@ -142,25 +142,55 @@ In den Ubuntu Einstellungen muss nun noch eine neue Kabelgebundene Netzwerkverbi
 
 ## Installation Robot Localization Package
 
-Erstellen eines neues Workspace `robot_localization_ws` im *home* Ordner. Anschließend klonen des robot_localization Github Repositories. Achtung: Es muss der ROS2 Branch gewählt werden. Bevor das Paket gebaut werden kann, müssen weitere Pakete installiert werden:
+Bevor das Robot Localization Package heruntergeladen und installiert werden kann, muss GeographicLib [heruntergeladen](https://geographiclib.sourceforge.io/html/index.html) und [installiert](https://geographiclib.sourceforge.io/html/install.html) werden.
+
+Anschließend wird ein neuer Workspace `robot_localization_ws` im *home* Ordner erstellt. In diesen Order werden das robot_localization package und alle dependencies geklont.
 
 Paket | Link
 ------|-----
+Robot Localization | [robot_localization](https://github.com/cra-ros-pkg/robot_localization/tree/ros2)
 Geographic Info | [geographic_info](https://github.com/ros-geographic-info/geographic_info/tree/ros2)
-Unique Identifier Messages | [UUID](https://github.com/ros2/unique_identifier_msgs)
+Diagnostics | [Diagnostics](https://github.com/ros/diagnostics/tree/foxy)
 GeographicLib | [GeographicLib](https://geographiclib.sourceforge.io/html/index.html)
 
-Die beiden Github Repositories werden wie schon bei robot_localization in den Workspace geklont. Die GeographicLib muss heruntergeladen werden und anschließend anhand der [Anleitung ](https://geographiclib.sourceforge.io/html/install.html) installiert werden. Anschließend können auch die geklonten Repositories gebaut werden.
+```
+mkdir -p ~/robot_localization_ws/src
+cd ~/robot_localization_ws/src
+git clone --branch ros2 https://github.com/ros-geographic-info/geographic_info.git
+git clone --branch foxy https://github.com/ros/diagnostics.git
+cd ..
+colcon build --symlink-install
+
+cd src
+git clone --branch foxy-devel https://github.com/cra-ros-pkg/robot_localization.git
+```
+
+Damit das Robot Localization Package fehlerfrei gebaut werden kann, muss das *STATIC* in Zeile 37 in robot_localization/CMakeLists.txt gelöscht werden, sodass die Zeile dann wie folgt aussieht:
+
+```
+find_package(GeographicLib REQUIRED COMPONENTS)
+```
+
+Anschließend speichern der Datei und bauen des Packages.
 
 ```
 cd ~/robot_localization_ws
-colcon build --symlink-install
+colcon build --symlink-install --packages-select robot_localization
+```
+
+
+Zum Schluss noch das Einfügen in die .bashrc.
+
+```sh
+if [ -f ~/robot_localization_ws/install/setup.bash ]; then
+  ~/robot_localization_ws/install/setup.bash
+fi
 ```
 
 ## Installation Gazebo 11
-Gazebo wird für die Arbeit mit dem Blindenhund nicht benötigt, ist jedoch sinnvoll, um neue Funktionen zuerst simulieren zu können und sie erst bei erfolgreicher Simulation auf dem Blindenhund zu testen.
+Gazebo wird für die Arbeit mit dem Blindenhund nicht benötigt, ist jedoch sinnvoll, um neue Funktionen zuerst simulieren zu können und sie erst bei erfolgreicher Simulation auf dem Blindenhund zu testen. Bei der Installation von ROS2 sollte Gazebo 11 installiert worden sein, das kann mit dem Befehl `gazebo` in einem Terminal geprüft werden.
 
-Installation wie [hier](http://gazebosim.org/tutorials?tut=install_ubuntu&cat=install) beschrieben.
+Falls sich Gazebo nicht öffnet, muss es manuell installiert werden wie [hier](http://gazebosim.org/tutorials?tut=install_ubuntu&cat=install) beschrieben.
 
 Dann noch benötigte Packages zur Kommunikation mit ROS2. Es ist sinnvoll den neuen Workspace nicht *ws* zu nennen, sondern *gazebo_ws*.
 [install gazebo ros2](http://gazebosim.org/tutorials?tut=ros2_installing&cat=connect_ros)
