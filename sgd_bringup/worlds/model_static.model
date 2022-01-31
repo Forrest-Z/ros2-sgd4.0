@@ -654,7 +654,7 @@
           <pose>0 0 0 0 -0 0</pose>
           <geometry>
             <mesh>
-              <uri>/home/ipp/mode_editor_models/BT21/BT21.dae</uri>
+              <uri>model://BT21/BT21.dae</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>
@@ -681,7 +681,7 @@
           <pose>0 0 0 0 -0 0</pose>
           <geometry>
             <mesh>
-              <uri>/home/ipp/model_editor_models/BT21/BT21.dae</uri>
+              <uri>model://BT21/BT21.dae</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>
@@ -759,7 +759,7 @@
           <pose>0 0 0 0 -0 0</pose>
           <geometry>
             <mesh>
-              <uri>/home/ipp/model_editor_models/BT5/BT5.dae</uri>
+              <uri>model://BT5/BT5.dae</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>
@@ -786,7 +786,7 @@
           <pose>0 0 0 0 -0 0</pose>
           <geometry>
             <mesh>
-              <uri>/home/ipp/model_editor_models/BT5/BT5.dae</uri>
+              <uri>model://BT5/BT5.dae</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>
@@ -864,7 +864,7 @@
           <pose>0 0 0 0 -0 0</pose>
           <geometry>
             <mesh>
-              <uri>/home/ipp/model_editor_models/WS3/WS3.dae</uri>
+              <uri>model://WS3/WS3.dae</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>
@@ -891,7 +891,7 @@
           <pose>0 0 0 0 -0 0</pose>
           <geometry>
             <mesh>
-              <uri>/home/ipp/model_editor_models/WS3/WS3.dae</uri>
+              <uri>model://WS3/WS3.dae</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>
@@ -957,7 +957,7 @@
           <pose>0 0 0 0 -0 0</pose>
           <geometry>
             <mesh>
-              <uri>/home/ipp/model_editor_models/ST69/ST69.dae</uri>
+              <uri>model://ST69/ST69.dae</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>
@@ -981,7 +981,7 @@
           <pose>0 0 0 0 -0 0</pose>
           <geometry>
             <mesh>
-              <uri>/home/ipp/model_editor_models/ST69/ST69.dae</uri>
+              <uri>model://ST69/ST69.dae</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>
