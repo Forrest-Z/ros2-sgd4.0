@@ -190,24 +190,23 @@ fi
 ## Installation Gazebo 11
 Gazebo wird für die Arbeit mit dem Blindenhund nicht benötigt, ist jedoch sinnvoll, um neue Funktionen zuerst simulieren zu können und sie erst bei erfolgreicher Simulation auf dem Blindenhund zu testen. Bei der Installation von ROS2 sollte Gazebo 11 installiert worden sein, das kann mit dem Befehl `gazebo` in einem Terminal geprüft werden.
 
-Falls sich Gazebo nicht öffnet, muss es manuell installiert werden wie [hier](http://gazebosim.org/tutorials?tut=install_ubuntu&cat=install) beschrieben.
-
-Dann noch benötigte Packages zur Kommunikation mit ROS2. Es ist sinnvoll den neuen Workspace nicht *ws* zu nennen, sondern *gazebo_ws*.
+Falls sich Gazebo nicht öffnet, muss es manuell installiert werden wie [hier](http://gazebosim.org/tutorials?tut=install_ubuntu&cat=install) beschrieben und zusätzlich werden weitere Packages benötigt. Es ist sinnvoll den neuen Workspace nicht *ws* zu nennen, sondern *gazebo_ws*.
 [install gazebo ros2](http://gazebosim.org/tutorials?tut=ros2_installing&cat=connect_ros)
 
-Die Testing Section sollte durchgeführt werden, um sicher zu stellen, dass alle Packages installiert sind. Beim Testen sollte sowohl der Pfad aus der Anleitung wie auch der Pfad zum Workspace funktionieren.
-
-```
-Gazebo --verbose  ~/gazebo_ws/src/gazebo_ros_pkgs/gazebo_plugins/worlds/gazebo_diff_drive_demo.world
-```
-
-Die bereitgestellte Simulationsumgebung enthält auch das Modell des Blindenhunds. Damit es von Gazebo gefunden werden kann, muss die Variable $GAZEBO_MODEL_PATH angepasst werden. 
+Die bereitgestellte Simulationsumgebung enthält auch das Modell des Blindenhunds. Damit es von Gazebo gefunden werden kann, muss die Variable $GAZEBO_MODEL_PATH angepasst werden. Um den Pfad automatisch bei jedem neuen Terminalfenster zu setzen, kann der Befehl auch an das Ende der .bashrc gesetzt werden.
 
 ```
 export GAZEBO_MODEL_PATH=~/dev_ws/src/ros2-sgd4.0/sgd_gazebo_sim/models:$GAZEBO_MODEL_PATH
 ```
 
-Um den Pfad automatisch bei jedem neuen Terminalfenster zu setzen, kann der Befehl auch an das Ende der .bashrc gesetzt werden.
+Ein Test der Simulationsumgebung kann mit dem folgenden Befehl durchgeführt werden. Es dürfen keine Fehler auftreten und die Welt muss vollständig geladen werden.
+
+```
+gazebo --verbose ~/dev_ws/src/ros2-sgd4.0/sgd_bringup/worlds/model_static.model
+```
+
+![Gazebo example](/doc/gazebo_example.png)
+
 
 # Testing im Shared Guide Dog Projekt
 
