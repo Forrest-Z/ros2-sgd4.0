@@ -249,8 +249,9 @@ planner_server:
     use_sim_time: False
     planner_plugins: ["GridBased"]
     GridBased:
-      plugin: "sgd_local_planner/StraightLine"
+      plugin: "sgd_local_planner/DubinsCurve"
       interpolation_resolution: 0.1
+      radius: 1.0
 
 planner_server_rclcpp_node:
   ros__parameters:

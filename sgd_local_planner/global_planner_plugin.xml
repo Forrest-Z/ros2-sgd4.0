@@ -1,5 +1,5 @@
 <library path="sgd_local_planner_plugin">
-	<class name="sgd_local_planner/StraightLine" type="sgd_local_planner::StraightLine" base_class_type="nav2_core::GlobalPlanner">
-	  <description>Plugin which generates straight line path.</description>
+	<class name="sgd_local_planner/DubinsCurve" type="sgd_local_planner::DubinsCurve" base_class_type="nav2_core::GlobalPlanner">
+	  <description>Plugin which generates path from dubins curve.</description>
 	</class>
 </library>
