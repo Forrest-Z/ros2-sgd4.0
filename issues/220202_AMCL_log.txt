@@ -1,0 +1,71 @@
+[lifecycle_manager-15] [INFO] [1643788100.845917307] [lifecycle_manager]: All nodes active.
+[bt_navigator-12] [INFO] [1643788142.720724274] [bt_navigator]: Begin navigating from current location to (9.26, -3.00)
+[controller_server-9] [INFO] [1643788142.742176177] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-9] [INFO] [1643788143.792443367] [controller_server]: Passing new path to controller.
+[controller_server-9] [INFO] [1643788144.792451179] [controller_server]: Passing new path to controller.
+[controller_server-9] [INFO] [1643788145.842459177] [controller_server]: Passing new path to controller.
+[controller_server-9] [INFO] [1643788146.892445655] [controller_server]: Passing new path to controller.
+[controller_server-9] [ERROR] [1643788147.142531580] [tf_help]: Transform data too old when converting from odom to map
+[controller_server-9] [ERROR] [1643788147.142572576] [tf_help]: Data time: 60s 900000000ns, Transform time: 60s 698000000ns
+[controller_server-9] [ERROR] [1643788147.142820700] [controller_server]: Unable to transform robot pose into global plan's frame
+[controller_server-9] [WARN] [1643788147.142878415] [controller_server_rclcpp_node]: [follow_path] [ActionServer] Aborting handle.
+[controller_server-9] [INFO] [1643788147.162067520] [local_costmap.local_costmap]: Received request to clear entirely the local_costmap
+[controller_server-9] [INFO] [1643788147.164262912] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-9] [ERROR] [1643788147.164980197] [tf_help]: Transform data too old when converting from odom to map
+[controller_server-9] [ERROR] [1643788147.164998258] [tf_help]: Data time: 60s 900000000ns, Transform time: 60s 698000000ns
+[controller_server-9] [ERROR] [1643788147.165059085] [controller_server]: Unable to transform robot pose into global plan's frame
+[controller_server-9] [WARN] [1643788147.165100978] [controller_server_rclcpp_node]: [follow_path] [ActionServer] Aborting handle.
+[controller_server-9] [INFO] [1643788147.181897962] [local_costmap.local_costmap]: Received request to clear entirely the local_costmap
+[planner_server-10] [INFO] [1643788147.182286711] [global_costmap.global_costmap]: Received request to clear entirely the global_costmap
+[recoveries_server-11] [INFO] [1643788147.184915821] [recoveries_server]: Attempting wait
+[recoveries_server-11] [INFO] [1643788148.185089307] [recoveries_server]: wait running...
+[recoveries_server-11] [INFO] [1643788149.185134344] [recoveries_server]: wait running...
+[recoveries_server-11] [INFO] [1643788150.185102263] [recoveries_server]: wait running...
+[recoveries_server-11] [INFO] [1643788151.185097254] [recoveries_server]: wait running...
+[ERROR] [amcl-5]: process has died [pid 9425, exit code -11, cmd '/opt/ros/foxy/lib/nav2_amcl/amcl --ros-args -r __node:=amcl --params-file /tmp/tmp_x0aebm6'].
+[recoveries_server-11] [INFO] [1643788152.185265066] [recoveries_server]: wait completed successfully
+[recoveries_server-11] [INFO] [1643788152.185296691] [recoveries_server]: wait running...
+[controller_server-9] [INFO] [1643788152.232152865] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-9] [ERROR] [1643788152.232420288] [tf_help]: Transform data too old when converting from map to odom
+[controller_server-9] [ERROR] [1643788152.232434559] [tf_help]: Data time: 61s 576000000ns, Transform time: 60s 698000000ns
+[controller_server-9] [ERROR] [1643788152.232502548] [tf_help]: Transform data too old when converting from odom to map
+[controller_server-9] [ERROR] [1643788152.232511539] [tf_help]: Data time: 61s 500000000ns, Transform time: 60s 698000000ns
+[controller_server-9] [ERROR] [1643788152.232573203] [controller_server]: Unable to transform robot pose into global plan's frame
+[controller_server-9] [WARN] [1643788152.232615003] [controller_server_rclcpp_node]: [follow_path] [ActionServer] Aborting handle.
+[controller_server-9] [INFO] [1643788152.234079341] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-9] [ERROR] [1643788152.234286845] [tf_help]: Transform data too old when converting from map to odom
+[controller_server-9] [ERROR] [1643788152.234301505] [tf_help]: Data time: 61s 576000000ns, Transform time: 60s 698000000ns
+[controller_server-9] [ERROR] [1643788152.234368234] [tf_help]: Transform data too old when converting from odom to map
+[controller_server-9] [ERROR] [1643788152.234378334] [tf_help]: Data time: 61s 500000000ns, Transform time: 60s 698000000ns
+[controller_server-9] [ERROR] [1643788152.234436503] [controller_server]: Unable to transform robot pose into global plan's frame
+[controller_server-9] [WARN] [1643788152.234479654] [controller_server_rclcpp_node]: [follow_path] [ActionServer] Aborting handle.
+[controller_server-9] [INFO] [1643788152.262054087] [local_costmap.local_costmap]: Received request to clear entirely the local_costmap
+[planner_server-10] [INFO] [1643788152.262880568] [global_costmap.global_costmap]: Received request to clear entirely the global_costmap
+[recoveries_server-11] [INFO] [1643788152.267125943] [recoveries_server]: Attempting wait
+[recoveries_server-11] [INFO] [1643788153.267285010] [recoveries_server]: wait running...
+[recoveries_server-11] [INFO] [1643788154.267300137] [recoveries_server]: wait running...
+[recoveries_server-11] [INFO] [1643788155.267289788] [recoveries_server]: wait running...
+[recoveries_server-11] [INFO] [1643788156.267324784] [recoveries_server]: wait running...
+[recoveries_server-11] [INFO] [1643788157.267287315] [recoveries_server]: wait completed successfully
+[controller_server-9] [INFO] [1643788157.312147587] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-9] [ERROR] [1643788157.314525451] [tf_help]: Transform data too old when converting from map to odom
+[controller_server-9] [ERROR] [1643788157.314583778] [tf_help]: Data time: 61s 844000000ns, Transform time: 60s 698000000ns
+[controller_server-9] [INFO] [1643788157.314614140] [controller_server]: Passing new path to controller.
+[controller_server-9] [ERROR] [1643788157.315180180] [tf_help]: Transform data too old when converting from map to odom
+[controller_server-9] [ERROR] [1643788157.315193578] [tf_help]: Data time: 61s 844000000ns, Transform time: 60s 698000000ns
+[controller_server-9] [ERROR] [1643788157.315258081] [tf_help]: Transform data too old when converting from odom to map
+[controller_server-9] [ERROR] [1643788157.315264996] [tf_help]: Data time: 61s 800000000ns, Transform time: 60s 698000000ns
+[controller_server-9] [ERROR] [1643788157.315321347] [controller_server]: Unable to transform robot pose into global plan's frame
+[controller_server-9] [WARN] [1643788157.315357609] [controller_server_rclcpp_node]: [follow_path] [ActionServer] Aborting handle.
+[controller_server-9] [INFO] [1643788157.342122554] [local_costmap.local_costmap]: Received request to clear entirely the local_costmap
+[planner_server-10] [INFO] [1643788157.342562484] [global_costmap.global_costmap]: Received request to clear entirely the global_costmap
+[recoveries_server-11] [INFO] [1643788157.344505549] [recoveries_server]: Attempting wait
+[recoveries_server-11] [INFO] [1643788158.345202204] [recoveries_server]: wait running...
+[recoveries_server-11] [INFO] [1643788159.345243251] [recoveries_server]: wait running...
+[recoveries_server-11] [INFO] [1643788160.345087717] [recoveries_server]: wait running...
+[recoveries_server-11] [INFO] [1643788161.345254782] [recoveries_server]: wait running...
+[planner_server-10] [INFO] [1643788161.928551114] [global_costmap.global_costmap_rclcpp_node]: Message Filter dropping message: frame 'base_scan' at time 60.704 for reason 'Unknown'
+^C[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[lifecycle_manager-15] [INFO] [1643788161.967044479] [rclcpp]: signal_handler(signal_value=2)
+[waypoint_follower-13] [INFO] [1643788161.967016583] [rclcpp]: signal_handler(signal_value=2)
+
