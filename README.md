@@ -2,6 +2,16 @@
 
 Im Rahmen des Forschungsvorhabens "Blindenhund 4.0" wird an der HAW Hamburg in interdisziplinärer Zusammenarbeit ein Blindenhund zur Unterstützung der menschlichen Navigation im urbanen Nahfeld entwickelt. Basierend auf Fähigkeiten Fahrerloser Transportsysteme (z.B. Laser, Ultraschall, 3D-Kamera) hilft er bei Einschränkungen in der natürlichen menschlichen Wahrnehmung ebenso wie bei körperlichen Einschränkungen. Besonders ältere und blinde Menschen profitieren durch erhöhte Selbständigkeit und Mobilität.
 
+# ROS2 Startup
+
+Zum Starten von ROS2 für den Shared Guide Dog 4.0 wird ein Launch-Script verwendet. Dieses befindet sich im Package *sgd_bringup*. Daneben sind weitere Dateien in diesem Package zu finden. Unter anderem die Konfigurationsdateien, Maps, die URDF Beschreibung des Roboters und das Simulationsmodell der Umgebung. Der Shared Guide Dog kann über den Befehl
+
+```
+ros2 launch sgd_bringup sgd_startup.launch.py sim:=[True|False] slam:=[True|False]
+```
+
+gestartet werden. Die beiden Parameter *sim* und *slam* sind optional. Standardmäßig ist `sim:=False` und `slam:=False`.
+
 # ROS2 Installation
 
 Installationsanleitung für die Verwendung von ROS2 im Projekt *Shared Guide Dog 4.0*.
