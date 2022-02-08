@@ -19,7 +19,7 @@ ObstacleChecker::initialize(double robot_width, double distance_min, double dist
         throw std::invalid_argument("Maximum safety distance is smaller than minimum safety distance.");
     }
     robot_width_ = robot_width;
-    distance_min_ = distance_min_;
+    distance_min_ = distance_min;
     distance_max_ = distance_max;
     half_width = (robot_width_ / 2) + width_tolerance;
 
