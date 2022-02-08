@@ -90,9 +90,13 @@ FrSky_RX8R::init_pub_sub()
 void
 FrSky_RX8R::on_msg_received(const sgd_msgs::msg::Serial::SharedPtr msg)
 {
-    if (msg->msg.find("RX8R") == std::string::npos) {return;}     // message is not from touch sensor
+    if (msg->msg.find("RX8R") == std::string::npos)
+    {
+        // message has to start with 'RX8R' to be sure it is from the remote control
+        return;
+    }
 
-    // 8 channels in message, each channel from 172 to 1811
+    // 8 channels in message, each channel ranges from 172 to 1811
     // channels 1 and 2 are for movement
     // channel 3 controls lights on left side, channel 6 lights on right side
 
@@ -101,12 +105,18 @@ FrSky_RX8R::on_msg_received(const sgd_msgs::msg::Serial::SharedPtr msg)
     int channels[8];
     int i = 0;
 
+    // parse channels
     while (getline(input_stringstream, parsed, ',') && i < 8)
     {
-        if (parsed.find("RX8R") != std::string::npos) continue;
+        // message starts with 'RX8R' so skip this part
+        if (parsed.find("RX8R") != std::string::npos)
+        {
+            continue;
+        }
 
         try
         {
+            // parse value and add it to array
             channels[i] = std::stoi(parsed);
             i++;
         }
@@ -127,13 +137,17 @@ FrSky_RX8R::pub_cmd_vel(int ch1, int ch2, int ch8)
     // ch1 = forward / backward; ch2 = left / right
     geometry_msgs::msg::Twist cmd_vel_;
 
+    // subtract 992 so each channel ranges from -820 to +819
     ch1 -= 992;
     ch2 -= 992;
     ch8 -= 992;
 
+    // if value is <20 set velocity to 0 to avoid shaking of the shared guide dog
+    // calculate speed from channel input
     cmd_vel_.linear.x = abs(ch1) < 20 ? 0 : (double)ch1 / 820.0 * max_vel_;
     cmd_vel_.angular.z = abs(ch2) < 20 ? 0 : (double)-ch2 / 820.0 * max_rot_vel_;
 
+    // publish velocity command
     if (ch8 < 0 && (abs(ch1) > 20 || abs(ch2) > 20))
     {
         last_msg_equ_zero_ = false;
@@ -141,11 +155,14 @@ FrSky_RX8R::pub_cmd_vel(int ch1, int ch2, int ch8)
     }
     else if (ch8 > 0)
     {
+        // channel 8 is used as a master switch. So if it is pressed publish to velocity master topic
         last_msg_equ_zero_ = false;
         publish_cmd_vel_master_->publish(cmd_vel_);
     }
     else if (abs(ch1) < 20 && abs(ch2) < 20 && !last_msg_equ_zero_)
     {
+        // last_msg_equ_zero is used to detect if the user is controlling the robot with the remote
+        // control. If the user is not using the remote control don't publish the velocity
         last_msg_equ_zero_ = true;
         publish_cmd_vel_->publish(cmd_vel_);
     }
@@ -154,9 +171,11 @@ FrSky_RX8R::pub_cmd_vel(int ch1, int ch2, int ch8)
 void
 FrSky_RX8R::pub_light(int ch3, int ch6)
 {
+    // subtract 992 so each channel ranges from -820 to +819
     ch3 -= 992;
     ch6 -= 992;
 
+    // set state to 0, 1 or 2
     ch3 = abs(ch3) < 20 ? 2 : ch3 > 0;
     ch6 = abs(ch6) < 20 ? 2 : ch6 > 0;
 
@@ -164,6 +183,7 @@ FrSky_RX8R::pub_light(int ch3, int ch6)
     std::vector<unsigned char> rgb = {0,0,0};
 
     int mode = -1;
+    // if the light mode has changed publish new message
     if (ch3 != lights_l_)
     {
         mode = ch3;
@@ -178,10 +198,12 @@ FrSky_RX8R::pub_light(int ch3, int ch6)
     }
     else
     {
+        // light mode has not changed so do nothing
         return;
     }
     light_msg_.mode = mode;
 
+    // set color depending on mode
     switch (mode)
     {
     case sgd_msgs::msg::Light::FILL:
@@ -206,6 +228,8 @@ FrSky_RX8R::pub_light(int ch3, int ch6)
     }
 
     light_msg_.rgb = rgb;
+
+    // publish message
     publish_light_->publish(light_msg_);
 
 }

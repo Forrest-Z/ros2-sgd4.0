@@ -40,9 +40,23 @@ protected:
     rclcpp::Subscription<sgd_msgs::msg::Serial>::SharedPtr subscriber_;
 
     void on_msg_received(const sgd_msgs::msg::Serial::SharedPtr msg);
-    // Publish movement 
+    
+    /**
+     * @brief Publish a velocity command
+     * 
+     * @param ch1 velocity
+     * @param ch2 rotation
+     * @param ch8 master switch
+     */
     void pub_cmd_vel(int ch1, int ch2, int ch8);
     bool last_msg_equ_zero_;
+
+    /**
+     * @brief Publish a command to control the led strips.
+     * 
+     * @param ch3 the command for left led strip
+     * @param ch6 the command for right led strip
+     */
     void pub_light(int ch3, int ch6);
     int lights_l_ = -1, lights_r_ = -1;
 };
