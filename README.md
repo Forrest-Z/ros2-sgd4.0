@@ -2,6 +2,12 @@
 
 Im Rahmen des Forschungsvorhabens "Blindenhund 4.0" wird an der HAW Hamburg in interdisziplinärer Zusammenarbeit ein Blindenhund zur Unterstützung der menschlichen Navigation im urbanen Nahfeld entwickelt. Basierend auf Fähigkeiten Fahrerloser Transportsysteme (z.B. Laser, Ultraschall, 3D-Kamera) hilft er bei Einschränkungen in der natürlichen menschlichen Wahrnehmung ebenso wie bei körperlichen Einschränkungen. Besonders ältere und blinde Menschen profitieren durch erhöhte Selbständigkeit und Mobilität.
 
+# Contents
+
+- [Startup](README.md#ros2-startup)
+- [Installation](README.md#ros2-installation)
+- [Testing](README.md#testing-im-shared-guide-dog-projekt)
+
 # ROS2 Startup
 
 Zum Starten von ROS2 für den Shared Guide Dog 4.0 wird ein Launch-Script verwendet. Dieses befindet sich im Package *sgd_bringup*. Daneben sind weitere Dateien in diesem Package zu finden. Unter anderem die Konfigurationsdateien, Maps, die URDF Beschreibung des Roboters und das Simulationsmodell der Umgebung. Der Shared Guide Dog kann über den Befehl
@@ -220,8 +226,64 @@ gazebo --verbose ~/dev_ws/src/ros2-sgd4.0/sgd_bringup/worlds/model_static.model
 
 # Testing im Shared Guide Dog Projekt
 
-- Trennung von ROS Code und eigenem Code. Das bedeutet, dass in einer ROS Node keine Berechnungen durchgeführt werden, sondern diese in externe Files ausgelagert werden.
-- Durch die Trennung können die Algorithmen mit GTest einfach getestet werden.
+## Idee
+
+Die ROS2 Packages werden so aufgebaut, dass eine Trennung zwischen ROS-spezifischem Code und anderem Code stattfindet. Somit kann ein Test der Algorithmen ohne eine Abhängigkeit von ROS2 durchgeführt werden.
+
+![ROS2 Testing mit GTest](/doc/ros2_testing.png)
+
+Als Beispielpaket kann *sgd_safety* verwendet werden.
+
+## Anpassungen in der CMakeLists.txt
+
+Damit ein Test mit colcon durchgeführt werden kann, muss die CMakeLists.txt angepasst werden. 
+
+Laden des GTest Pakets:
+```
+# find dependencies
+find_package(...)
+...
+
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+)
+FetchContent_MakeAvailable(googletest)
+
+... weiter mit der alten CMakeLists.txt
+```
+
+Erstellen der Tests mit den Abhängigkeiten:
+```
+### testing
+enable_testing()
+
+set(test_name test_name)
+add_executable(${test_name} <path_to_test_cpp> <optional path_to_src_cpp>)
+target_link_libraries(${test_name} gtest_main <optional included_libs>)
+
+# if you have test data (e.g. a csv file with data) put it into test/data and uncomment the following line.
+# The files will be copied to the build folder from where they can be accessed
+# file(COPY test/data DESTINATION ${CMAKE_BINARY_DIR}/lib/test)
+
+include(GoogleTest)
+gtest_discover_tests(${test_name})
+```
+
+## Start der Tests und Anzeige der Testergebnisse
+
+Das Starten der Tests erfolgt mit
+```
+colcon test --packages-select package_name
+```
+die Angabe eines Pakets ist optional. Wird kein Paket angegeben, werden alle Pakete getestet.
+
+Eine Kurzübersicht über die Testergebnisse kann mit 
+```
+colcon test-result
+```
+erzeugt werden. Ausführlichere Berichte über bestandene und Fehlerhafte Tests sind im build_Ordner des Paktes unter *Testing* zu finden.
 
 # Use COLCON inside Visual Studio Code
 
