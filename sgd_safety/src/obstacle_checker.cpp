@@ -44,7 +44,7 @@ ObstacleChecker::compute_speed(std::vector<float> scan_ranges, float min_angle, 
     /* Evaluates the distances the Lidar measures at every angle */
     for (double current_distance : scan_ranges)
     {
-        /* If the angle is too big, t is detecting its own body. If the distance is too small, it is a false measurement regarding an issue with the lidar sensor.*/
+        /* If the angle is too big, it is detecting its own body. If the distance is too small, it is a false measurement regarding an issue with the lidar sensor.*/
         if ((abs(angle_) > workspace_lower_limit) || (current_distance < 0.009))
         {
         } // Discard this measurements because it's detecting itself.
