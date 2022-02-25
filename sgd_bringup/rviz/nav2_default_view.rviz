@@ -80,6 +80,8 @@ Visualization Manager:
           Value: true
         caster_link:
           Value: true
+        earth:
+          Value: true
         gps_link:
           Value: true
         imu_link:
@@ -98,21 +100,22 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          odom:
-            base_link:
-              base_scan:
-                {}
-              caster_link:
-                {}
-              gps_link:
-                {}
-              imu_link:
-                {}
-              wheel_left_link:
-                {}
-              wheel_right_link:
-                {}
+        earth:
+          map:
+            odom:
+              base_link:
+                base_scan:
+                  {}
+                caster_link:
+                  {}
+                gps_link:
+                  {}
+                imu_link:
+                  {}
+                wheel_left_link:
+                  {}
+                wheel_right_link:
+                  {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -554,7 +557,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: -1.6150002479553223
+      Angle: 0.0
       Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -567,8 +570,8 @@ Visualization Manager:
       Scale: 15.083584785461426
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz_default_plugins)
-      X: -3.8185553550720215
-      Y: -12.051765441894531
+      X: 220.0
+      Y: 220.0
     Saved: ~
 Window Geometry:
   Displays:

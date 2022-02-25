@@ -26,7 +26,9 @@ def generate_launch_description():
 
     # Create the launch configuration variables
     map_yaml_file = LaunchConfiguration('map')
+    #osm_map_file = LaunchConfiguration('osm_map')
     params_file = LaunchConfiguration('params_file')
+    hardware_params_file = LaunchConfiguration('hardware_params_file')
     default_bt_xml_filename = LaunchConfiguration('default_bt_xml_filename')
 
     # Launch configuration variables specific to simulation
@@ -58,21 +60,24 @@ def generate_launch_description():
 
     declare_map_yaml_cmd = DeclareLaunchArgument(
         'map',
-        default_value=os.path.join(bringup_dir, 'maps', 'map_slam.yaml'),
+        default_value=os.path.join(bringup_dir, 'maps', 'lohmuehlenpark.yaml'),
         description='Full path to map file to load')
 
     # Change depending on sim = true or sim = false
     if (sim):
-        params_filepath = os.path.join(bringup_dir, 'config', 'simulation_params.yaml')
         lfc_launch = os.path.join(bringup_dir, 'config', 'launch_sim.xml')
     else:
-        params_filepath = os.path.join(bringup_dir, 'config', 'sgd_params.yaml')
         lfc_launch = os.path.join(bringup_dir, 'config', 'launch.xml')
 
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
-        default_value=params_filepath,
+        default_value=os.path.join(bringup_dir, 'config', 'sgd_params.yaml'),
         description='Full path to the ROS2 parameters file to use for all launched nodes')
+
+    declare_hardware_params_file_cmd = DeclareLaunchArgument(
+        'hardware_params_file',
+        default_value=os.path.join(bringup_dir, 'config', 'hardware_params.yaml'),
+        description='Full path to hardware specific parameters.')
 
     declare_bt_xml_cmd = DeclareLaunchArgument(
         'default_bt_xml_filename',
@@ -92,13 +97,13 @@ def generate_launch_description():
 
     declare_world_cmd = DeclareLaunchArgument(
         'world',
-        default_value=os.path.join(bringup_dir, 'worlds', 'model_static.model'),
+        default_value=os.path.join(bringup_dir, 'worlds', 'lohmuehlenpark.model'),
         description='Full path to world model file to load')
 
     # Specify the actions
     start_gazebo_server_cmd = ExecuteProcess(
         condition=IfCondition(sim),
-        cmd=['gzserver', '-s', 'libgazebo_ros_init.so', world],
+        cmd=['gzserver', '--verbose', '-s', 'libgazebo_ros_init.so', world],
         cwd=[launch_dir], output={'both': 'log'})
 
     start_gazebo_client_cmd = ExecuteProcess(
@@ -156,7 +161,7 @@ def generate_launch_description():
         condition=IfCondition(PythonExpression(['not ', sim])),
         launch_arguments={'map': map_yaml_file,
                           'use_sim_time': sim,
-                          'params_file': params_file}.items())
+                          'params_file': hardware_params_file}.items())
     
     start_lifecycle_cmd = Node(
         package='sgd_lifecycle_manager',
@@ -174,6 +179,7 @@ def generate_launch_description():
     ld.add_action(declare_slam_cmd)
     ld.add_action(declare_map_yaml_cmd)
     ld.add_action(declare_params_file_cmd)
+    ld.add_action(declare_hardware_params_file_cmd)
     ld.add_action(declare_bt_xml_cmd)
 
     ld.add_action(declare_rviz_config_file_cmd)

@@ -1,0 +1,657 @@
+<sdf version='1.7'>
+  <world name='default'>
+    <gravity>0 0 -9.81</gravity>
+    <physics type='ode'>
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+    <scene>
+      <ambient>0.6 0.6 0.6 1</ambient>
+      <background>0.7 0.7 0.7 1</background>
+      <shadows>1</shadows>
+    </scene>
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>53.5532264</latitude_deg>
+      <longitude_deg>10.0192452</longitude_deg>
+      <elevation>0</elevation>
+      <heading_deg>-180</heading_deg>
+    </spherical_coordinates>
+
+    <gui fullscreen='0'>
+      <camera name='user_camera'>
+        <pose>189.5 233.0 127.624 0 0.647459 2.52816</pose>
+        <view_controller>orbit</view_controller>
+        <projection_type>perspective</projection_type>
+      </camera>
+    </gui>
+
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <scene>
+      <shadows>false</shadows>
+    </scene>
+
+    <model name='ground'>
+      <static>1</static>
+      <include>
+        <uri>model://Lohmuehlenpark</uri>
+      </include>
+      <pose>189.5 233 0 0 0 0</pose>
+    </model>
+
+    <!-- The model must be included in the world file to ensure the proper connection between the frames -->
+    <model name="blindenhund">
+      <pose>190 213 0.12 0 0 0.5505</pose>
+
+      <link name="base_link">
+        <pose>0 0 0 0 0 0</pose>
+      </link>
+
+      <link name="base_frame">
+        <pose>0.3576 0 0.1082 0 0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>4</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.1</iyy>
+            <iyz>0</iyz>
+            <izz>0.1</izz>
+          </inertia>
+        </inertial>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+        <gravity>1</gravity>
+        <visual name="base_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.7152 0.628 0.20</size>
+            </box>
+          </geometry>
+        </visual>
+        <collision name="base_collision">
+          <max_contacts>10</max_contacts>
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.7152 0.628 0.20</size>
+            </box>
+          </geometry>
+        </collision>        
+      </link>
+
+      <link name="wheel_left_link">
+        <pose>0 0.3493 0 -1.5707 0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <inertia>
+            <ixx>14.5833</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>14.5833</iyy>
+            <iyz>0</iyz>
+            <izz>12.5</izz>
+          </inertia>
+          <mass>4</mass>
+        </inertial>
+        <visual name="wheel_left_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1082</radius>
+              <length>0.056</length>
+            </cylinder>
+          </geometry>
+        </visual>
+        <collision name="wheel_left_collision">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1082</radius>
+              <length>0.056</length>
+            </cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>1.0</mu2>
+                <fdir1>0 0 0</fdir1>
+                <slip1>0.0</slip1>
+                <slip2>0.0</slip2>
+              </ode>
+            </friction>
+            <contact>
+              <ode>
+                <kp>1e+15</kp>
+                <kd>1e+5</kd>
+                <max_vel>0.1</max_vel>
+                <min_depth>0.01</min_depth>
+              </ode>
+            </contact>
+          </surface>
+        </collision>
+      </link>
+
+      <link name="wheel_right_link">
+        <pose>0 -0.3493 0 -1.5707 0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <inertia>
+            <ixx>14.5833</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>14.5833</iyy>
+            <iyz>0</iyz>
+            <izz>12.5</izz>
+          </inertia>
+          <mass>4</mass>
+        </inertial>
+        <visual name="wheel_right_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1082</radius>
+              <length>0.056</length>
+            </cylinder>
+          </geometry>
+        </visual>
+        <collision name="wheel_right_collision">
+          <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.1082</radius>
+              <length>0.056</length>
+            </cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>1.0</mu2>
+                <fdir1>0 0 0</fdir1>
+                <slip1>0.0</slip1>
+                <slip2>0.0</slip2>
+              </ode>
+            </friction>
+            <contact>
+              <ode>
+                <kp>1e+15</kp>
+                <kd>1e+5</kd>
+                <max_vel>0.1</max_vel>
+                <min_depth>0.01</min_depth>
+              </ode>
+            </contact>
+          </surface>
+        </collision>
+      </link>
+
+      <link name='caster_link'>
+        <pose>0.7152 0 0 0 0 0</pose>
+        <inertial>
+          <mass>4</mass>
+          <inertia>
+            <ixx>1.0</ixx>
+            <ixy>0.000</ixy>
+            <ixz>0.000</ixz>
+            <iyy>1.0</iyy>
+            <iyz>0.000</iyz>
+            <izz>1.0</izz>
+          </inertia>
+          <pose>0 0 0 0 -0 0</pose>
+        </inertial>
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>0.1082</radius>
+            </sphere>
+          </geometry>
+          <pose>0 0 0 0 0 0</pose>
+        </visual>
+        <collision name='collision'>
+          <max_contacts>10</max_contacts>
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>0.1082</radius>
+            </sphere>
+          </geometry>
+          <surface>
+            <contact>
+              <ode>
+                <kp>1e+15</kp>
+                <kd>1e+5</kd>
+                <max_vel>0.1</max_vel>
+                <min_depth>0.01</min_depth>
+              </ode>
+            </contact>
+          </surface>
+        </collision>
+      </link>
+
+      <link name="imu_link">
+        <pose>0 0 0.3 0 0 0</pose>
+        <visual name="imu_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.05 0.05 0.05</size>
+            </box>
+          </geometry>
+        </visual>
+        <collision name="imu_collision">
+          <max_contacts>10</max_contacts>
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.05 0.05 0.05</size>
+            </box>
+          </geometry>
+        </collision>
+        <sensor name="sgd_imu" type="imu">
+          <pose>0 0 0 0 0 0</pose>
+          <always_on>true</always_on>
+          <update_rate>100</update_rate>
+          <visualize>true</visualize>
+          <topic>__default_topic__</topic>
+          <initialOrientationAsReference>false</initialOrientationAsReference>
+          <imu>
+            <angular_velocity>
+              <x>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>2e-2</stddev>
+                </noise>
+              </x>
+              <y>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>2e-2</stddev>
+                </noise>
+              </y>
+              <z>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>2e-2</stddev>
+                </noise>
+              </z>
+            </angular_velocity>
+            <linear_acceleration>
+              <x>
+                <noise type="gaussian">
+                  <mean>-0.0</mean>
+                  <stddev>3.54e-1</stddev>
+                </noise>
+              </x>
+              <y>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>3.98e-1</stddev>
+                </noise>
+              </y>
+              <z>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>4.8e-1</stddev>
+                </noise>
+              </z>
+            </linear_acceleration>
+          </imu>
+          <plugin name="blindenhund_imu" filename="libgazebo_ros_imu_sensor.so">
+            <ros>
+              <remapping>~/out:=imu</remapping>
+            </ros>
+            <gravity>false</gravity>
+            <topicName>imu</topicName>
+            <bodyName>imu_link</bodyName>
+            <updateRateHZ>100.0</updateRateHZ>
+            <gaussianNoise>0.0</gaussianNoise>
+            <xyzOffset>0 0 0</xyzOffset>
+            <rpyOffset>0 0 0</rpyOffset>
+            <frameName>imu_link</frameName>
+            <initialOrientationAsReference>false</initialOrientationAsReference>
+          </plugin>
+        </sensor>
+        <self_collide>0</self_collide>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+          <mass>0.001</mass>
+        </inertial>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+
+      <link name="base_scan">
+        <pose>0.6 -0 0.3 3.14159 -0 0</pose>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+        <gravity>1</gravity>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <inertia>
+            <ixx>0.001</ixx>
+            <ixy>0.000</ixy>
+            <ixz>0.000</ixz>
+            <iyy>0.001</iyy>
+            <iyz>0.000</iyz>
+            <izz>0.001</izz>
+          </inertia>
+          <mass>0.2</mass>
+        </inertial>
+        <visual name="lidar_sensor_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://blindenhund/lds.dae</uri>
+              <scale>0.001 0.001 0.001</scale>
+            </mesh>
+          </geometry>
+        </visual>
+        <collision name="lidar_sensor_collision">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.0508</radius>
+              <length>0.055</length>
+            </cylinder>
+          </geometry>
+        </collision>
+
+        <sensor name="sick_tim5xx" type="ray">
+          <always_on>true</always_on>
+          <visualize>true</visualize>
+          <pose>0 0 0 0 0 0</pose>
+          <update_rate>15</update_rate>
+          <ray>
+            <scan>
+              <horizontal>
+                <samples>810</samples>
+                <resolution>0.33</resolution>
+                <min_angle>-2.3562</min_angle>
+                <max_angle>2.3562</max_angle>
+              </horizontal>
+            </scan>
+            <range>
+              <min>0.3</min>
+              <max>25</max>
+              <resolution>0.06</resolution>
+            </range>
+            <noise>
+              <type>gaussian</type>
+              <mean>0.0</mean>
+              <stddev>0.01</stddev>
+            </noise>
+          </ray>
+          <plugin name="sick_laserscan" filename="libgazebo_ros_ray_sensor.so">
+            <ros>
+                <remapping>~/out:=scan</remapping>
+            </ros>
+            <output_type>sensor_msgs/LaserScan</output_type>
+            <frame_name>base_scan</frame_name>
+          </plugin>
+        </sensor>
+      </link>
+
+      <link name="gps_link">
+        <pose>0.3 0 0.3 0 0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <inertia>
+            <ixx>0.001</ixx>
+            <ixy>0.000</ixy>
+            <ixz>0.000</ixz>
+            <iyy>0.001</iyy>
+            <iyz>0.000</iyz>
+            <izz>0.001</izz>
+          </inertia>
+          <mass>0.01</mass>
+        </inertial>
+        <visual name="gps_visual">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.05 0.05 0.05</size>
+            </box>
+          </geometry>
+        </visual>
+        <collision name="gps_collision">
+          <max_contacts>10</max_contacts>
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.05 0.05 0.05</size>
+            </box>
+          </geometry>
+        </collision>
+        <sensor name="gps_sensor" type="gps">
+          <always_on>true</always_on>
+          <update_rate>4</update_rate>
+          <gps>
+            <position_sensing>
+              <horizontal>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>2e-4</stddev>
+                </noise>
+              </horizontal>
+              <vertical>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>2e-4</stddev>
+                </noise>
+              </vertical>
+            </position_sensing>
+          </gps>
+          <plugin name="my_gps_plugin" filename="libgazebo_ros_gps_sensor.so">
+            <ros>
+              <remapping>~/out:=gps</remapping>
+            </ros>
+            <frame_name>map</frame_name>
+          </plugin>
+        </sensor>
+      </link>
+
+      <joint name="base_joint" type="fixed">
+        <parent>base_link</parent>
+        <child>base_frame</child>
+        <pose>0 0 0 0 0 0</pose>
+      </joint>
+
+      <joint name="wheel_left_joint" type="revolute">
+        <parent>base_frame</parent>
+        <child>wheel_left_link</child>
+        <pose>0 0 0 0 0 0</pose>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+
+      <joint name="wheel_right_joint" type="revolute">
+        <parent>base_frame</parent>
+        <child>wheel_right_link</child>
+        <pose>0 0 0 0 0 0</pose>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+
+      <joint name='caster_joint' type='ball'>
+        <parent>base_frame</parent>
+        <child>caster_link</child>
+        <pose>0 0 0 0 0 0</pose>
+      </joint>
+
+      <joint name="lidar_joint" type="fixed">
+        <parent>base_frame</parent>
+        <child>base_scan</child>
+        <pose>0 0 0 0 0 0</pose>
+      </joint>
+
+      <joint name="gps_joint" type="fixed">
+        <parent>base_frame</parent>
+        <child>gps_link</child>
+        <pose>0 0 0 0 0 0</pose>
+      </joint>
+      
+      <joint name="imu_joint" type="fixed">
+        <parent>base_frame</parent>
+        <child>imu_link</child>
+        <pose>0 0 0 0 0 0</pose>
+      </joint>
+
+      <plugin name="sgd_diff_drive" filename="libgazebo_ros_diff_drive.so">
+        <update_rate>10</update_rate>
+
+        <left_joint>wheel_left_joint</left_joint>
+        <right_joint>wheel_right_joint</right_joint>
+
+        <wheel_separation>0.71</wheel_separation>
+        <wheel_diameter>0.2165</wheel_diameter>
+
+        <max_wheel_torque>10</max_wheel_torque>
+        <max_wheel_acceleration>0.5</max_wheel_acceleration>
+
+        <command_topic>cmd_vel</command_topic> <!-- hard coded -->
+
+        <publish_odom>true</publish_odom>
+        <publish_odom_tf>false</publish_odom_tf>
+        <publish_wheel_tf>false</publish_wheel_tf>
+
+        <odometry_topic>odom</odometry_topic>
+        <odometry_frame>odom</odometry_frame>
+        <robot_base_frame>base_link</robot_base_frame>
+      </plugin>
+    </model>
+
+    <!--model name='pine_tree_1'>
+      <static>1</static>
+      <include>
+        <uri>model://pine_tree</uri>
+      </include>
+      <pose>123.781 322.932 0.0 0.0 0.0 0.0</pose>
+    </model>
+
+    <model name='oak_tree_1'>
+      <static>1</static>
+      <include>
+        <uri>model://oak_tree</uri>
+      </include>
+      <pose>121.774 352.101 0.0 0.0 0.0 0.0</pose>
+    </model>
+
+    <model name='oak_tree_2'>
+      <static>1</static>
+      <include>
+        <uri>model://oak_tree</uri>
+      </include>
+      <pose>165.962 328.508 0.0 0.0 0.0 0.0</pose>
+    </model>
+
+    <model name='oak_tree_3'>
+      <static>1</static>
+      <include>
+        <uri>model://oak_tree</uri>
+      </include>
+      <pose>170.27 322.13 0.0 0.0 0.0 0.0</pose>
+    </model>
+
+    <model name='oak_tree_4'>
+      <static>1</static>
+      <include>
+        <uri>model://oak_tree</uri>
+      </include>
+      <pose>175.178 314.877 0.0 0.0 0.0 0.0</pose>
+    </model>
+
+    <model name='oak_tree_5'>
+      <static>1</static>
+      <include>
+        <uri>model://oak_tree</uri>
+      </include>
+      <pose>178.988 309.195 0.0 0.0 0.0 0.0</pose>
+    </model>
+
+    <model name='oak_tree_6'>
+      <static>1</static>
+      <include>
+        <uri>model://oak_tree</uri>
+      </include>
+      <pose>183.061 302.532 0.0 0.0 0.0 0.0</pose>
+    </model>
+
+    <model name='oak_tree_7'>
+      <static>1</static>
+      <include>
+        <uri>model://oak_tree</uri>
+      </include>
+      <pose>187.077 296.613 0.0 0.0 0.0 0.0</pose>
+    </model>
+
+    <model name='oak_tree_8'>
+      <static>1</static>
+      <include>
+        <uri>model://oak_tree</uri>
+      </include>
+      <pose>191.584 289.488 0.0 0.0 0.0 0.0</pose>
+    </model>
+
+    <model name='pfosten_1'>
+      <static>1</static>
+      <include>
+        <uri>model://Absperrpfosten</uri>
+      </include>
+      <pose>233.303 175.946 0.0 0.0 0.0 -0.3634</pose>
+    </model>
+
+    <model name='bt21'>
+      <static>1</static>
+      <include>
+        <uri>model://BT21</uri>
+      </include>
+      <pose>214.702 301.6528 0.0 0.0 0.0 -0.9392</pose>
+    </model>
+
+    <model name='bt5'>
+      <static>1</static>
+      <include>
+        <uri>model://BT5</uri>
+      </include>
+      <pose>183.8912 378.4009 0.0 0.0 0.0 -0.92925</pose>
+    </model>
+
+    <model name='ws3'>
+      <static>1</static>
+      <include>
+        <uri>model://WS3</uri>
+      </include>
+      <pose>121.0375 264.868 0.0 0.0 0.0 2.1584</pose>
+    </model>
+
+    <model name='st69'>
+      <static>1</static>
+      <include>
+        <uri>model://ST69</uri>
+      </include>
+      <pose>195.5546 165.8806 0.0 0.0 0.0 -1.1484</pose>
+    </model-->
+
+  </world>
+</sdf>

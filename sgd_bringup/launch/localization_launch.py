@@ -30,16 +30,6 @@ def generate_launch_description():
     map_yaml_file = LaunchConfiguration('map')
     use_sim_time = LaunchConfiguration('use_sim_time')
     params_file = LaunchConfiguration('params_file')
-    lifecycle_nodes = ['map_server', 'amcl', 'initial_pose_estimator']
-
-    # Map fully qualified names to relative ones so the node's namespace can be prepended.
-    # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
-    # https://github.com/ros/geometry2/issues/32
-    # https://github.com/ros/robot_state_publisher/pull/30
-    # TODO(orduno) Substitute with `PushNodeRemapping`
-    #              https://github.com/ros2/launch_ros/issues/56
-    #remappings = [('/tf', 'tf'),
-    #              ('/tf_static', 'tf_static')]
 
     # Create our own temporary YAML files that include substitutions
     param_substitutions = {
@@ -53,72 +43,95 @@ def generate_launch_description():
 
     config_file = os.path.join(bringup_dir, 'config', 'dual_ekf.yaml')
 
-    return LaunchDescription([
-        # Set env var to print messages to stdout immediately
-        SetEnvironmentVariable('RCUTILS_LOGGING_BUFFERED_STREAM', '1'),
+    # Set env var to print messages to stdout immediately
+    SetEnvironmentVariable('RCUTILS_LOGGING_BUFFERED_STREAM', '1')
 
-        DeclareLaunchArgument(
-            'map',
-            default_value=os.path.join(bringup_dir, 'maps', 'sgd_world.yaml'),
-            description='Full path to map yaml file to load'),
+    # 
+    declare_map_cmd = DeclareLaunchArgument(
+        'map',
+        default_value=os.path.join(bringup_dir, 'maps', 'lohmuehlenpark.yaml'),
+        description='Full path to map yaml file to load')
 
-        DeclareLaunchArgument(
-            'use_sim_time', default_value='true',
-            description='Use simulation (Gazebo) clock if true'),
+    declare_sim_cmd = DeclareLaunchArgument(
+        'use_sim_time', default_value='true',
+        description='Use simulation (Gazebo) clock if true')
 
-        DeclareLaunchArgument(
-            'params_file',
-            default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
-            description='Full path to the ROS2 parameters file to use'),
+    declare_params_cmd = DeclareLaunchArgument(
+        'params_file',
+        default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
+        description='Full path to the ROS2 parameters file to use')
 
-        Node(
-            package='nav2_map_server',
-            executable='map_server',
-            name='map_server',
-            output='screen',
-            parameters=[configured_params]),
+    # Provide the transform between earth and map frame
+    # this is the transformation in WGS84 coordinates to map origin specified in <map>.yaml
+    start_tf2_ros_cmd = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        output='screen',
+        arguments=["10.0192452", "53.5532264", "0", "0", "0", "0", "earth", "map"])
 
-        #Node(
-        #    package='gps',
-        #    executable='gps_transform',
-        #    name='gps_transform',
-        #    output='screen',
-        #    parameters=[{'use_sim_time': use_sim_time}],
-        #),
+    start_tf2_global_cmd = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        output='screen',
+        arguments=["190.0", "213.0", "0.0", "0.5505", "0.0", "0.0", "map", "odom"])
 
-        Node(
-            package='nav2_amcl',
-            executable='amcl',
-            name='amcl',
-            output='screen',
-            parameters=[configured_params]),
+    start_map_server_cmd = Node(
+        package='nav2_map_server',
+        executable='map_server',
+        name='map_server',
+        output='screen',
+        parameters=[configured_params])
 
-        Node(
-            package='sgd_localizer',
-            executable='initial_pose_estimator',
-            name='initial_pose_estimator',
-            output='screen',
-            parameters=[
-                {"source_frame": "map",
-                 "gps_topic": "gps",
-                 "imu_topic": "imu",
-                 "initial_pose_topic": "initialpose",
-                 "use_sim_time": use_sim_time}]),
+    start_wgs_to_local_cmd = Node(
+        package='sgd_util',
+        executable='wgs_to_local',
+        name='wgs_to_local',
+        output='screen',
+        parameters=[{
+            "gps_topic": "gps",
+            "gps_local_topic": "gps_local"
+        }])
 
-        Node(
-            package='robot_localization',
-            executable='ekf_node',
-            name='ekf_filter_node_odom',
-            output='screen',
-            parameters=[{os.path.join(bringup_dir, 'config', 'dual_ekf.yaml')},
-                        {'use_sim_time': use_sim_time}])
+    start_amcl_cmd = Node(
+        package='nav2_amcl',
+        executable='amcl',
+        name='amcl',
+        output='screen',
+        parameters=[configured_params])
 
-        #Node(
-        #    package='robot_localization',
-        #    executable='ekf_node',
-        #    name='ekf_filter_node_map',
-        #    output='screen',
-        #    parameters=[{os.path.join(bringup_dir, 'params', 'dual_ekf.yaml')},
-        #                {'use_sim_time': use_sim_time}],
-        #    remappings=remappings),
-    ])
+    start_odom_ekf_cmd = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node_odom',
+        output='screen',
+        parameters=[{os.path.join(bringup_dir, 'config', 'dual_ekf.yaml')},
+                    {'use_sim_time': use_sim_time}])
+
+    start_map_ekf_cmd = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node_map',
+        output='screen',
+        parameters=[{os.path.join(bringup_dir, 'config', 'dual_ekf.yaml')},
+                    {'use_sim_time': use_sim_time}])
+
+    # Create the launch description and populate
+    ld = LaunchDescription()
+
+    # Declare the launch options
+    ld.add_action(declare_sim_cmd)
+    ld.add_action(declare_map_cmd)
+    ld.add_action(declare_params_cmd)
+
+    # Add the actions to launch all of the navigation nodes
+    ld.add_action(start_tf2_ros_cmd)
+    ld.add_action(start_tf2_global_cmd)
+    ld.add_action(start_map_server_cmd)
+    # transform from WGS84 to local coordinates is only required in simulation
+    if (use_sim_time):
+        ld.add_action(start_wgs_to_local_cmd)
+    ld.add_action(start_amcl_cmd)
+    ld.add_action(start_odom_ekf_cmd)
+    #ld.add_action(start_map_ekf_cmd)
+
+    return ld

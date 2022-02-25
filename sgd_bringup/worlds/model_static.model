@@ -1,26 +1,6 @@
 <sdf version='1.7'>
   <world name='default'>
-    <!--light name='sun' type='directional'>
-      <cast_shadows>1</cast_shadows>
-      <pose>0 0 10 0 -0 0</pose>
-      <diffuse>0.8 0.8 0.8 1</diffuse>
-      <specular>0.2 0.2 0.2 1</specular>
-      <attenuation>
-        <range>1000</range>
-        <constant>0.9</constant>
-        <linear>0.01</linear>
-        <quadratic>0.001</quadratic>
-      </attenuation>
-      <direction>-0.5 0.1 -0.9</direction>
-      <spot>
-        <inner_angle>0</inner_angle>
-        <outer_angle>0</outer_angle>
-        <falloff>0</falloff>
-      </spot>
-    </light-->
     <gravity>0 0 -9.8</gravity>
-    <!--magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
-    <atmosphere type='adiabatic'/-->
     <physics type='ode'>
       <max_step_size>0.001</max_step_size>
       <real_time_factor>1</real_time_factor>
@@ -31,13 +11,11 @@
       <background>0.7 0.7 0.7 1</background>
       <shadows>1</shadows>
     </scene>
-    <wind/>
     <spherical_coordinates>
       <surface_model>EARTH_WGS84</surface_model>
       <world_frame_orientation>ENU</world_frame_orientation>
-      <latitude_deg>53.555268515</latitude_deg>
-      <longitude_deg>10.021989123</longitude_deg>
-      <!-- 53.55526851472951, 10.021989122747957 -->
+      <latitude_deg>53.5532264</latitude_deg>
+      <longitude_deg>10.0192452</longitude_deg>
       <elevation>0</elevation>
       <heading_deg>-180</heading_deg>
     </spherical_coordinates>
@@ -52,7 +30,7 @@
 
     <model name='heightmap'>
       <static>1</static>
-      <link name='link'>
+      <!--link name='link'>
         <collision name='collision'>
           <geometry>
             <heightmap>
@@ -106,7 +84,10 @@
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
-      </link>
+      </link-->
+      <include>
+        <uri>model://heightmap</uri>
+      </include>
       <pose>-1.07035 -0.421063 0 0 -0 0</pose>
     </model>
     <model name='pine_tree'>
@@ -3480,14 +3461,14 @@
         <robot_base_frame>base_link</robot_base_frame>
       </plugin>
 
-      <plugin name="turtlebot3_joint_state" filename="libgazebo_ros_joint_state_publisher.so">
+      <!--plugin name="turtlebot3_joint_state" filename="libgazebo_ros_joint_state_publisher.so">
         <ros>
           <remapping>~/out:=joint_states</remapping>
         </ros>
         <update_rate>30</update_rate>
         <joint_name>wheel_left_joint</joint_name>
         <joint_name>wheel_right_joint</joint_name>
-      </plugin>
+      </plugin-->
 
     </model>
 

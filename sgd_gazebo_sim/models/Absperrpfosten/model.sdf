@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
 <sdf version='1.7'>
-  <model name='BT21'>
+  <model name='Absperrpfosten'>
     <link name='link_0'>
       <inertial>
         <mass>1</mass>
@@ -14,7 +14,7 @@
         </inertia>
         <pose>0 0 0 0 -0 0</pose>
       </inertial>
-      <pose>0 0 0 0 0 0.0</pose>
+      <pose>0 0 0 0 -0 0</pose>
       <gravity>1</gravity>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
@@ -23,24 +23,10 @@
         <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
-            <uri>./BT21.dae</uri>
+            <uri>./mesh/pfosten.dae</uri>
             <scale>1 1 1</scale>
           </mesh>
         </geometry>
-        <material>
-          <lighting>1</lighting>
-          <script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/White</name>
-          </script>
-          <shader type='pixel'>
-            <normal_map>__default__</normal_map>
-          </shader>
-          <ambient>1 1 1 1</ambient>
-          <diffuse>0.7 0.7 0.7 1</diffuse>
-          <specular>0.01 0.01 0.01 1</specular>
-          <emissive>0 0 0 1</emissive>
-        </material>
         <transparency>0</transparency>
         <cast_shadows>1</cast_shadows>
       </visual>
@@ -50,7 +36,7 @@
         <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
-            <uri>./BT21.dae</uri>
+            <uri>./mesh/pfosten.dae</uri>
             <scale>1 1 1</scale>
           </mesh>
         </geometry>

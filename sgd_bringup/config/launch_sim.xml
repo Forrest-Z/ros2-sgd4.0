@@ -2,7 +2,7 @@
 <launch>
 <!-- localization nodes -->
     <node name="map_server" />
-    <node name="amcl" />
+    <!--node name="amcl" /-->
 
 <!-- receiver -->
     <!--node name="rx8r_serial" />

@@ -3,52 +3,61 @@ project(sgd_util)
 
 set(CMAKE_CXX_STANDARD 17)
 
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+)
+FetchContent_MakeAvailable(googletest)
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
-find_package(nav_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
-find_package(nav2_util REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
-set(dependencies
-  rclcpp
-  rclcpp_lifecycle
-  sensor_msgs
-  nav_msgs
-)
-
+## build library
 include_directories(include)
 
 set(library_name ${PROJECT_NAME}_core)
-add_library(${library_name} SHARED src/sgd_util.cpp)
-ament_target_dependencies(${library_name}
+set(CPP_FILES src/sgd_util.cpp src/geotools.cpp)
+set(dependencies
   geometry_msgs
   tf2
-  tf2_geometry_msgs)
+  tf2_geometry_msgs
+)
+
+add_library(${library_name} SHARED
+  ${CPP_FILES})
+
+ament_target_dependencies(${library_name}
+  ${dependencies})
+
+ament_export_targets(${library_name} HAS_LIBRARY_TARGET)
+ament_export_dependencies(${dependencies})
 
 add_executable(logger src/logger.cpp)
 ament_target_dependencies(logger
   rclcpp
-  rclcpp_lifecycle
-  nav2_util
-  sensor_msgs
-  nav_msgs)
+  tf2
+  tf2_ros
+  sensor_msgs)
 
-target_include_directories(${library_name}
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>)
+add_executable(wgs_to_local src/wgs_to_local.cpp)
+ament_target_dependencies(wgs_to_local
+  rclcpp
+  tf2
+  tf2_ros
+  sensor_msgs
+  geometry_msgs)
+target_link_libraries(wgs_to_local ${library_name})
 
 install(
-  TARGETS logger
+  TARGETS logger wgs_to_local
   DESTINATION lib/${PROJECT_NAME})
-
-ament_export_targets(export_sgd_util HAS_LIBRARY_TARGET)
-ament_export_dependencies(geometry_msgs tf2 tf2_geometry_msgs)
 
 install(
   DIRECTORY include/
@@ -56,26 +65,25 @@ install(
 
 install(
   TARGETS ${library_name}
-  EXPORT export_sgd_util
+  EXPORT ${library_name}
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
   INCLUDES DESTINATION include
 )
 
-if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # uncomment the line when a copyright and license is not present in all source files
-  #set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # uncomment the line when this package is not in a git repo
-  #set(ament_cmake_cpplint_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
-endif()
+### testing
+enable_testing()
+
+add_executable(test_geotools test/test_geotools.cpp)
+target_link_libraries(test_geotools gtest_main ${library_name})
+
+#file(COPY test/data DESTINATION ${CMAKE_BINARY_DIR}/lib/test)
+
+include(GoogleTest)
+gtest_discover_tests(test_geotools)
 
 ament_export_include_directories(include)
 ament_export_libraries(${library_name})
-ament_export_dependencies(${dependencies})
 
 ament_package()

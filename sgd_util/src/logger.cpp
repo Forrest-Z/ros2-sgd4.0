@@ -13,7 +13,7 @@ Logger::Logger() : rclcpp::Node("logger")
     // Add parameters
 
     imu_topic_ = declare_parameter<std::string>("imu_topic", "scan");
-    gps_topic_ = declare_parameter<std::string>("gps_topic", "gps");
+    gps_topic_ = declare_parameter<std::string>("gps_topic", "tf");
     odom_topic_ = declare_parameter<std::string>("odom_topic", "odom");
     output_folder_ = declare_parameter<std::string>("output_folder", "log");
 
@@ -27,6 +27,7 @@ Logger::Logger() : rclcpp::Node("logger")
 
     // Initialize parameters, pub/sub, services, etc.
     init_pub_sub();
+    init_transforms();
 }
 
 Logger::~Logger()
@@ -37,8 +38,8 @@ Logger::~Logger()
 void
 Logger::init_pub_sub()
 {
-    sub_gps_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(gps_topic_, default_qos,
-        std::bind(&Logger::gps_callback, this, std::placeholders::_1));
+    //sub_gps_ = this->create_subscription<tf2_msgs::msg::TFMessage>(gps_topic_, default_qos,
+    //    std::bind(&Logger::gps_callback, this, std::placeholders::_1));
 
     // Publish odometry
     sub_imu_ = this->create_subscription<sensor_msgs::msg::LaserScan>(imu_topic_, default_qos,
@@ -50,43 +51,49 @@ Logger::init_pub_sub()
 }
 
 void
+Logger::init_transforms()
+{
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(get_clock());
+    auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
+        get_node_base_interface(),
+        get_node_timers_interface());
+    tf_buffer_->setCreateTimerInterface(timer_interface);
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+}
+
+void
 Logger::imu_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg_)
 {
     // linear acceleration, angular velocity, orientation
     out_imu_.open(scan_filename_, std::ios::out | std::ios::app);
+    out_imu_ << "Laser: ";
     out_imu_ << time_to_string();
+    out_imu_ << stamp_to_string(msg_->header);
 
-    for (float dist : msg_->ranges)
+    out_imu_ << "\tTransform: ";
+
+    try
     {
-        out_imu_ << "," << std::to_string(dist);
+        // transformation from map -> base_link in local cooridinates
+        geometry_msgs::msg::TransformStamped tf_ = tf_buffer_->lookupTransform("map", "base_link",
+                    rclcpp::Time(0), rclcpp::Duration(5,0));
+        out_imu_ << time_to_string();
+        out_imu_ << stamp_to_string(tf_.header);
+    } catch (tf2::TransformException &ex)
+    {
+        RCLCPP_WARN(this->get_logger(), "%s", ex.what());
+        return;
     }
+
     out_imu_ << "\n";
     out_imu_.close();
-}
-
-void
-Logger::gps_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg_)
-{
-    // lat, lon
-    out_gps_ << time_to_string();
-    out_gps_ << std::to_string(msg_->latitude) << ",";
-    out_gps_ << std::to_string(msg_->longitude) << "\n";
-}
-
-void
-Logger::odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg_)
-{
-    // lin velocity x and ang velocity z
-    //out_odom_ << time_to_string();
-    //out_odom_ << std::to_string(msg_->twist.twist.linear.x) << ",";
-    //out_odom_ << std::to_string(msg_->twist.twist.angular.z) << "\n";
 }
 
 std::string
 Logger::time_to_string()
 {
-  long t = round(now().nanoseconds() / 1.0E6) - time_at_start_;
-  std::string ts = std::to_string(t);
+  double t = now().nanoseconds() / 1.0E9; // - time_at_start_;
+  std::string ts = to_string(t);
   ts.append(",");
   return ts;
 }
@@ -97,6 +104,22 @@ Logger::vec3_to_string(geometry_msgs::msg::Vector3 vec3)
   std::string s;
   s = std::to_string(vec3.x) + "," + std::to_string(vec3.y) + "," + std::to_string(vec3.z);
   return s;
+}
+
+std::string
+Logger::stamp_to_string(std_msgs::msg::Header header)
+{
+    double t = header.stamp.sec + header.stamp.nanosec / 1.0E9;
+    return to_string(t);
+}
+
+std::string
+Logger::to_string(double time_s, std::string format)
+{
+    int sz = std::snprintf(nullptr, 0, format.c_str(), time_s);
+    char buf[sz + 1]; // +1 for null terminator
+    std::snprintf(&buf[0], sz+1, format.c_str(), time_s);
+    return std::string(buf);
 }
 
 }

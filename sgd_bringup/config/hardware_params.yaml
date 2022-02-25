@@ -1,0 +1,10 @@
+### Hardware parameters ###
+sick_scan2:
+  ros__parameters:
+    use_sim_time: False
+    hostname : "141.22.33.150"
+    frame_id : "base_scan"
+    scanner_name : "sick_tim_5xx"
+    port : 2112
+    min_ang : -2.35619449
+    max_ang : 2.35619449

@@ -13,7 +13,7 @@ amcl:
     do_beamskip: false
     global_frame_id: "map"
     lambda_short: 0.1
-    laser_likelihood_max_dist: 2.0
+    laser_likelihood_max_dist: 5.0
     laser_max_range: 25.0
     laser_min_range: -1.0
     laser_model_type: "likelihood_field"
@@ -23,15 +23,15 @@ amcl:
     odom_frame_id: "odom"
     pf_err: 0.05
     pf_z: 0.99
-    recovery_alpha_fast: 0.0
-    recovery_alpha_slow: 0.0
+    recovery_alpha_fast: 0.1
+    recovery_alpha_slow: 0.001
     resample_interval: 1
     robot_model_type: "differential"
     save_pose_rate: 0.5
     sigma_hit: 0.2
-    tf_broadcast: true
+    tf_broadcast: False
     transform_tolerance: 1.0
-    update_min_a: 0.2
+    update_min_a: 0.1
     update_min_d: 0.25
     z_hit: 0.5
     z_max: 0.05
@@ -153,11 +153,11 @@ controller_server_rclcpp_node:
 local_costmap:
   local_costmap:
     ros__parameters:
+      use_sim_time: False
       update_frequency: 5.0
       publish_frequency: 2.0
       global_frame: odom
       robot_base_frame: base_link
-      use_sim_time: False
       rolling_window: true
       width: 3
       height: 3
@@ -197,11 +197,11 @@ local_costmap:
 global_costmap:
   global_costmap:
     ros__parameters:
+      use_sim_time: False
       update_frequency: 1.0
       publish_frequency: 1.0
       global_frame: map
       robot_base_frame: base_link
-      use_sim_time: False
       robot_radius: 0.7
       resolution: 0.05
       track_unknown_space: true
@@ -234,7 +234,7 @@ global_costmap:
 map_server:
   ros__parameters:
     use_sim_time: False
-    yaml_filename: "map_slam.yaml"
+    yaml_filename: "lohmuehlenpark.yaml"
 
 map_saver:
   ros__parameters:
@@ -242,16 +242,15 @@ map_saver:
     save_map_timeout: 5000
     free_thresh_default: 0.25
     occupied_thresh_default: 0.65
+    map_subscribe_transient_local: False
 
 planner_server:
   ros__parameters:
     expected_planner_frequency: 10.0
+    plugins: ["GridBased"]
     use_sim_time: False
-    planner_plugins: ["GridBased"]
     GridBased:
-      plugin: "sgd_local_planner/DubinsCurve"
-      interpolation_resolution: 0.1
-      radius: 1.0
+      plugin: "nav2_navfn_planner/NavfnPlanner"
 
 planner_server_rclcpp_node:
   ros__parameters:
@@ -282,7 +281,7 @@ robot_state_publisher:
 
 subsum_controller:
   ros__parameters:
-    move_topics: ["cmd_vel_master", "cmd_vel_lidar", "cmd_vel_frsky", "cmd_vel_contr"]
+    move_topics: ["cmd_vel_master", "cmd_vel_lidar", "cmd_vel_frsky", "cmd_vel"]
     sgd_move_topic: "sgd_move_base"
     use_sim_time: False
 
@@ -298,16 +297,11 @@ osm_planner:
     use_sim_time: False
     waypoints_topic: "global_plan"
     clicked_point_topic: "clicked_point"
-    port: 8080
-    ip_address: "127.0.0.1"
+    map_filename: ""
 
-### Hardware nodes ###
-sick_scan2:
+frsky_rx8r:
   ros__parameters:
     use_sim_time: False
-    hostname : "141.22.33.150"
-    frame_id : "base_scan"
-    scanner_name : "sick_tim_5xx"
-    port : 2112
-    min_ang : -2.35619449
-    max_ang : 2.35619449
+    port: "/dev/ttyACM0"
+    max_vel: 0.5
+    max_rot_vel: 0.5
