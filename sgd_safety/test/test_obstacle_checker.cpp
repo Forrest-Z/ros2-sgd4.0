@@ -56,6 +56,9 @@ TEST(TestObstacleChecker, CalcSpeed)
     }
     EXPECT_NEAR(oc.compute_speed(scan, -M_PI_4, M_PI_4/4), 0.0, 1E-6)
         << "More than 6 values smaller than distance_min should return a speed of 0.0.";
+
+    EXPECT_NEAR(oc.compute_speed(scan, -M_PI_4, M_PI_4/4), 0.5, 0.5)
+        << "The speed should be within the range [0, 1]";
 }
 
 int main(int argc, char **argv)
