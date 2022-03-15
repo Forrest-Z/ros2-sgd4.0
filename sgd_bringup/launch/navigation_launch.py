@@ -22,11 +22,11 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from nav2_common.launch import RewrittenYaml
 
-
 def generate_launch_description():
     # Get the launch directory
     bringup_dir = get_package_share_directory('sgd_bringup')
 
+    map_yaml_file = LaunchConfiguration('map')
     use_sim_time = LaunchConfiguration('use_sim_time')
     params_file = LaunchConfiguration('params_file')
     default_bt_xml_filename = LaunchConfiguration('default_bt_xml_filename')
@@ -45,7 +45,8 @@ def generate_launch_description():
     param_substitutions = {
         'use_sim_time': use_sim_time,
         'default_bt_xml_filename': default_bt_xml_filename,
-        'map_subscribe_transient_local': map_subscribe_transient_local}
+        'map_subscribe_transient_local': map_subscribe_transient_local,
+        'yaml_filename': map_yaml_file}
 
     configured_params = RewrittenYaml(
             source_file=params_file,
@@ -129,6 +130,8 @@ def generate_launch_description():
             executable='global_planner',
             name='osm_planner',
             output='screen',
+            emulate_tty=True,
+            arguments=[('__log_level:=debug')],
             parameters=[configured_params]),
 
         #Node(

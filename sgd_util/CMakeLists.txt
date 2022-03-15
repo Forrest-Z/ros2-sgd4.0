@@ -18,12 +18,13 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 ## build library
 include_directories(include)
 
 set(library_name ${PROJECT_NAME}_core)
-set(CPP_FILES src/sgd_util.cpp src/geotools.cpp)
+set(CPP_FILES src/sgd_util.cpp src/geotools.cpp include/sgd_util/ieee_754_conv.hpp)
 set(dependencies
   geometry_msgs
   tf2
@@ -39,12 +40,11 @@ ament_target_dependencies(${library_name}
 ament_export_targets(${library_name} HAS_LIBRARY_TARGET)
 ament_export_dependencies(${dependencies})
 
-add_executable(logger src/logger.cpp)
-ament_target_dependencies(logger
+add_executable(visualizer src/visualizer.cpp)
+ament_target_dependencies(visualizer
   rclcpp
-  tf2
-  tf2_ros
-  sensor_msgs)
+  geometry_msgs
+  visualization_msgs)
 
 add_executable(wgs_to_local src/wgs_to_local.cpp)
 ament_target_dependencies(wgs_to_local
@@ -56,7 +56,7 @@ ament_target_dependencies(wgs_to_local
 target_link_libraries(wgs_to_local ${library_name})
 
 install(
-  TARGETS logger wgs_to_local
+  TARGETS visualizer wgs_to_local
   DESTINATION lib/${PROJECT_NAME})
 
 install(

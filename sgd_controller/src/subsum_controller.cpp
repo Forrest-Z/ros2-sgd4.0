@@ -1,31 +1,25 @@
-
 #include "sgd_controller/subsum_controller.hpp"
 
-namespace nav_sgd
+namespace sgd_ctrl
 {
 
 using std::placeholders::_1;
 using namespace std::chrono_literals; 
 
-Subsum_Controller::Subsum_Controller() 
-        : nav2_util::LifecycleNode("subsum_controller", "", true),
+Subsum_Controller::Subsum_Controller()
+        : rclcpp_lifecycle::LifecycleNode("subsum_controller"),
           in_topics_{"cmd_vel_lidar", "cmd_vel_nav2"}
 {
     RCLCPP_DEBUG(get_logger(), "Creating");
 
     // Add parameters
-
     declare_parameter("move_topics", in_topics_);
     declare_parameter("sgd_move_topic", rclcpp::ParameterValue("sgd_move_base"));
-
 }
 
-Subsum_Controller::~Subsum_Controller()
-{
-    // Destroy
-}
+Subsum_Controller::~Subsum_Controller() {}
 
-nav2_util::CallbackReturn
+CallbackReturn
 Subsum_Controller::on_configure(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Configure");
@@ -38,7 +32,7 @@ Subsum_Controller::on_configure(const rclcpp_lifecycle::State & state)
     if (in_topics_.size() < 1 || out_topic_.length() < 1)
     {
         RCLCPP_ERROR(get_logger(), "Could not initialize input or output topics.");
-        return nav2_util::CallbackReturn::FAILURE;
+        return CallbackReturn::FAILURE;
     }
 
     init_pub_sub();
@@ -49,39 +43,37 @@ Subsum_Controller::on_configure(const rclcpp_lifecycle::State & state)
         last_time_received_.push_back(0.0);
     }
 
-    return nav2_util::CallbackReturn::SUCCESS;
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Subsum_Controller::on_activate(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Activate");
-
     pub_cmd_vel->on_activate();
-
-    return nav2_util::CallbackReturn::SUCCESS;
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Subsum_Controller::on_deactivate(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Deactivate");
     pub_cmd_vel->on_deactivate();
-    return nav2_util::CallbackReturn::SUCCESS;
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Subsum_Controller::on_cleanup(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Cleanup");
-    return nav2_util::CallbackReturn::SUCCESS;
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Subsum_Controller::on_shutdown(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Shutdown");
-    return nav2_util::CallbackReturn::SUCCESS;
+    return CallbackReturn::SUCCESS;
 }
 
 void
@@ -92,8 +84,8 @@ Subsum_Controller::init_pub_sub()
     for (uint8_t i = 0; i < in_topics_.size(); i++)
     {
         std::function<void(std::shared_ptr<geometry_msgs::msg::Twist>)> fnc = std::bind(
-            &Subsum_Controller::on_cm_vel_received, this, std::placeholders::_1, (int)i);
-        //sub_input_ = node->create_subscription<sensor_msgs::msg::Imu>("input", fnc);
+            &Subsum_Controller::on_cmd_vel_received, this, std::placeholders::_1, (int)i);
+
         RCLCPP_INFO(get_logger(), "Create subscription for topic %s on layer %i", in_topics_.at(i).c_str(), i);
         subscriber.push_back(this->create_subscription<geometry_msgs::msg::Twist>(in_topics_.at(i), default_qos,
                             fnc));
@@ -101,7 +93,7 @@ Subsum_Controller::init_pub_sub()
 }
 
 void
-Subsum_Controller::on_cm_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg, int layer)
+Subsum_Controller::on_cmd_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg, int layer)
 {
     double t = now().nanoseconds() / 1000000.0; // current time in milliseconds
     last_time_received_[layer] = t;
@@ -109,7 +101,6 @@ Subsum_Controller::on_cm_vel_received(const geometry_msgs::msg::Twist::SharedPtr
     // get currently active layer
     for (int8_t i = 0; i <= layer; i++)
     {
-        //RCLCPP_INFO(get_logger(), "Layer: %i, Last received: %f, Time: %f", layer, last_time_received_[i], t);
         // check time since last msg received
         if (t - last_time_received_[i] < 1000)   // time in milliseconds
         {
@@ -127,12 +118,12 @@ Subsum_Controller::on_cm_vel_received(const geometry_msgs::msg::Twist::SharedPtr
     }
 }
 
-}   // namespace sgd_lc
+}   // namespace sgd_ctrl
 
 int main(int argc, char const *argv[])
 {
     rclcpp::init(argc, argv);
-    std::shared_ptr<nav2_util::LifecycleNode> node = std::make_shared<nav_sgd::Subsum_Controller>();
+    std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node = std::make_shared<sgd_ctrl::Subsum_Controller>();
 
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Subsumption controller startup completed.");
 

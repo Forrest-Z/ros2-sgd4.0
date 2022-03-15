@@ -250,7 +250,9 @@ planner_server:
     plugins: ["GridBased"]
     use_sim_time: False
     GridBased:
-      plugin: "nav2_navfn_planner/NavfnPlanner"
+      plugin: "sgd_local_planner/DubinsCurve"
+      interpolation_resolution: 0.1
+      radius: 1.0
 
 planner_server_rclcpp_node:
   ros__parameters:
@@ -297,7 +299,7 @@ osm_planner:
     use_sim_time: False
     waypoints_topic: "global_plan"
     clicked_point_topic: "clicked_point"
-    map_filename: ""
+    yaml_filename: "lohmuehlenpark.yaml"
 
 frsky_rx8r:
   ros__parameters:
@@ -305,3 +307,16 @@ frsky_rx8r:
     port: "/dev/ttyACM0"
     max_vel: 0.5
     max_rot_vel: 0.5
+
+uwb_node:
+  ros__parameters:
+    use_sim_time: False
+    port: "/dev/ttyUSB0"
+    tag_defs: "uwb_tag_defs.yaml"
+    publish_wgs84_pose: True
+
+visualizer:
+  ros__parameters:
+    use_sim_time: False
+    topics: ["uwb_local", "gps_local"]
+    

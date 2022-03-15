@@ -193,7 +193,7 @@ def generate_launch_description():
     ld.add_action(start_rviz_cmd)
     ld.add_action(localization_cmd)
     ld.add_action(navigation_cmd)
-    #ld.add_action(hardware_cmd)
+    ld.add_action(hardware_cmd)
 
     ld.add_action(start_lifecycle_cmd)
 

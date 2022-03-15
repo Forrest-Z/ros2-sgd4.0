@@ -3,7 +3,11 @@
 namespace sgd_util
 {
 
-LatLon::LatLon() {}
+LatLon::LatLon()
+{
+    lat_ = 0.0;
+    lon_ = 0.0;
+}
 
 LatLon::LatLon(double lat, double lon) :
     lat_(lat), lon_(lon)
@@ -22,8 +26,8 @@ void
 LatLon::set_local_coordinates(LatLon origin, double x, double y)
 {
     // convert local to WGS84
-    lat_ += y * METER_TO_LATLON;
-    lon_ += x * METER_TO_LATLON / cos((lat_) * M_PI/180);
+    lat_ = origin.lat_ + y * METER_TO_LATLON;
+    lon_ = origin.lon_ + x * METER_TO_LATLON / cos((lat_) * M_PI/180);
 }
 
 double
@@ -41,12 +45,12 @@ LatLon::distance_to(double lat, double lon)
 }
 
 std::pair<double, double>
-LatLon::to_local(LatLon origin) {
+LatLon::to_local(const LatLon origin) {
     return to_local(origin.lat_, origin.lon_);
 }
 
 std::pair<double, double>
-LatLon::to_local(double lat, double lon) {
+LatLon::to_local(const double lat, const double lon) {
     double x = (lon_ - lon) * LATLON_TO_METER * cos((lat + lat_) * M_PI/360);
     double y = (lat_ - lat) * LATLON_TO_METER;
     return {x,y};

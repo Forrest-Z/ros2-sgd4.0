@@ -1,3 +1,17 @@
+// Copyright 2022 HAW Hamburg
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #ifndef SGD_UTIL__GEO_TOOLS
 #define SGD_UTIL__GEO_TOOLS
 
@@ -51,7 +65,7 @@ public:
      * @param origin the latlon from which the local coordinates are to be computed
      * @return std::pair<double, double> 
      */
-    std::pair<double, double> to_local(LatLon origin);
+    std::pair<double, double> to_local(const LatLon origin);
 
     /**
      * @brief Transform WGS84 coordinate system into local coordinate system.
@@ -60,7 +74,7 @@ public:
      * @param lon 
      * @return std::pair<double, double> 
      */
-    std::pair<double, double> to_local(double lat, double lon);
+    std::pair<double, double> to_local(const double lat, const double lon);
 
     /**
      * @brief Create string <lat, lon> with 7 digits precision

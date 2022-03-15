@@ -34,7 +34,8 @@ def generate_launch_description():
     # Create our own temporary YAML files that include substitutions
     param_substitutions = {
         'use_sim_time': use_sim_time,
-        'yaml_filename': map_yaml_file}
+        'yaml_filename': map_yaml_file,
+        'tag_defs': os.path.join(bringup_dir, 'config', 'uwb_tag_defs.yaml')}
 
     configured_params = RewrittenYaml(
         source_file=params_file,
@@ -115,6 +116,23 @@ def generate_launch_description():
         parameters=[{os.path.join(bringup_dir, 'config', 'dual_ekf.yaml')},
                     {'use_sim_time': use_sim_time}])
 
+    start_uwb_cmd = Node(
+        package='uwb',
+        executable='uwb_node',
+        name='uwb_node',
+        output='screen',
+        emulate_tty=True,
+        parameters=[configured_params])
+
+    # Visualizer for debugging
+    start_visualizer_cmd = Node(
+        package='sgd_util',
+        executable='visualizer',
+        name='visualizer',
+        output='screen',
+        emulate_tty=True,
+        parameters=[configured_params])
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -133,5 +151,7 @@ def generate_launch_description():
     ld.add_action(start_amcl_cmd)
     ld.add_action(start_odom_ekf_cmd)
     #ld.add_action(start_map_ekf_cmd)
+    ld.add_action(start_uwb_cmd)
+    ld.add_action(start_visualizer_cmd)
 
     return ld
