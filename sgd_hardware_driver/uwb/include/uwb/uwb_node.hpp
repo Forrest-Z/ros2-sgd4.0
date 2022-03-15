@@ -12,29 +12,46 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SGD_HARDWARE__CAPACITIVE_TOUCH_HPP_
-#define SGD_HARDWARE__CAPACITIVE_TOUCH_HPP_
+#ifndef SGD_HARDWARE__UWB_NODE_HPP_
+#define SGD_HARDWARE__UWB_NODE_HPP_
 
 #include <regex>
+#include <memory>
+#include <fstream>
+#include <charconv>
+#include <string_view>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
-#include "sgd_msgs/msg/touch.hpp"
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/create_timer_ros.h"
+#include "sensor_msgs/msg/nav_sat_fix.hpp"
+#include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
+#include "visualization_msgs/msg/marker.hpp"
 #include "sgd_io/serial.hpp"
+#include "sgd_util/geotools.hpp"
+#include "sgd_util/ieee_754_conv.hpp"
 
-#include "moving_average_filter.hpp"
+#include "ieee754.h"
 
-namespace sgd_hardware_drivers 
+#include "include/levmarq.hpp"
+
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <bitset>
+
+namespace sgd_hardware_drivers
 {
 
 using namespace std::chrono_literals;
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
-class Capacitive_Touch : public rclcpp_lifecycle::LifecycleNode
+class UWB_Node : public rclcpp_lifecycle::LifecycleNode
 {
 public:
-    Capacitive_Touch();
-    ~Capacitive_Touch();
+    UWB_Node();
+    ~UWB_Node();
 
 protected:
     // Implement the lifecycle interface
@@ -48,25 +65,36 @@ protected:
      * @brief Initialize parameters
      */
     void init_parameters();
-
     /**
-     * @brief If the received value is greater than the threshold, it is assumed that the sensor is touched.
+     * @brief Regular expression to use to get values from received message.
      */
-    int thresh_;
-
-    /**
-     * @brief Size of the moving average filter
-     */
-    int filter_size_;
-
+    std::regex regex_;
+    std::string tag_definitions_;
+    bool is_pub_wgs84_pose_;
+    int exp_frequ_;
     
     /**
      * @brief Initialize publisher and subscriber.
      */
     void init_pub_sub();
+
+    /**
+     * @brief Publish the computed pose
+     * 
+     * @param x the poses x value
+     * @param y the poses y value
+     */
+    void publish_pose(double x, double y);
     rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
     rclcpp::TimerBase::SharedPtr timer_;
-    rclcpp_lifecycle::LifecyclePublisher<sgd_msgs::msg::Touch>::SharedPtr publisher_;
+    rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_position_;
+    rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::NavSatFix>::SharedPtr pub_wgs84_pose_;
+
+    /**
+     * @brief Initialize transforms if the local output is set.
+     */
+    void init_transforms();
+    sgd_util::LatLon map_origin;
 
     /**
      * @brief Class to read from / write to serial port.
@@ -78,20 +106,15 @@ protected:
      */
     void read_serial();
 
-    /**
-     * @brief Regular expression to use to get values from received message.
-     */
-    std::regex regex_;
-    
-    /**
-     * @brief Moving average filter for right sensor.
-     */
-    MovingAverageFilter filter_r;
+    std::unique_ptr<IMultilateration> optimizer;
 
-    /**
-     * @brief Moving average filter for left sensor.
-     */
-    MovingAverageFilter filter_l;
+    uint num_tags;   // number of tags
+    //int num_ranges; // number of received measurements
+    bool is_last_estimate_valid;
+    double t_last_meas = 0.0;   // time of last received measurement
+
+    // robo position for debugging
+    float real_x, real_y;
 };
 
 }

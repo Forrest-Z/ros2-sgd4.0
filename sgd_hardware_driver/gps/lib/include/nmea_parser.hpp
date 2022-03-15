@@ -34,7 +34,7 @@
 
 #include "IGPS_Message.hpp"
 
-namespace sgd_hardware
+namespace sgd_hardware_drivers
 {
 
 class Nmea_Parser : public IGPS_Message

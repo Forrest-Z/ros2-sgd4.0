@@ -1,15 +1,29 @@
-#include "../include/led_strips/led_node.hpp"
+// Copyright 2022 HAW Hamburg
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "led_strips/led_node.hpp"
 
 namespace sgd_hardware_drivers
 {
 
 LED_Strip::LED_Strip():
-    nav2_util::LifecycleNode("led_node", "", true)
+    rclcpp_lifecycle::LifecycleNode("led_node")
 {
     RCLCPP_DEBUG(get_logger(), "Creating");
 
-    add_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
-    add_parameter("input_topic", rclcpp::ParameterValue("led"));
+    declare_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
+    declare_parameter("input_topic", rclcpp::ParameterValue("led"));
 }
 
 LED_Strip::~LED_Strip()
@@ -17,47 +31,47 @@ LED_Strip::~LED_Strip()
     // Destroy
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 LED_Strip::on_configure(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Configuring");
 
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
+    std::string port;
+    get_parameter("port", port);
+    serial.open_port(port, 9600);
     init_pub_sub();
-    return nav2_util::CallbackReturn::SUCCESS;
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 LED_Strip::on_activate(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Activating");
 
-    publisher_->on_activate();
-    return nav2_util::CallbackReturn::SUCCESS;
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 LED_Strip::on_deactivate(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Deactivating");
-    publisher_->on_deactivate();
-    return nav2_util::CallbackReturn::SUCCESS;
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 LED_Strip::on_cleanup(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Cleanup");
-    publisher_.reset();
-    return nav2_util::CallbackReturn::SUCCESS;
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 LED_Strip::on_shutdown(const rclcpp_lifecycle::State & state)
 {
     RCLCPP_DEBUG(get_logger(), "Shutdown");
-    return nav2_util::CallbackReturn::SUCCESS;
+    return CallbackReturn::SUCCESS;
 }
 
 void
@@ -70,20 +84,21 @@ LED_Strip::init_parameters()
 void
 LED_Strip::init_pub_sub()
 {
-    std::string serial_topic = "write_" + port_.substr(port_.find_last_of("/")+1);
+    //std::string serial_topic = "write_" + port_.substr(port_.find_last_of("/")+1);
+    //timer_ = this->create_wall_timer(10ms, std::bind(&LED_Strip::read_serial, this));
 
     subscriber_ = this->create_subscription<sgd_msgs::msg::Light>(led_, default_qos,
             std::bind(&LED_Strip::on_msg_received, this, std::placeholders::_1));
-    publisher_ = this->create_publisher<sgd_msgs::msg::Serial>(serial_topic, default_qos);
+    //publisher_ = this->create_publisher<sgd_msgs::msg::Serial>(serial_topic, default_qos);
 }
 
 void
 LED_Strip::on_msg_received(const sgd_msgs::msg::Light::SharedPtr msg)
 {
-    publisher_->publish(compute_msg(msg));
+    serial.write_serial(compute_msg(msg));
 }
 
-sgd_msgs::msg::Serial
+std::string
 LED_Strip::compute_msg(const sgd_msgs::msg::Light::SharedPtr msg)
 {
     std::string light_status = "L";
@@ -92,12 +107,8 @@ LED_Strip::compute_msg(const sgd_msgs::msg::Light::SharedPtr msg)
     light_status.append(std::to_string(msg->rgb[0])+",");
     light_status.append(std::to_string(msg->rgb[1])+",");
     light_status.append(std::to_string(msg->rgb[2]));
-
-    sgd_msgs::msg::Serial light_serial;
-    light_serial.header = msg->header;
-    light_serial.msg = light_status;
     
-    return light_serial;
+    return light_status;
 }
 
 }

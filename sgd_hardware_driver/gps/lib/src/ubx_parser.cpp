@@ -15,7 +15,7 @@
 #include "ubx_parser.hpp"
 #include <memory>
 
-namespace sgd_hardware
+namespace sgd_hardware_drivers
 {
 
 Ubx_Parser::Ubx_Parser()

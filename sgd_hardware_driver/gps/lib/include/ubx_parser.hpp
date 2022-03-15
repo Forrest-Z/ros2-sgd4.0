@@ -35,7 +35,7 @@
 
 #include "IGPS_Message.hpp"
 
-namespace sgd_hardware
+namespace sgd_hardware_drivers
 {
 
 class Ubx_Parser : public IGPS_Message

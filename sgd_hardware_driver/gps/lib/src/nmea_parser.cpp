@@ -15,7 +15,7 @@
 #include "nmea_parser.hpp"
 #include <memory>
 
-namespace sgd_hardware
+namespace sgd_hardware_drivers
 {
 
 Nmea_Parser::Nmea_Parser() {}

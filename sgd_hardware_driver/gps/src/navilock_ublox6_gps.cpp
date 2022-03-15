@@ -14,19 +14,18 @@
 
 #include "gps/navilock_ublox6_gps.hpp"
 
-namespace sgd_hardware
+namespace sgd_hardware_drivers
 {
 
-using namespace std::chrono_literals;   // if a timer is used
-
 Navilock_UBlox6_GPS::Navilock_UBlox6_GPS():
-    nav2_util::LifecycleNode("navilock_ublox6_gps", "", true)
+    LifecycleNode("navilock_ublox6_gps")
 {
     RCLCPP_DEBUG(get_logger(), "Creating");
 
-    add_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
-    add_parameter("xml_file", rclcpp::ParameterValue("/home/ipp/dev_ws/src/ros2-sgd4.0/sgd_hardware_driver/gps/params/nmea_0183.xml"));
-    add_parameter("parser_type", rclcpp::ParameterValue("ubx"));
+    declare_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
+    declare_parameter("xml_file", rclcpp::ParameterValue("/home/ipp/dev_ws/src/ros2-sgd4.0/sgd_hardware_driver/gps/params/nmea_0183.xml"));
+    declare_parameter("parser_type", rclcpp::ParameterValue("ubx"));
+    declare_parameter("publish_local_pose", rclcpp::ParameterValue(true));
 }
 
 Navilock_UBlox6_GPS::~Navilock_UBlox6_GPS()
@@ -34,29 +33,38 @@ Navilock_UBlox6_GPS::~Navilock_UBlox6_GPS()
     // Destroy
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Navilock_UBlox6_GPS::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Configuring");
 
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
+
+    std::string port;
+    get_parameter("port", port);
+    serial.open_port(port, 115200);
+
+    if (is_pub_local_pose_)
+    {
+        init_transforms();
+    }
     init_pub_sub();
 
     // Initialize parser
     if (parser_type_ == "nmea")
     {
-        parser_ = std::make_shared<Nmea_Parser>();
+        parser_ = std::make_unique<Nmea_Parser>();
     }
     else
     {
-        parser_ = std::make_shared<Ubx_Parser>();
+        parser_ = std::make_unique<Ubx_Parser>();
     }
     
-    return nav2_util::CallbackReturn::SUCCESS;
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Navilock_UBlox6_GPS::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused))) 
 {
     RCLCPP_DEBUG(get_logger(), "Activating");
@@ -66,100 +74,166 @@ Navilock_UBlox6_GPS::on_activate(const rclcpp_lifecycle::State & state __attribu
     if (parser_->has_error())
     {
         RCLCPP_ERROR(get_logger(), parser_->get_last_error().to_string());
-        return nav2_util::CallbackReturn::FAILURE;
+        return CallbackReturn::FAILURE;
     }
 
-    publisher_->on_activate();
-    return nav2_util::CallbackReturn::SUCCESS;
+    pub_navsatfix_->on_activate();
+    if (is_pub_local_pose_)
+    {
+        pub_local_pose_->on_activate();
+    }
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Navilock_UBlox6_GPS::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Deactivating");
-    publisher_->on_deactivate();
-    return nav2_util::CallbackReturn::SUCCESS;
+    pub_navsatfix_->on_deactivate();
+    if (is_pub_local_pose_)
+    {
+        pub_local_pose_->on_deactivate();
+    }
+
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Navilock_UBlox6_GPS::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Cleanup");
-    publisher_.reset();
-    return nav2_util::CallbackReturn::SUCCESS;
+    pub_navsatfix_.reset();
+    if (is_pub_local_pose_) pub_local_pose_.reset();
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Navilock_UBlox6_GPS::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Shutdown");
 
-    return nav2_util::CallbackReturn::SUCCESS;
+    return CallbackReturn::SUCCESS;
 }
 
 void
 Navilock_UBlox6_GPS::init_parameters()
 {
-    get_parameter("port", port_);
     get_parameter("xml_file", xml_file_);
     get_parameter("parser_type", parser_type_);
+    get_parameter("publish_local_pose", is_pub_local_pose_);
 }
 
 void
 Navilock_UBlox6_GPS::init_pub_sub()
 {
     RCLCPP_DEBUG(get_logger(), "Init pub sub");
-    std::string serial_topic = "serial_" + port_.substr(port_.find_last_of("/")+1);
+    timer_ = this->create_wall_timer(10ms, std::bind(&Navilock_UBlox6_GPS::read_serial, this));
 
-    publisher_ = this->create_publisher<sensor_msgs::msg::NavSatFix>("gps", default_qos);
-    subscriber_ = this->create_subscription<sgd_msgs::msg::Serial>(
-        serial_topic, default_qos, std::bind(&Navilock_UBlox6_GPS::on_serial_received, this, std::placeholders::_1));
+    std::string log_("Initialised publisher on topic 'gps'");
+    pub_navsatfix_ = this->create_publisher<sensor_msgs::msg::NavSatFix>("gps", default_qos);
+    if (is_pub_local_pose_)
+    {
+        pub_local_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("gps_local", default_qos);
+        log_.append(" and on topic 'gps_local'.");
+    }
 
-    RCLCPP_DEBUG(get_logger(), "Initialised publisher on topic %s and subscriber on topic %s.",
-            "gps", serial_topic.c_str());
+    RCLCPP_DEBUG(get_logger(), "Initialised publisher on topic 'gps' and on topic 'gps_local'.");
 }
 
 void
-Navilock_UBlox6_GPS::on_serial_received(const sgd_msgs::msg::Serial::SharedPtr msg)
+Navilock_UBlox6_GPS::read_serial()
 {
-    std::string line = msg->msg;
-    parser_->parse_msg(line);
-
-    // TODO wait for all nmea messages
-    if (parser_->msg_complete())
+    if (serial.read_serial())
     {
-        // Create NavSatFix message and publish data
-        sensor_msgs::msg::NavSatFix nsf;
-        nsf.latitude = parser_->latitude();
-        nsf.longitude = parser_->longitude();
-        nsf.header.stamp.sec = parser_->time();
-        nsf.header.stamp.nanosec = (parser_->time() - floor(parser_->time())) * 1E9;
+        std::string msg = serial.get_msg();
+        parser_->parse_msg(msg);
 
-        auto val = parser_->get_data("hdop");
-        double hdop = -1;
-        if (val.second == 1)
+        // wait for all nmea messages
+        if (parser_->msg_complete())
         {
-            hdop = std::get<double>(val.first);
-            RCLCPP_INFO(get_logger(), "HDOP is %f", hdop);
+            // Create NavSatFix message and publish data
+            sensor_msgs::msg::NavSatFix nsf;
+            nsf.latitude = parser_->latitude();
+            nsf.longitude = parser_->longitude();
+            nsf.header.stamp.sec = parser_->time();
+            nsf.header.stamp.nanosec = (parser_->time() - floor(parser_->time())) * 1E9;
+
+            auto val = parser_->get_data("hdop");
+            double hdop = -1;
+            if (val.second == 1)
+            {
+                hdop = std::get<double>(val.first);
+                RCLCPP_INFO(get_logger(), "HDOP is %f", hdop);
+            }
+
+            nsf.status.status = (parser_->fix() > 1 ? sensor_msgs::msg::NavSatStatus::STATUS_FIX
+                        : sensor_msgs::msg::NavSatStatus::STATUS_NO_FIX);
+
+            // publish message and transforms
+            pub_navsatfix_->publish(nsf);
+            
+            if (is_pub_local_pose_)
+            {
+                // create pose stamped msg
+                geometry_msgs::msg::PoseWithCovarianceStamped pose;
+                pose.header = nsf.header;
+
+                // wgs84 -> map frame
+                sgd_util::LatLon ll(parser_->latitude(), parser_->longitude());
+                auto xy = ll.to_local(map_origin);
+
+                // publish local pose
+                pose.pose.pose.position.x = xy.first;
+                pose.pose.pose.position.y = xy.second;
+
+                pub_local_pose_->publish(pose);
+            }
+
+            // Clear old message
+            parser_->clear();
         }
-
-        nsf.status.status = (parser_->fix() > 1 ? sensor_msgs::msg::NavSatStatus::STATUS_FIX
-                    : sensor_msgs::msg::NavSatStatus::STATUS_NO_FIX);
-
-        // publish message and transforms
-        publisher_->publish(nsf);
-        
-        // Clear old message
-        parser_->clear();
     }
 }
 
-}   // namespace
+void
+Navilock_UBlox6_GPS::init_transforms() {
+    auto tf_buffer_ = std::make_shared<tf2_ros::Buffer>(get_clock());
+    auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
+        get_node_base_interface(),
+        get_node_timers_interface());
+    tf_buffer_->setCreateTimerInterface(timer_interface);
+    auto tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
+    // Wait for transform to be available
+    std::string err;
+    int retries = 0;
+    while (rclcpp::ok() && !tf_buffer_->canTransform("earth", "map", tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
+        && retries < 10)
+    {
+        RCLCPP_INFO(this->get_logger(), "Timeout waiting for transform. Tf error: %s", err);
+        err.clear();
+        rclcpp::sleep_for(500000000ns);
+        retries++;
+    }
+
+    if (retries > 9)
+    {
+        RCLCPP_ERROR(get_logger(), "Could not retrieve transform from earth to map.");
+        return;
+    }
+
+    // transformation from earth -> map in WGS84 coordinates
+    // according to REP-105 the x-axis points east (lon) and the y-axis north (lat)
+    auto tf_ = tf_buffer_->lookupTransform("earth", "map", rclcpp::Time(0), rclcpp::Duration(5,0));
+    map_origin.set_global_coordinates(tf_.transform.translation.y, tf_.transform.translation.x);
+}
+
+}   // namespace sgd_hardware_drivers
 
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<sgd_hardware::Navilock_UBlox6_GPS>();
+    auto node = std::make_shared<sgd_hardware_drivers::Navilock_UBlox6_GPS>();
     rclcpp::spin(node->get_node_base_interface());
     rclcpp::shutdown();
 }

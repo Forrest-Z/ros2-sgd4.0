@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(cap_touch)
+project(sgd_io)
 
 # Default to C++17
 set(CMAKE_CXX_STANDARD 17)
@@ -8,6 +8,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# find dependencies
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -15,43 +16,42 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-# find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(sgd_msgs REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
-find_package(sgd_io REQUIRED)
 
+## build library
 include_directories(include)
 
-set(executable_name capacitive_touch)
-add_executable(${executable_name} src/capacitive_touch.cpp src/moving_average_filter.cpp)
-ament_target_dependencies(${executable_name}
-    rclcpp
-    rclcpp_lifecycle
-    sgd_msgs
-    sgd_io
-)
-target_link_libraries(${executable_name} sgd_io::sgd_io_core)
+set(library_name ${PROJECT_NAME}_core)
+set(CPP_FILES src/serial.cpp include/sgd_io/io_exception.hpp)
 
-install(TARGETS
-  ${executable_name}
-  RUNTIME DESTINATION lib/${PROJECT_NAME})
-  
+add_library(${library_name} SHARED
+  ${CPP_FILES})
+
+ament_export_targets(${library_name} HAS_LIBRARY_TARGET)
+
 install(
   DIRECTORY include/
   DESTINATION include/)
 
+install(
+  TARGETS ${library_name}
+  EXPORT ${library_name}
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+)
+
 ### testing
 enable_testing()
 
-add_executable(test_cap_touch test/test_moving_average_filter.cpp src/moving_average_filter.cpp)
-target_link_libraries(test_cap_touch gtest_main)
+add_executable(test_serial test/test_serial.cpp)
+target_link_libraries(test_serial gtest_main ${library_name})
 
 #file(COPY test/data DESTINATION ${CMAKE_BINARY_DIR}/lib/test)
 
 include(GoogleTest)
-gtest_discover_tests(test_cap_touch)
+gtest_discover_tests(test_serial)
 
 ament_export_include_directories(include)
 ament_export_libraries(${library_name})

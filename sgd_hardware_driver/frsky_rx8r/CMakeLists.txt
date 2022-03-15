@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(frsky_rx8r)
 
-# Default to C++14
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
-endif()
+# Default to C++17
+set(CMAKE_CXX_STANDARD 17)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -14,23 +12,25 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sgd_msgs REQUIRED)
-find_package(nav2_util)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(sgd_io REQUIRED)
 
 include_directories(include)
 
-add_executable(frsky_rx8r src/frsky_rx8r.cpp)
-ament_target_dependencies(frsky_rx8r
+set(executable_name frsky_rx8r)
+add_executable(${executable_name} src/frsky_rx8r.cpp)
+ament_target_dependencies(${executable_name}
     rclcpp
     sgd_msgs
     rclcpp_lifecycle
     geometry_msgs
-    nav2_util
+    sgd_io
 )
+target_link_libraries(${executable_name} sgd_io::sgd_io_core)
 
 install(TARGETS
-  frsky_rx8r
+${executable_name}
   RUNTIME DESTINATION lib/${PROJECT_NAME})
   
 install(

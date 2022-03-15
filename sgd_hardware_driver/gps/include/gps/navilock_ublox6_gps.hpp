@@ -20,18 +20,24 @@
 #include <memory>
 
 #include "rclcpp/rclcpp.hpp"
-#include "nav2_util/lifecycle_node.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/create_timer_ros.h"
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
-#include "sensor_msgs/msg/nav_sat_status.hpp"
-#include "sgd_msgs/msg/serial.hpp"
+#include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
+#include "sgd_util/geotools.hpp"
+#include "sgd_io/serial.hpp"
 
 #include "include/nmea_parser.hpp"
 #include "include/ubx_parser.hpp"
 
-namespace sgd_hardware
+namespace sgd_hardware_drivers
 {
 
-class Navilock_UBlox6_GPS : public nav2_util::LifecycleNode
+using namespace std::chrono_literals;
+using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
+
+class Navilock_UBlox6_GPS : public rclcpp_lifecycle::LifecycleNode
 {
 
 public: 
@@ -40,26 +46,40 @@ public:
 
 protected:
     // Implement the lifecycle interface
-    nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
-    nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
-    nav2_util::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
-    nav2_util::CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
-    nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
+    CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
+    CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
+    CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
+    CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
+    CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
     
-    //! \brief Init parameters
+    /**
+     * @brief Init parameters
+     */
     void init_parameters();
-    std::string port_;
     std::string xml_file_;
     std::string parser_type_;
+    bool is_pub_local_pose_;
 
-    //! \brief Init Publisher and subscriber
+    /**
+     * @brief Initialize publisher
+     */
     void init_pub_sub();
     rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-    rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::NavSatFix>::SharedPtr publisher_;
-    rclcpp::Subscription<sgd_msgs::msg::Serial>::SharedPtr subscriber_;
+    rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::NavSatFix>::SharedPtr pub_navsatfix_;
+    rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_local_pose_;
+
+    /**
+     * @brief Initialize transforms
+     */
+    void init_transforms();
+    sgd_util::LatLon map_origin;
     
-    std::shared_ptr<IGPS_Message> parser_;
-    void on_serial_received(const sgd_msgs::msg::Serial::SharedPtr msg);
+    sgd_io::Serial serial;
+    void read_serial();
+
+    std::unique_ptr<IGPS_Message> parser_;
+    //void on_serial_received(const sgd_msgs::msg::Serial::SharedPtr msg);
 };
 
 }       // namespace sgd_hardware

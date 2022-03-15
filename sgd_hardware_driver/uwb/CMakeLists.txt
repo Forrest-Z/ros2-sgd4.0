@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(cap_touch)
+project(uwb)
 
 # Default to C++17
 set(CMAKE_CXX_STANDARD 17)
@@ -18,21 +18,33 @@ FetchContent_MakeAvailable(googletest)
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(sgd_msgs REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(sgd_io REQUIRED)
+find_package(sgd_util REQUIRED)
 
 include_directories(include)
+include_directories(lib)
 
-set(executable_name capacitive_touch)
-add_executable(${executable_name} src/capacitive_touch.cpp src/moving_average_filter.cpp)
+set(executable_name uwb_node)
+add_executable(${executable_name} src/uwb_node.cpp)
+
+add_subdirectory(lib)
+target_link_libraries(${executable_name} multilateration_core sgd_io::sgd_io_core)
+
 ament_target_dependencies(${executable_name}
     rclcpp
     rclcpp_lifecycle
-    sgd_msgs
+    tf2_ros
+    geometry_msgs
+    sensor_msgs
+    visualization_msgs
     sgd_io
+    sgd_util
 )
-target_link_libraries(${executable_name} sgd_io::sgd_io_core)
 
 install(TARGETS
   ${executable_name}
@@ -42,18 +54,7 @@ install(
   DIRECTORY include/
   DESTINATION include/)
 
-### testing
-enable_testing()
-
-add_executable(test_cap_touch test/test_moving_average_filter.cpp src/moving_average_filter.cpp)
-target_link_libraries(test_cap_touch gtest_main)
-
-#file(COPY test/data DESTINATION ${CMAKE_BINARY_DIR}/lib/test)
-
-include(GoogleTest)
-gtest_discover_tests(test_cap_touch)
-
 ament_export_include_directories(include)
-ament_export_libraries(${library_name})
+ament_export_dependencies(rclcpp rclcpp_lifecycle geometry_msgs sgd_io)
 
 ament_package()
