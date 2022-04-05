@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 #include <math.h>
+#include <iostream>
 
 namespace sgd_util
 {
@@ -75,6 +76,16 @@ public:
      * @return std::pair<double, double> 
      */
     std::pair<double, double> to_local(const double lat, const double lon);
+
+    /**
+     * @brief Interpolate between two points. The interpolation is based on the euclidian distance,
+     * so be careful when using this for large distances
+     * 
+     * @param other the LatLon to interpolate to
+     * @param points_to_insert how many points to insert
+     * @return the vector containing only the new points
+     */
+    std::vector<LatLon> interpolate(LatLon other, int points_to_insert = 1);
 
     /**
      * @brief Create string <lat, lon> with 7 digits precision

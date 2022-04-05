@@ -66,6 +66,23 @@ LatLon::lon() {
     return lon_;
 }
 
+std::vector<LatLon>
+LatLon::interpolate(LatLon other, int points_to_insert)
+{
+    // TODO: Take into account the spherical curvature of the earth
+    std::vector<LatLon> vec_ll;
+    double delta_lat = other.lat_ - lat_;
+    double delta_lon = other.lon_ - lon_;
+    for (int i = 0; i < points_to_insert; i++)
+    {
+        LatLon ll(lat_ + delta_lat*(i+1)/(points_to_insert+1), 
+                lon_ + delta_lon*(i+1)/(points_to_insert+1));
+        vec_ll.push_back(ll);
+        std::cout << "Insert LatLon " << ll.lat_ << ", " << ll.lon_ << std::endl;
+    }
+    return vec_ll;
+}
+
 std::string
 LatLon::to_string() {
     const char *out = "%3.7f, %3.7f";

@@ -52,6 +52,18 @@ TEST(GeotoolsTest, DistanceLocalLL)
   EXPECT_NEAR(ll.distance_to(53.5574830, 10.0248699), 300.201, 0.001);
 }
 
+TEST(GeotoolsTest, InterpolateLL)
+{
+  sgd_util::LatLon ll(55.0, 10.0);
+  sgd_util::LatLon ll2(45.0, 20.0);
+
+  auto vec_ll = ll.interpolate(ll2);
+  EXPECT_EQ(vec_ll.size(), 1);
+
+  auto vec_ll2 = ll.interpolate(ll2, 5);
+  EXPECT_EQ(vec_ll2.size(), 5);
+}
+
 int main(int argc, char **argv)
 {
   ::testing::InitGoogleTest(&argc, argv);

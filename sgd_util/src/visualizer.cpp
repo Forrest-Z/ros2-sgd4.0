@@ -114,7 +114,7 @@ Visualizer::createMarker()
     marker.scale.x = 0.1;
     marker.scale.y = 0.1;
     marker.scale.z = 0.05;
-    marker.lifetime.sec = 5;
+    marker.lifetime.sec = 0;
 
     return marker;
 }
