@@ -7,6 +7,7 @@ Im Rahmen des Forschungsvorhabens "Blindenhund 4.0" wird an der HAW Hamburg in i
 - [Startup](README.md#ros2-startup)
 - [Installation](README.md#ros2-installation)
 - [Testing](README.md#testing-im-shared-guide-dog-projekt)
+- [Debugging](README.md#debugging)
 
 # ROS2 Startup
 
@@ -292,6 +293,21 @@ Install the package [Colcon Tasks](https://marketplace.visualstudio.com/items?it
 In settings tab (Ctrl+,) search for *colcon* and change `Colcon: Colcon Cwd` to `~/home/dev_ws` and `Colcon: Install Type` to `symlinked`.
 
 The last step is to change the command in `tasks.json` to `"colcon"`.
+
+# Debugging
+
+The following section is based on [this](https://navigation.ros.org/tutorials/docs/get_backtrace.html) tutorial.
+
+## Preparations
+
+Add the following line to the CMakeLists.txt of the node you want to debug.
+
+```
+add_compile_options(-g)
+```
+
+After that simply rebuild the package with `colcon build --packages-select <package-name>`. After debugging the node, the option should be removed again, as it causes performance losses.
+
 
 # Useful git commands
 
