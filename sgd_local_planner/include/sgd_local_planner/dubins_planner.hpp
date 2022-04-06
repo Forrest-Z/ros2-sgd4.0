@@ -60,7 +60,21 @@ private:
   // parameters
   double interpolation_resolution_;
   double radius_;
+  std::string global_plan_topic_;
   nav_msgs::msg::Path global_path;
+
+  // global plan from osm planner
+  nav_msgs::msg::Path global_plan;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_global_plan;
+  void on_glopbal_plan_received(const nav_msgs::msg::Path::SharedPtr path);
+
+  /**
+   * @brief Checks if a global plan to the destination pose is available. For the plan to be accepted, the target poses must match.
+   * 
+   * @param goal the goal pose of the planner
+   * @return true if global plan is available and matches the goal
+   */
+  bool is_global_plan_available(const geometry_msgs::msg::PoseStamped & goal);
 };
 
 }  // namespace nav2_DubinsCurve_planner

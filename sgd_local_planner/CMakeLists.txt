@@ -5,8 +5,6 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(visualization_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
@@ -27,10 +25,6 @@ add_library(${library_name} SHARED
   src/dubins_planner.cpp
   src/dubins.cpp
 )
-
-
-##target_link_libraries(${library_name}  ${catkin_LIBRARIES} )
-
 
 ament_target_dependencies(${library_name}
   rclcpp
