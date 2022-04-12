@@ -1,4 +1,3 @@
-
 #include "sgd_global_planner/global_planner.hpp"
 
 namespace nav_sgd
@@ -8,15 +7,14 @@ using std::placeholders::_1;
 using namespace std::chrono_literals;
 
 Global_Planner_OSM::Global_Planner_OSM():
-        nav2_util::LifecycleNode("global_planner_osm", "", true) 
-{   
+        rclcpp_lifecycle::LifecycleNode("global_planner_osm") 
+{
     RCLCPP_DEBUG(get_logger(), "Creating");
 
-    // Add parameters
+    // declare parameters and default values
     declare_parameter("waypoints_topic", rclcpp::ParameterValue("global_plan"));
     declare_parameter("clicked_point_topic", rclcpp::ParameterValue("clicked_point"));
-    declare_parameter("port", rclcpp::ParameterValue(8080));
-    declare_parameter("ip_address", rclcpp::ParameterValue("127.0.0.1"));
+    declare_parameter("yaml_filename", rclcpp::ParameterValue("map.yaml"));
 }
 
 Global_Planner_OSM::~Global_Planner_OSM()
@@ -24,130 +22,155 @@ Global_Planner_OSM::~Global_Planner_OSM()
     // Destroy
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Global_Planner_OSM::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Configuring");
+    RCLCPP_INFO(get_logger(), "Configuring");
 
     // Initialize parameters, pub/sub, services, etc.
-    init_parameters();
-    init_pub_sub();
-    init_transforms();
-    init_ip_connection();
+    get_parameter("waypoints_topic", waypoints_topic_);
+    get_parameter("clicked_point_topic", clicked_point_topic_);
+    get_parameter("yaml_filename", yaml_filename_);
 
-    return nav2_util::CallbackReturn::SUCCESS;
+    init_transforms();
+    init_yaml();
+
+    // check if file exists
+    FILE * mFile, * uFile;
+    mFile = fopen(map_filename.c_str(), "r");
+    uFile = fopen(users_filename.c_str(), "r");
+    if (mFile == NULL || uFile == NULL)
+    {
+        RCLCPP_ERROR(get_logger(), "Map file %s or users file %s does not exist!", map_filename.c_str(), users_filename.c_str());
+        return CallbackReturn::FAILURE;
+    }
+
+    init_pub_sub();
+    
+    RCLCPP_INFO(get_logger(), "Configuring complete");
+
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Global_Planner_OSM::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Activating");
+    RCLCPP_INFO(get_logger(), "Activating");
+
+    a_star_users = std::make_shared<A_Star_Users>(users_filename);
+    a_star = std::make_unique<A_Star>(map_filename, a_star_users);
+
     publisher_path_->on_activate();
 
     return wait_for_transform();
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Global_Planner_OSM::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Deactivating");
-    return nav2_util::CallbackReturn::SUCCESS;
+    publisher_path_->on_deactivate();
+    
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Global_Planner_OSM::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Cleanup");
-    return nav2_util::CallbackReturn::SUCCESS;
+    publisher_path_.reset();
+    map_info_srv.reset();
+    compute_path_srv.reset();
+
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Global_Planner_OSM::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Shutdown");
-    return nav2_util::CallbackReturn::SUCCESS;
-}
-
-void
-Global_Planner_OSM::init_parameters()
-{
-    get_parameter("waypoints_topic", waypoints_topic_);
-    get_parameter("clicked_point_topic", clicked_point_topic_);
-    get_parameter("port", port_);
-    get_parameter("ip_address", ip_address_);
+    return CallbackReturn::SUCCESS;
 }
 
 void
 Global_Planner_OSM::init_pub_sub()
 {
     publisher_path_ = this->create_publisher<nav_msgs::msg::Path>(waypoints_topic_, default_qos);
+    
+    //sub_clicked_point_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
+    //    clicked_point_topic_, default_qos, std::bind(&Global_Planner_OSM::computePath, this, _1));
 
-    sub_clicked_point_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
-        clicked_point_topic_, default_qos, std::bind(&Global_Planner_OSM::computePath, this, _1));
+    RCLCPP_INFO(get_logger(), "Initialised publisher on topic %s",
+            waypoints_topic_.c_str());
 
-    RCLCPP_DEBUG(get_logger(), "Initialised publisher on topic %s and subscriber on %s.",
-            waypoints_topic_.c_str(), clicked_point_topic_.c_str());
-
-    auto options = rclcpp::NodeOptions().arguments(
-        {"--ros-args --remap __node:=navigation_dialog_action_client"});
-    client_node_ = std::make_shared<rclcpp::Node>("_follow", options);
-    waypoint_follower_action_client_ = 
-        rclcpp_action::create_client<nav2_msgs::action::FollowWaypoints>(
-        client_node_,
-        "FollowWaypoints");
-    waypoint_follower_goal_ = nav2_msgs::action::FollowWaypoints::Goal();
+    // create compute path service
+    map_info_srv = create_service<sgd_msgs::srv::GetMapInfo>("get_map_info",
+        std::bind(&Global_Planner_OSM::getMapInfo, this, _1, _2));
+    compute_path_srv = create_service<sgd_msgs::srv::GetGlobalPlan>("get_global_plan",
+        std::bind(&Global_Planner_OSM::computePath, this, _1, _2));
+    
+    // create waypoint follower action
+    // auto options = rclcpp::NodeOptions().arguments(
+    //     {"--ros-args --remap __node:=navigation_dialog_action_client"});
+    // client_node_ = std::make_shared<rclcpp::Node>("_follow", options);
+    // waypoint_follower_action_client_ = 
+    //     rclcpp_action::create_client<nav2_msgs::action::FollowWaypoints>(
+    //     client_node_,
+    //     "FollowWaypoints");
+    // waypoint_follower_goal_ = nav2_msgs::action::FollowWaypoints::Goal();
 
     server_timeout_ = std::chrono::milliseconds(10);
+    RCLCPP_INFO(get_logger(), "Publisher and subscriber initialized.");
 }
 
 void
 Global_Planner_OSM::init_transforms()
 {
-    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(rclcpp_node_->get_clock());
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(get_clock());
     auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
-        rclcpp_node_->get_node_base_interface(),
-        rclcpp_node_->get_node_timers_interface());
+        get_node_base_interface(),
+        get_node_timers_interface());
     tf_buffer_->setCreateTimerInterface(timer_interface);
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 }
 
-void
-Global_Planner_OSM::init_ip_connection()
+CallbackReturn
+Global_Planner_OSM::init_yaml()
 {
-    struct sockaddr_in serv_addr;
+    YAML::Node doc = YAML::LoadFile(yaml_filename_);
 
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    // get directory from yaml filename
+    std::string base_path = yaml_filename_.substr(0, yaml_filename_.find_last_of("/")+1);
+
+    try
     {
-        RCLCPP_ERROR(get_logger(), "Socket creation error!");
-        return;
+        map_filename = yaml_get_value<std::string>(doc, "osm_map_file");
+        adr_filename = yaml_get_value<std::string>(doc, "address_file");
+        users_filename = yaml_get_value<std::string>(doc, "users_file");
     }
-   
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(port_);
-       
-    // Convert IPv4 and IPv6 addresses from text to binary form
-    if(inet_pton(AF_INET, ip_address_.c_str(), &serv_addr.sin_addr)<=0) 
+    catch(const YAML::Exception& e)
     {
-        RCLCPP_ERROR(get_logger(), "Invalid address/ Address not supported");
-        return;
+        RCLCPP_ERROR(get_logger(), "Error reading yaml file: %s", e.what());
+        return CallbackReturn::FAILURE;
     }
-   
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        RCLCPP_ERROR(get_logger(), "Connection Failed!");
-        return;
-    }
+
+    // if all filenames were parsed successfully add base path to get an absolute path
+    map_filename = base_path + map_filename;
+    adr_filename = base_path + adr_filename;
+    users_filename = base_path + users_filename;
+
+    return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 Global_Planner_OSM::wait_for_transform()
 {
     // Wait for transform to be available
-    RCLCPP_DEBUG(get_logger(), "Wait for transform");
+    RCLCPP_INFO(get_logger(), "Wait for transform");
 
     std::string err;
     int retries = 0;
-    while (rclcpp::ok() && !tf_buffer_->canTransform("base_link", "map", tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
+    while (rclcpp::ok() && !tf_buffer_->canTransform("earth", "map", tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
         && retries < 10)
     {
         RCLCPP_INFO(this->get_logger(), "Timeout waiting for transform. Tf error: %s", err);
@@ -155,213 +178,167 @@ Global_Planner_OSM::wait_for_transform()
         rclcpp::sleep_for(500000000ns);
         retries++;
     }
-    return (retries > 9 ? nav2_util::CallbackReturn::FAILURE : nav2_util::CallbackReturn::SUCCESS);
+
+    if (retries > 9)
+    {
+        return CallbackReturn::FAILURE;
+    }
+
+    // transformation from earth -> map in WGS84 coordinates
+    // according to REP-105 the x-axis points east (lon) and the y-axis north (lat)
+    auto tf_ = tf_buffer_->lookupTransform("earth", "map", rclcpp::Time(0), rclcpp::Duration(5,0));
+    map_origin.set_global_coordinates(tf_.transform.translation.y, tf_.transform.translation.x);
+
+    RCLCPP_INFO(get_logger(), "Set map origin to %s", map_origin.to_string().c_str());
+
+    return CallbackReturn::SUCCESS;
 }
 
 void
-Global_Planner_OSM::computePath(const std::shared_ptr<geometry_msgs::msg::PointStamped> msg)
+Global_Planner_OSM::getMapInfo(const std::shared_ptr<sgd_msgs::srv::GetMapInfo::Request> request,
+                               std::shared_ptr<sgd_msgs::srv::GetMapInfo::Response> response)
 {
-    // get current position
-    double x_base_map, y_base_map;
+    // read address file and user file
+    RCLCPP_INFO(get_logger(), "Service get_map_info callback");
+
+    // read address file
+    std::string line, json = "";
+    std::ifstream infile(adr_filename);
+    while (std::getline(infile, line))
+    {
+        json.append(line);
+    }
+    infile.close();
+
+    response->address_json = json;
+    response->usernames = a_star_users->get_user_list();
+    RCLCPP_INFO(get_logger(), "Service response filled.");
+}
+
+void
+Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPlan::Request> request,
+                                std::shared_ptr<sgd_msgs::srv::GetGlobalPlan::Response> response)
+{
+    // get current position in WGS84 coordinates
+    RCLCPP_INFO(get_logger(), "Get current position");
+    sgd_util::LatLon position;
     try
     {
-        geometry_msgs::msg::TransformStamped tf_base_map = tf_buffer_->lookupTransform("map", "base_link",
+        // transformation from map -> base_link in local cooridinates
+        geometry_msgs::msg::TransformStamped tf_ = tf_buffer_->lookupTransform("map", "base_link",
                     rclcpp::Time(0), rclcpp::Duration(5,0));
-        x_base_map = tf_base_map.transform.translation.x;
-        y_base_map = tf_base_map.transform.translation.y;
-        RCLCPP_INFO(this->get_logger(), "Transform map -> base_link x: %f, %f", x_base_map, y_base_map);
-    } catch (tf2::TransformException &ex)
+        position.set_local_coordinates(map_origin, tf_.transform.translation.x, tf_.transform.translation.y);        
+    }
+    catch (tf2::TransformException &ex)
     {
         RCLCPP_WARN(this->get_logger(), "%s", ex.what());
         return;
     }
 
-    std::vector<std::string> in;
-    in.push_back(""); // TODO get username
-    // local coordinates to lat/lon
-    auto latlon = sgd_util::local_to_WGS84(x_base_map, y_base_map);
-    RCLCPP_INFO(get_logger(), "Current pos (lat/lon): %.7f, %.7f", latlon.first, latlon.second);
-    in.push_back(to_string(latlon.first));
-    in.push_back(to_string(latlon.second));
+    // get destination from message. If multiple IDs are specified, multiple paths are calculated and the best one is returned.
+    ROUTE best_route_;
+    best_route_.cost = 1E9;
 
-    // get destination from message
-    auto dest = sgd_util::local_to_WGS84(msg->point.x, msg->point.y);
-    in.push_back(to_string(dest.first));
-    in.push_back(to_string(dest.second));
-
-    // build message
-    /*
+    for (int dest_id : request->dest_ids)
     {
-      "mode": 0,
-      "username": "default",
-      "start": [53.1234567, 10.1234567],
-      "dest": [53.9876543, 10.9876543],
-      "address": "Berliner Tor 21"
+        RCLCPP_INFO(get_logger(), "Compute path to node %d", dest_id);
+        try
+        {
+            // set start and destination
+            a_star->set_start(position);
+            a_star->set_dest(dest_id);
+
+            auto route = a_star->compute_path();
+            if (route.cost < best_route_.cost)
+            {
+                best_route_ = route;
+            }
+            RCLCPP_INFO(get_logger(), "Route has length of %.3f m", route.length_m);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+            RCLCPP_WARN(get_logger(), "Path computation error: %s", e.what());
+        }
     }
-    */
-    std::string s = "{\n  \"mode\": 0,\n  \"username\":\"default\",\n  \"start\": [";
-    s.append(to_string(latlon.first) + "," + to_string(latlon.second) + "],\n");
-    s.append("  \"dest\": [" + to_string(dest.first) + "," + to_string(dest.second) + "],\n");
-    s.append("  \"address\": \"\"\n}");
+
+    // we need at least two waypoints to get a valid path
+    if (best_route_.waypoints.size() < 2)
+    {
+        RCLCPP_WARN(get_logger(), "No route available.");
+        response->length = -1;
+        return;
+    }    
+
+    RCLCPP_INFO(get_logger(), "Route has %d waypoints", best_route_.waypoints.size());
+    response->length = best_route_.length_m;
     
-    //RCLCPP_INFO(get_logger(), "Send message %s", s.c_str());
-    send(sock , s.c_str() , s.length() , 0 );
-    s.clear();
-
-    // wait for response
-    std::string wps;
-    std::vector<POSE> waypoints;
-    bool IN_MSG = false;
-    while (1)
-    {
-        char c;
-        read(sock , &c, 1);
-
-        if (c == '{' && !IN_MSG)
-        {
-            wps.clear();
-            IN_MSG = true;
-        }
-        else if (IN_MSG && c == '}')
-        {
-            // end of message -> parse msg, compute waypoints and send to controller
-            waypoints = get_waypoints_from_msg(wps);
-            if (waypoints.size() < 1)
-            {
-                RCLCPP_INFO(get_logger(), "No waypoints received!");
-            }
-            else
-            {
-                publish_marker_array(&waypoints, publisher_path_);
-                start_waypoint_following(&waypoints);
-            }
-            
-            return;
-        }
-        else if (IN_MSG)
-        {
-            wps.push_back(c);
-        }
-    }
+    // publish path
+    auto poses = create_poses_from_waypoints(best_route_.waypoints);
+    publish_path(poses);
 }
 
 void
-Global_Planner_OSM::publish_marker_array(
-    std::vector<POSE> * data,
-    std::shared_ptr<rclcpp::Publisher<nav_msgs::msg::Path>> publisher)
+Global_Planner_OSM::publish_path(std::vector<geometry_msgs::msg::Pose> data)
 {
-    std::vector<POSE>::iterator it;
     nav_msgs::msg::Path path_;
 
     path_.header.frame_id = "map";
     path_.header.stamp = this->get_clock()->now();
 
-    geometry_msgs::msg::PoseStamped last_p_;
-    tf2::Quaternion angle_to_last_p_;
-    for (auto p : *data)
+    for (auto p : data)
     {
-        auto xy = sgd_util::WGS84_to_local(p.lat, p.lon);
-
         geometry_msgs::msg::PoseStamped pose;
         pose.header = path_.header;
 
-        pose.pose.position.x = xy.first;
-        pose.pose.position.y = xy.second;
-        pose.pose.position.z = 0.0;
-
-        pose.pose.orientation.x = 0.0;
-        pose.pose.orientation.y = 0.0;
-        pose.pose.orientation.z = 0.0;
-        pose.pose.orientation.w = 1.0;
-
-        double angle = atan2(pose.pose.position.y - last_p_.pose.position.y,
-                    pose.pose.position.x - last_p_.pose.position.x);
-        angle_to_last_p_.setRPY(0, 0, angle);
-        last_p_ = pose;
+        pose.pose = p;
         path_.poses.push_back(pose);
     }
-
-    RCLCPP_INFO(get_logger(), "Angle from last point: %f", angle_to_last_p_.getAngle());
-    path_.poses.back().pose.orientation = tf2::toMsg(angle_to_last_p_);
-    publisher->publish(path_);
+    publisher_path_->publish(path_);
 }
 
-void
-Global_Planner_OSM::start_waypoint_following(std::vector<POSE> * waypoints)
+std::vector<geometry_msgs::msg::Pose>
+Global_Planner_OSM::create_poses_from_waypoints(std::vector<sgd_util::LatLon> waypoints)
 {
-    auto is_action_server_ready = 
-        waypoint_follower_action_client_->wait_for_action_server(std::chrono::seconds(5));
-    if (!is_action_server_ready)
+    std::pair<double, double> last_wp{-1.0,-1.0};
+    std::vector<geometry_msgs::msg::Pose> poses_list;
+    for (std::size_t i = 0; i < waypoints.size(); i++)
     {
-        RCLCPP_ERROR(this->get_logger(), "FollowWaypoints action server is not available.");
-        return;
+        auto xy = waypoints.at(i).to_local(map_origin);
+
+        geometry_msgs::msg::Pose pose;
+        pose.position.x = xy.first;
+        pose.position.y = xy.second;
+        pose.position.z = 0.0;
+
+        // calculate angle
+        double ang = 0.0;
+        auto next_wp = (i < waypoints.size()-1) ? waypoints.at(i+1).to_local(map_origin) : waypoints.at(i-1).to_local(map_origin);
+        if (last_wp.first < 0)  // local coordinates should always be positive
+        {
+            // no last waypoint available -> take angle to next waypoint
+            ang = atan2(next_wp.second - xy.second, next_wp.first - xy.first);
+        }
+        else if (i >= (waypoints.size() - 1))
+        {
+            // no next waypoint available
+            ang = atan2(xy.second - last_wp.second, xy.first - last_wp.first);
+        }
+        else
+        {
+            // last and next waypoint available
+            ang = (atan2(next_wp.second - xy.second, next_wp.first - xy.first) + 
+                   atan2(xy.second - last_wp.second, xy.first - last_wp.first)) / 2;
+        }
+
+        tf2::Quaternion q;
+        q.setRPY(0,0,ang);
+        pose.orientation = tf2::toMsg(q);
+
+        poses_list.push_back(pose);
+        last_wp = xy;
     }
-
-    std::vector<POSE>::iterator it;
-    std::vector<geometry_msgs::msg::PoseStamped> poses;
-    geometry_msgs::msg::PoseStamped ps;
-
-    for (it = waypoints->begin(); it != waypoints->end(); ++it)
-    {
-        ps = geometry_msgs::msg::PoseStamped();
-
-        auto p = *it;
-        auto xy = sgd_util::WGS84_to_local(p.lat, p.lon);
-
-        ps.header.stamp = rclcpp::Clock().now();
-        ps.header.frame_id = "map";
-        ps.pose.position.x = xy.first;
-        ps.pose.position.y = xy.second;
-        ps.pose.position.z = 0.0;
-        ps.pose.orientation = sgd_util::rotation_around_z(p.angle);
-
-        poses.push_back(ps);
-    }
-
-    waypoint_follower_goal_.poses = poses;
-
-    auto send_goal_options = rclcpp_action::Client<nav2_msgs::action::FollowWaypoints>::SendGoalOptions();
-    send_goal_options.result_callback = [](auto) {};
-
-    auto future_goal_handle = waypoint_follower_action_client_->async_send_goal(waypoint_follower_goal_, send_goal_options);
-    if (rclcpp::spin_until_future_complete(client_node_, future_goal_handle, server_timeout_) != rclcpp::FutureReturnCode::SUCCESS)
-    {
-        RCLCPP_ERROR(this->get_logger(), "Send goal call failed.");
-        return;
-    }
-
-    waypoint_follower_goal_handle_ = future_goal_handle.get();
-    if (!waypoint_follower_goal_handle_)
-    {
-        RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server.");
-        return;
-    }
-}
-
-std::vector<Global_Planner_OSM::POSE>
-Global_Planner_OSM::get_waypoints_from_msg(std::string waypoints_)
-{
-    std::vector<POSE> waypoints;
-
-    std::string wps_str = waypoints_.substr(waypoints_.find_first_of("[")+1,waypoints_.find_last_of("]")-1);
-    RCLCPP_INFO(get_logger(), "Parse message %s", wps_str.c_str());
-
-    std::string token;
-    std::istringstream tokenStream(wps_str);
-    while (std::getline(tokenStream, token, ']'))
-    {
-        if (token.size() < 5)   continue;
-        token = token.substr(token.find_first_of("[")+1);
-
-        int del_pos = token.find(',');
-        POSE p;
-        p.lat = stod(token.substr(0, del_pos));
-        p.lon = stod(token.substr(del_pos + 1));
-        
-        waypoints.push_back(p);
-    }
-    
-    return waypoints;
+    return poses_list;
 }
 
 }   // namespace nav_sgd

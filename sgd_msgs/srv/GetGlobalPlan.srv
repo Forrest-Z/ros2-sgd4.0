@@ -1,0 +1,13 @@
+# Compute path to the goal pose
+
+string username
+
+# id of destination node
+int32[] dest_ids
+
+---
+# Array of poses from start to goal if one was successfully found.
+#Path plan
+
+# Length of path in m
+float32 length

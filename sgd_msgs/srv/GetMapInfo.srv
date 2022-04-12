@@ -1,0 +1,5 @@
+# Get addresses and users for the current map
+
+---
+string address_json      # json object containing all addresses
+string[] usernames       # list with all usernames
