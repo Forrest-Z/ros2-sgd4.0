@@ -42,6 +42,7 @@
 #include "sgd_util/geotools.hpp"
 #include "a_star.hpp"
 #include "a_star_users.hpp"
+#include "path_smoothing.hpp"
 
 namespace nav_sgd
 {
