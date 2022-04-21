@@ -1,5 +1,5 @@
-#ifndef  PATH_SMOOTHING_HPP_
-#define  PATH_SMOOTHING_HPP_
+#ifndef  NAV_SGD__PATH_SMOOTHING_HPP_
+#define  NAV_SGD__PATH_SMOOTHING_HPP_
 
 #include <iostream>
 #include <fstream>
@@ -11,7 +11,10 @@
 
 #include "sgd_util/geotools.hpp"
 
-class path_smoothing
+namespace nav_sgd
+{
+
+class PathSmoothing
 {
     
     private:
@@ -28,7 +31,7 @@ class path_smoothing
          * @param original_path     The path to be extended by interpolation.
          * @return vector<sgd_util::LatLon> 
          */
-        vector<sgd_util::LatLon> extend_path(vector<sgd_util::LatLon> original_path);
+        std::vector<sgd_util::LatLon> extend_path(std::vector<sgd_util::LatLon> original_path);
         
 
     public:
@@ -42,13 +45,18 @@ class path_smoothing
          * @param tolerance         It states how much change per iteration is necessary to keep iterating.
          * @param path_increase     A factor by which the number of points in the original path will be increased through interpolation.
          */
-        path_smoothing(double weight_data_, double weight_smooth_, double tolerance_, int path_increase_);
+        PathSmoothing(double weight_data_, double weight_smooth_, double tolerance_, int path_increase_);
 
         /**
          * @brief Construct a new path smoothing object
          * If no parameters are specified, they are set to default values.
          */
-        path_smoothing();
+        PathSmoothing();
+
+        /**
+         * @brief Destroy the Path Smoothing object
+         */
+        ~PathSmoothing();
 
 
         // Public methods
@@ -58,7 +66,7 @@ class path_smoothing
          * 
          * @return vector<sgd_util::LatLon>  Returns a smoothened version of the oiginal path.
          */
-        vector<sgd_util::LatLon> smoothen_path(vector<sgd_util::LatLon> path);
+        std::vector<sgd_util::LatLon> smoothen_path(std::vector<sgd_util::LatLon> path);
 
         // Setters
         /**
@@ -98,5 +106,6 @@ class path_smoothing
 
 };
 
+} // namespace nav_sgd
 
 #endif

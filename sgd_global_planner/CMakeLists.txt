@@ -65,7 +65,7 @@ include_directories(include)
 
 # add executable
 set(EXE_NAME global_planner)
-add_executable(${EXE_NAME} src/global_planner.cpp src/a_star.cpp src/a_star_node.cpp src/a_star_users.cpp)
+add_executable(${EXE_NAME} src/global_planner.cpp src/a_star.cpp src/a_star_node.cpp src/a_star_users.cpp src/path_smoothing.cpp)
 target_link_libraries(${EXE_NAME} sgd_util::sgd_util_core nlohmann_json::nlohmann_json)
 #target_link_libraries(${EXE_NAME} PRIVATE nlohmann_json::nlohmann_json)
 ament_target_dependencies(${EXE_NAME} ${dependencies})
