@@ -21,7 +21,8 @@ int main(int argc, char **argv)
     node->create_client<sgd_msgs::srv::GetGlobalPlan>("get_global_plan");
 
   auto request = std::make_shared<sgd_msgs::srv::GetGlobalPlan::Request>();
-  request->dest_ids = {100000200, 100004800, 100012300};
+  //request->dest_id = "{100000200, 100004800, 100012300}";
+  request->dest_id = "Berliner Tor 21";
   //request->b = atoll(argv[2]);
 
   while (!client->wait_for_service(1s)) {

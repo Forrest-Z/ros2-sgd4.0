@@ -43,6 +43,8 @@
 #include "a_star.hpp"
 #include "a_star_users.hpp"
 
+#include <nlohmann/json.hpp>
+
 namespace nav_sgd
 {
 
@@ -98,6 +100,7 @@ protected:
     std::string map_filename;
     std::string users_filename;
     std::string adr_filename;
+    nlohmann::json js;
 
     // A*
     std::shared_ptr<A_Star_Users> a_star_users;
@@ -123,14 +126,6 @@ protected:
      */
     void computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPlan::Request> request,
                      std::shared_ptr<sgd_msgs::srv::GetGlobalPlan::Response> response);
-
-    // action
-    std::chrono::milliseconds server_timeout_;
-    //rclcpp::Node::SharedPtr client_node_;
-    //rclcpp::Service<sgd_msgs::srv::ComputePath>::SharedPtr compute_path_srv;
-    //rclcpp_action::Client<nav2_msgs::action::FollowWaypoints>::SharedPtr waypoint_follower_action_client_;
-    //nav2_msgs::action::FollowWaypoints::Goal waypoint_follower_goal_;
-    //rclcpp_action::ClientGoalHandle<nav2_msgs::action::FollowWaypoints>::SharedPtr waypoint_follower_goal_handle_;
 
     /**
      * @brief Publish the waypoints to show on the map

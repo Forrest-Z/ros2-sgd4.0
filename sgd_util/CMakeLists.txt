@@ -24,7 +24,8 @@ find_package(visualization_msgs REQUIRED)
 include_directories(include)
 
 set(library_name ${PROJECT_NAME}_core)
-set(CPP_FILES src/sgd_util.cpp src/geotools.cpp include/sgd_util/ieee_754_conv.hpp)
+set(CPP_FILES src/geotools.cpp include/sgd_util/ieee_754_conv.hpp)
+set(HPP_FILES include/sgd_util/angle_utils.hpp)
 set(dependencies
   geometry_msgs
   tf2
@@ -32,7 +33,8 @@ set(dependencies
 )
 
 add_library(${library_name} SHARED
-  ${CPP_FILES})
+  ${CPP_FILES}
+  ${HPP_FILES})
 
 ament_target_dependencies(${library_name}
   ${dependencies})
@@ -76,12 +78,15 @@ install(
 enable_testing()
 
 add_executable(test_geotools test/test_geotools.cpp)
+add_executable(test_angle_utils test/test_angle_utils.cpp)
 target_link_libraries(test_geotools gtest_main ${library_name})
+target_link_libraries(test_angle_utils gtest_main)
 
 #file(COPY test/data DESTINATION ${CMAKE_BINARY_DIR}/lib/test)
 
 include(GoogleTest)
 gtest_discover_tests(test_geotools)
+gtest_discover_tests(test_angle_utils)
 
 ament_export_include_directories(include)
 ament_export_libraries(${library_name})

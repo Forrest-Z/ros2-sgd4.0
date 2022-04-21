@@ -60,6 +60,11 @@ Global_Planner_OSM::on_activate(const rclcpp_lifecycle::State & state __attribut
     a_star_users = std::make_shared<A_Star_Users>(users_filename);
     a_star = std::make_unique<A_Star>(map_filename, a_star_users);
 
+    // read address file
+    std::string line, json = "";
+    std::ifstream infile(adr_filename);
+    infile >> js;
+
     publisher_path_->on_activate();
 
     return wait_for_transform();
@@ -119,7 +124,6 @@ Global_Planner_OSM::init_pub_sub()
     //     "FollowWaypoints");
     // waypoint_follower_goal_ = nav2_msgs::action::FollowWaypoints::Goal();
 
-    server_timeout_ = std::chrono::milliseconds(10);
     RCLCPP_INFO(get_logger(), "Publisher and subscriber initialized.");
 }
 
@@ -198,21 +202,9 @@ void
 Global_Planner_OSM::getMapInfo(const std::shared_ptr<sgd_msgs::srv::GetMapInfo::Request> request,
                                std::shared_ptr<sgd_msgs::srv::GetMapInfo::Response> response)
 {
-    // read address file and user file
-    RCLCPP_INFO(get_logger(), "Service get_map_info callback");
-
-    // read address file
-    std::string line, json = "";
-    std::ifstream infile(adr_filename);
-    while (std::getline(infile, line))
-    {
-        json.append(line);
-    }
-    infile.close();
-
-    response->address_json = json;
+    // send json and list with usernames
+    response->address_json = js.dump();
     response->usernames = a_star_users->get_user_list();
-    RCLCPP_INFO(get_logger(), "Service response filled.");
 }
 
 void
@@ -239,7 +231,20 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
     ROUTE best_route_;
     best_route_.cost = 1E9;
 
-    for (int dest_id : request->dest_ids)
+    // get destination ids from json
+    std::vector<int> dest_ids;
+    for (auto& adr : js["addresslist"])
+    {
+        if (adr["address"] == request->dest_id)
+        {
+            for (auto& nd : adr["node"])
+            {
+                dest_ids.push_back(std::stoi(nd.get<std::string>()));
+            }
+        }
+    }
+
+    for (int dest_id : dest_ids)
     {
         RCLCPP_INFO(get_logger(), "Compute path to node %d", dest_id);
         try
@@ -271,7 +276,19 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
     }    
 
     RCLCPP_INFO(get_logger(), "Route has %d waypoints", best_route_.waypoints.size());
+    std::vector<geometry_msgs::msg::Point> points;
+    for (auto ll : best_route_.waypoints)
+    {
+        geometry_msgs::msg::Point pnt;
+        auto xy = ll.to_local(map_origin);
+        pnt.x = xy.first;
+        pnt.y = xy.second;
+        pnt.z = 0.0;
+        points.push_back(pnt);
+    }
+
     response->length = best_route_.length_m;
+    response->waypoints = points;
     
     // publish path
     auto poses = create_poses_from_waypoints(best_route_.waypoints);

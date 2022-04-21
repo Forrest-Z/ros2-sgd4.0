@@ -13,6 +13,13 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+include(FetchContent)
+FetchContent_Declare(
+  json
+  URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz
+)
+FetchContent_MakeAvailable(json)
+
 #include(FetchContent)
 #FetchContent_Declare(
 #  googletest
@@ -59,7 +66,8 @@ include_directories(include)
 # add executable
 set(EXE_NAME global_planner)
 add_executable(${EXE_NAME} src/global_planner.cpp src/a_star.cpp src/a_star_node.cpp src/a_star_users.cpp)
-target_link_libraries(${EXE_NAME} sgd_util::sgd_util_core)
+target_link_libraries(${EXE_NAME} sgd_util::sgd_util_core nlohmann_json::nlohmann_json)
+#target_link_libraries(${EXE_NAME} PRIVATE nlohmann_json::nlohmann_json)
 ament_target_dependencies(${EXE_NAME} ${dependencies})
 
 #add_executable(navigator src/navigator.cpp)

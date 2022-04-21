@@ -78,7 +78,6 @@ LatLon::interpolate(LatLon other, int points_to_insert)
         LatLon ll(lat_ + delta_lat*(i+1)/(points_to_insert+1), 
                 lon_ + delta_lon*(i+1)/(points_to_insert+1));
         vec_ll.push_back(ll);
-        std::cout << "Insert LatLon " << ll.lat_ << ", " << ll.lon_ << std::endl;
     }
     return vec_ll;
 }
