@@ -290,8 +290,13 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
     response->length = best_route_.length_m;
     response->waypoints = points;
     
+    //Smoothen path
+    path_smoothing path_object;
+    auto smoothened_path = path_object.smoothen_path(best_route_.waypoints);
+
+    
     // publish path
-    auto poses = create_poses_from_waypoints(best_route_.waypoints);
+    auto poses = create_poses_from_waypoints(smoothened_path);
     publish_path(poses);
 }
 
