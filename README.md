@@ -39,6 +39,12 @@ sick_scan2 | [sick_scan2](https://github.com/SICKAG/sick_scan2) | required
 robot_localization | [robot_localization](https://github.com/cra-ros-pkg/robot_localization/tree/ros2) | required
 Gazebo 11 | [Gazebo](http://gazebosim.org/tutorials?tut=ros2_installing&cat=connect_ros) | optional
 
+## 3rd party libraries
+
+- [GoogleTest](https://github.com/google/googletest)
+- [json](https://github.com/nlohmann/json)
+- [Plog](https://github.com/SergiusTheBest/plog)
+
 ## Installation ROS2 Foxy
 
 Installation wie [hier](https://index.ros.org/doc/ros2/Installation/Foxy/Linux-Development-Setup/) beschrieben.
