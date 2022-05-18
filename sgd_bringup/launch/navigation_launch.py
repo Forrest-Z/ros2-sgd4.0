@@ -46,7 +46,8 @@ def generate_launch_description():
         'use_sim_time': use_sim_time,
         'default_bt_xml_filename': default_bt_xml_filename,
         'map_subscribe_transient_local': map_subscribe_transient_local,
-        'yaml_filename': map_yaml_file}
+        'yaml_filename': map_yaml_file,
+        'log_dir': '~home/.ros/log/'}
 
     configured_params = RewrittenYaml(
             source_file=params_file,
@@ -83,12 +84,12 @@ def generate_launch_description():
             output='screen',
             parameters=[configured_params]),
 
-        #Node(
-        #    package='sgd_controller',
-        #    executable='lidar_obstacle_checker',
-        #    name='lidar_obstacle_checker',
-        #    output='screen',
-        #    parameters=[configured_params]),
+        Node(
+            package='sgd_safety',
+            executable='ros2_obstacle_checker',
+            name='ros2_obstacle_checker',
+            output='screen',
+            parameters=[configured_params]),
 
         Node(
             package='nav2_controller',
@@ -134,26 +135,11 @@ def generate_launch_description():
             arguments=[('__log_level:=debug')],
             parameters=[configured_params]),
 
-        #Node(
-        #    package='sgd_comm',
-        #    executable='serial',
-        #    name='rx8r_serial',
-        #    output='screen',
-        #    parameters=[{'port': '/dev/ttyACM0',
-        #    		     'baud_rate': 115200,
-        #    		     'read_write': 'ro',
-        #                 'logfile': os.path.join('/home/ipp/dev_ws','log','serial_rx8r.log'),
-        #                 'raw': False,
-        #                 'sframe': '$',
-        #                 'stframe': '\n',
-        #                 'log': False,
-        #                 'use_sim_time': use_sim_time}]),
-
-        #Node(
-        #    package='frsky_rx8r',
-        #    executable='frsky_rx8r',
-        #    name='frsky_rx8r',
-        #    output='screen',
-        #    parameters=[configured_params])
+        Node(
+            package='frsky_rx8r',
+            executable='frsky_rx8r',
+            name='frsky_rx8r',
+            output='screen',
+            parameters=[configured_params])
 
     ])

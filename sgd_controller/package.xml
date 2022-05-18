@@ -3,7 +3,7 @@
 <package format="3">
   <name>sgd_controller</name>
   <version>1.0.0</version>
-  <description>Subsumption architecture package</description>
+  <description>SGD Controller package</description>
   <maintainer email="pascal.stahr@haw-hamburg.de">Pascal Stahr</maintainer>
   <license>Apache-2.0</license>
 
@@ -11,8 +11,11 @@
   <depend>rclcpp</depend>
   <depend>rclcpp_lifecyclce</depend>
   <depend>geometry_msgs</depend>
+  <depend>nav2_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
+    <nav2_core plugin="${prefix}/plugins.xml" />
+    <nav2_core plugin="${prefix}/global_planner_plugin.xml" />
   </export>
 </package>

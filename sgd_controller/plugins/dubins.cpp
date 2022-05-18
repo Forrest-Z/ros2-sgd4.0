@@ -1,5 +1,5 @@
 #include <cmath>
-#include "sgd_local_planner/dubins.hpp"
+#include "sgd_controller/plugins/dubins.hpp"
 
 #define EPSILON (10e-10)
 

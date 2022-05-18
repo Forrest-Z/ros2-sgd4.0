@@ -1,12 +1,11 @@
-#include "nav2_util/node_utils.hpp"
 #include <cmath>
 #include <memory>
 #include <string>
 
-#include "sgd_local_planner/dubins.hpp"
-#include "sgd_local_planner/dubins_planner.hpp"
+#include "sgd_controller/plugins/dubins.hpp"
+#include "sgd_controller/plugins/sgd_dubins_planner.hpp"
 
-namespace sgd_local_planner
+namespace sgd_ctrl
 {
 
     void DubinsCurve::configure(
@@ -25,11 +24,23 @@ namespace sgd_local_planner
                                  rclcpp::ParameterValue(0.1));
         node_->declare_parameter(name_ + ".radius", rclcpp::ParameterValue(2.0));
         node_->declare_parameter(name_ + ".global_plan_topic", rclcpp::ParameterValue("global_plan"));
+        node_->declare_parameter(name_ + ".route_info_topic", rclcpp::ParameterValue("route_info"));
+        node_->declare_parameter(name_ + ".route_update_frequ", rclcpp::ParameterValue(1.0));
 
         node_->get_parameter(name_ + ".interpolation_resolution",
                              interpolation_resolution_);
         node_->get_parameter(name_ + ".radius", radius_);
         node_->get_parameter(name_ + ".global_plan_topic", global_plan_topic_);
+
+        std::string route_info_topic;
+        node_->get_parameter(name_ + ".route_info_topic", route_info_topic);
+        pub_route_info = node_->create_publisher<sgd_msgs::msg::RouteInfo>(route_info_topic, default_qos);
+        pub_route_info->on_activate();
+
+        double route_update_frequ_ = 1.0;
+        node_->get_parameter(name_ + ".route_update_frequ", route_update_frequ_);
+        route_update_timeout_ = rclcpp::Duration::from_seconds(1/route_update_frequ_);
+        last_route_update_ = node_->now();
     }
 
     void DubinsCurve::cleanup()
@@ -40,8 +51,11 @@ namespace sgd_local_planner
 
     void DubinsCurve::activate()
     {
-        sub_global_plan = node_->create_subscription<nav_msgs::msg::Path>(global_plan_topic_, rclcpp::QoS(rclcpp::SystemDefaultsQoS()),
-                                                                          std::bind(&DubinsCurve::on_global_plan_received, this, std::placeholders::_1));
+        sub_global_plan = node_->create_subscription<nav_msgs::msg::Path>(global_plan_topic_, default_qos,
+                                std::bind(&DubinsCurve::on_global_plan_received, this, std::placeholders::_1));
+
+        pub_route_info->on_activate();
+        route_analyzer = std::make_unique<RouteAnalyzer>();
 
         RCLCPP_INFO(node_->get_logger(), "Activated plugin %s of type Dubins Curve Planner",
                     name_.c_str());
@@ -51,6 +65,7 @@ namespace sgd_local_planner
     {
         RCLCPP_INFO(node_->get_logger(),
                     "Deactivating plugin %s of type Dubins Curve Planner", name_.c_str());
+        pub_route_info->on_deactivate();
     }
 
     nav_msgs::msg::Path
@@ -84,14 +99,14 @@ namespace sgd_local_planner
         {
             // Wenn global plan available, dann immer die nächsten 2 Punkte mit einbeziehen
             // get next waypoints
-            for (int i = 0; i < 2; i++)
+            for (std::size_t i = 0; i < 2; i++)
             {
                 // add next two waypoints if available
                 if (next_wp_+i >= global_plan.poses.size())      break;
                 goal_poses.push_back(global_plan.poses.at(next_wp_ + i).pose);
             }
 
-            if (distance(global_plan.poses.at(next_wp_), start) < 0.5)
+            if (distance(global_plan.poses.at(next_wp_), start) < 1.0)
             {
                 RCLCPP_INFO(node_->get_logger(), "Reached waypoint %d", next_wp_);
                 // distance to next waypoint is smaller than a threshold, so count up next_wp_
@@ -108,7 +123,7 @@ namespace sgd_local_planner
         global_path.header.frame_id = global_frame_;
 
         // Minimum size for goal poses is 2 (start and end pose)
-        for (int i = 1; i < goal_poses.size(); i++)
+        for (std::size_t i = 1; i < goal_poses.size(); i++)
         {
             DubinsPath path;
             // set start pose
@@ -139,8 +154,16 @@ namespace sgd_local_planner
 
                 pose.header.stamp = node_->now();
                 pose.header.frame_id = global_frame_;
-                global_path.poses.push_back(pose);
+                global_path.poses.push_back(pose); 
             }
+        }
+
+        // if current time - last pub time > publisher frequency
+        if ((node_->now() - last_route_update_) > route_update_timeout_)
+        {
+            auto next_maeuver = route_analyzer->next_step(start.pose.position.x, start.pose.position.y);
+            last_route_update_ = node_->now();
+            RCLCPP_INFO(node_->get_logger(), "Next maneuver is: %s", next_maeuver.text.c_str());
         }
 
         return global_path;
@@ -151,10 +174,20 @@ namespace sgd_local_planner
     {
         global_plan = *path;
         next_wp_ = 0;
+
+        // add waypoints to route analyzer
+        std::vector<std::pair<double, double>> waypoints;
+        for (auto el : path->poses)
+        {
+            waypoints.push_back({el.pose.position.x, el.pose.position.y});
+        }
+        route_analyzer->add_waypoints(waypoints);
+        last_route_update_ = node_->now();    // reset timer
+
         RCLCPP_INFO(node_->get_logger(), "Received global plan with %d waypoints", global_plan.poses.size());
     }
 
-} // namespace sgd_local_planner
+} // namespace sgd_ctrl
 
 #include "pluginlib/class_list_macros.hpp"
-PLUGINLIB_EXPORT_CLASS(sgd_local_planner::DubinsCurve, nav2_core::GlobalPlanner)
+PLUGINLIB_EXPORT_CLASS(sgd_ctrl::DubinsCurve, nav2_core::GlobalPlanner)

@@ -1,4 +1,4 @@
-# Message to control lighting of shared guide dog
+# Message to control lights of shared guide dog
 
 # define some modes
 uint8 FILL = 0

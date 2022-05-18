@@ -12,12 +12,14 @@ from launch.events import Shutdown
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
+from nav2_common.launch import RewrittenYaml
 
 
 def generate_launch_description():
     # Get the launch directory
     bringup_dir = get_package_share_directory('sgd_bringup')
     sim_dir = get_package_share_directory('sgd_gazebo_sim')
+    log_dir = '~/home/.ros/log/'
     launch_dir = os.path.join(bringup_dir, 'launch')
 
     # Launch variables
@@ -100,6 +102,18 @@ def generate_launch_description():
         default_value=os.path.join(bringup_dir, 'worlds', 'lohmuehlenpark.model'),
         description='Full path to world model file to load')
 
+    param_substitutions = {
+        'use_sim_time': sim,
+        'default_bt_xml_filename': default_bt_xml_filename,
+        'map_subscribe_transient_local': 'true',
+        'yaml_filename': map_yaml_file,
+        'log_dir': log_dir}
+
+    configured_params = RewrittenYaml(
+            source_file=params_file,
+            param_rewrites=param_substitutions,
+            convert_types=True)
+
     # Specify the actions
     start_gazebo_server_cmd = ExecuteProcess(
         condition=IfCondition(sim),
@@ -161,7 +175,7 @@ def generate_launch_description():
         condition=IfCondition(PythonExpression(['not ', sim])),
         launch_arguments={'map': map_yaml_file,
                           'use_sim_time': sim,
-                          'params_file': hardware_params_file}.items())
+                          'params_file': params_file}.items())
     
     start_lifecycle_cmd = Node(
         package='sgd_lifecycle_manager',
@@ -170,6 +184,13 @@ def generate_launch_description():
         output='screen',
         emulate_tty=True,
         parameters=[{"launch_file": lfc_launch}])
+
+    start_mcu_cmd = Node(
+        package='sgd_controller',
+        executable='master_control_unit',
+        name='master_control_unit',
+        output='screen',
+        emulate_tty=True)
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -190,13 +211,14 @@ def generate_launch_description():
     ld.add_action(start_robot_state_publisher_cmd)
     ld.add_action(start_gazebo_server_cmd)
     ld.add_action(start_gazebo_client_cmd)
-    ld.add_action(start_rviz_cmd)
     ld.add_action(localization_cmd)
     ld.add_action(navigation_cmd)
     ld.add_action(hardware_cmd)
 
     ld.add_action(start_lifecycle_cmd)
+    ld.add_action(start_mcu_cmd)
 
+    ld.add_action(start_rviz_cmd)
     ## add event handler
     ld.add_action(exit_event_handler)
 

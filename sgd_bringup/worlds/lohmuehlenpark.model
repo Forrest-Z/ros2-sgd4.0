@@ -320,7 +320,7 @@
             <ros>
               <remapping>~/out:=imu</remapping>
             </ros>
-            <gravity>false</gravity>
+            <gravity>true</gravity>
             <topicName>imu</topicName>
             <bodyName>imu_link</bodyName>
             <updateRateHZ>100.0</updateRateHZ>
@@ -421,7 +421,7 @@
       </link>
 
       <link name="gps_link">
-        <pose>0.3 0 0.3 0 0 0</pose>
+        <pose>0.5 0 0.3 0 0 0</pose>
         <inertial>
           <pose>0 0 0 0 0 0</pose>
           <inertia>
@@ -459,22 +459,22 @@
               <horizontal>
                 <noise type="gaussian">
                   <mean>0.0</mean>
-                  <stddev>2e-4</stddev>
+                  <stddev>2e-3</stddev>
                 </noise>
               </horizontal>
               <vertical>
                 <noise type="gaussian">
                   <mean>0.0</mean>
-                  <stddev>2e-4</stddev>
+                  <stddev>2e-3</stddev>
                 </noise>
               </vertical>
             </position_sensing>
           </gps>
           <plugin name="my_gps_plugin" filename="libgazebo_ros_gps_sensor.so">
             <ros>
-              <remapping>~/out:=gps</remapping>
+              <remapping>~/out:=gps_sim</remapping>
             </ros>
-            <frame_name>map</frame_name>
+            <frame_name>earth</frame_name>
           </plugin>
         </sensor>
       </link>
@@ -550,118 +550,6 @@
         <robot_base_frame>base_link</robot_base_frame>
       </plugin>
     </model>
-
-    <!--model name='pine_tree_1'>
-      <static>1</static>
-      <include>
-        <uri>model://pine_tree</uri>
-      </include>
-      <pose>123.781 322.932 0.0 0.0 0.0 0.0</pose>
-    </model>
-
-    <model name='oak_tree_1'>
-      <static>1</static>
-      <include>
-        <uri>model://oak_tree</uri>
-      </include>
-      <pose>121.774 352.101 0.0 0.0 0.0 0.0</pose>
-    </model>
-
-    <model name='oak_tree_2'>
-      <static>1</static>
-      <include>
-        <uri>model://oak_tree</uri>
-      </include>
-      <pose>165.962 328.508 0.0 0.0 0.0 0.0</pose>
-    </model>
-
-    <model name='oak_tree_3'>
-      <static>1</static>
-      <include>
-        <uri>model://oak_tree</uri>
-      </include>
-      <pose>170.27 322.13 0.0 0.0 0.0 0.0</pose>
-    </model>
-
-    <model name='oak_tree_4'>
-      <static>1</static>
-      <include>
-        <uri>model://oak_tree</uri>
-      </include>
-      <pose>175.178 314.877 0.0 0.0 0.0 0.0</pose>
-    </model>
-
-    <model name='oak_tree_5'>
-      <static>1</static>
-      <include>
-        <uri>model://oak_tree</uri>
-      </include>
-      <pose>178.988 309.195 0.0 0.0 0.0 0.0</pose>
-    </model>
-
-    <model name='oak_tree_6'>
-      <static>1</static>
-      <include>
-        <uri>model://oak_tree</uri>
-      </include>
-      <pose>183.061 302.532 0.0 0.0 0.0 0.0</pose>
-    </model>
-
-    <model name='oak_tree_7'>
-      <static>1</static>
-      <include>
-        <uri>model://oak_tree</uri>
-      </include>
-      <pose>187.077 296.613 0.0 0.0 0.0 0.0</pose>
-    </model>
-
-    <model name='oak_tree_8'>
-      <static>1</static>
-      <include>
-        <uri>model://oak_tree</uri>
-      </include>
-      <pose>191.584 289.488 0.0 0.0 0.0 0.0</pose>
-    </model>
-
-    <model name='pfosten_1'>
-      <static>1</static>
-      <include>
-        <uri>model://Absperrpfosten</uri>
-      </include>
-      <pose>233.303 175.946 0.0 0.0 0.0 -0.3634</pose>
-    </model>
-
-    <model name='bt21'>
-      <static>1</static>
-      <include>
-        <uri>model://BT21</uri>
-      </include>
-      <pose>214.702 301.6528 0.0 0.0 0.0 -0.9392</pose>
-    </model>
-
-    <model name='bt5'>
-      <static>1</static>
-      <include>
-        <uri>model://BT5</uri>
-      </include>
-      <pose>183.8912 378.4009 0.0 0.0 0.0 -0.92925</pose>
-    </model>
-
-    <model name='ws3'>
-      <static>1</static>
-      <include>
-        <uri>model://WS3</uri>
-      </include>
-      <pose>121.0375 264.868 0.0 0.0 0.0 2.1584</pose>
-    </model>
-
-    <model name='st69'>
-      <static>1</static>
-      <include>
-        <uri>model://ST69</uri>
-      </include>
-      <pose>195.5546 165.8806 0.0 0.0 0.0 -1.1484</pose>
-    </model-->
 
   </world>
 </sdf>

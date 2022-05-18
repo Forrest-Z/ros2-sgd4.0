@@ -1,21 +1,24 @@
-#ifndef SGD_LOCAL_PLANNER__DUBINS_PLANNER_HPP_
-#define SGD_LOCAL_PLANNER__DUBINS_PLANNER_HPP_
+#ifndef SGD_CONTROLLER__DUBINS_PLANNER_HPP_
+#define SGD_CONTROLLER__DUBINS_PLANNER_HPP_
 
+// C++ includes
 #include <string>
 #include <memory>
 
+// ROS2 base includes
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
-
-#include "nav2_core/global_planner.hpp"
 #include "nav_msgs/msg/path.hpp"
-#include "nav2_util/robot_utils.hpp"
-#include "nav2_util/lifecycle_node.hpp"
-#include "nav2_costmap_2d/costmap_2d_ros.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 
-namespace sgd_local_planner
+// other includes
+#include "nav2_core/global_planner.hpp"
+#include "nav2_costmap_2d/costmap_2d_ros.hpp"
+#include "sgd_msgs/msg/route_info.hpp"
+#include "route_analyzer.hpp"
+
+namespace sgd_ctrl
 {
 
     class DubinsCurve : public nav2_core::GlobalPlanner
@@ -49,7 +52,7 @@ namespace sgd_local_planner
         std::shared_ptr<tf2_ros::Buffer> tf_;
 
         // node ptr
-        nav2_util::LifecycleNode::SharedPtr node_;
+        rclcpp_lifecycle::LifecycleNode::SharedPtr node_;
 
         // Global Costmap
         nav2_costmap_2d::Costmap2D *costmap_;
@@ -64,10 +67,17 @@ namespace sgd_local_planner
         nav_msgs::msg::Path global_path;
 
         // global plan from osm planner
-        int next_wp_; // next waypoint from global plan
+        ulong next_wp_; // next waypoint from global plan
         nav_msgs::msg::Path global_plan;
+
+        rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
         rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_global_plan;
         void on_global_plan_received(const nav_msgs::msg::Path::SharedPtr path);
+
+        rclcpp::Duration route_update_timeout_{1, 0};
+        rclcpp::Time last_route_update_;
+        rclcpp_lifecycle::LifecyclePublisher<sgd_msgs::msg::RouteInfo>::SharedPtr pub_route_info;
+        std::unique_ptr<RouteAnalyzer> route_analyzer;
 
         /**
          * @brief 
@@ -78,10 +88,10 @@ namespace sgd_local_planner
          */
         inline double distance(const geometry_msgs::msg::PoseStamped pos1, const geometry_msgs::msg::PoseStamped pos2)
         {
-            return sqrt(pow(pos1.pose.position.x - pos2.pose.position.x, 2) + pow(pos1.pose.position.y - pos2.pose.position.y, 2));
+            return std::hypot(pos1.pose.position.x - pos2.pose.position.x, pos1.pose.position.y - pos2.pose.position.y);
         }
     };
 
-} // namespace nav2_DubinsCurve_planner
+} // namespace sgd_ctrl
 
-#endif // NAV2_DubinsCurve_PLANNER__STRAIGHT_LINE_PLANNER_HPP_
+#endif // SGD_CONTROLLER__DUBINS_PLANNER_HPP_

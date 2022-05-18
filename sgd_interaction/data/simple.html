@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Shared Guide Dog</title>
+    <link rel="stylesheet" href="sgd_style.css">
+    <meta charset="utf-8" />
+
+    <script type="text/javascript" src="js/eventemitter2.min.js"></script>
+    <script type="text/javascript" src="js/roslib.min.js"></script>
+
+    <script type="text/javascript" src="js/sgd_service.js"></script>
+</head>
+
+<body onload="loadMapData()">
+
+    <header>
+        <div class="haw_logo">
+            <img src="logo_haw_white.svg" alt="Logo HAW" height="50%" />
+        </div>
+    </header>
+
+    <div class="form_input" id="dest_chooser" style="display: flex;">
+        <div class="input_fields">
+            <h1>Zieleingabe</h1>
+            <input class="adrlist" type="text" placeholder="Suche..." id="dest"
+                    onkeyup="filterFunction()" required>
+            <ul id="dropdownList" onclick="dropdownSelect()">
+            </ul>
+        </div>
+        <div class="form_footer">
+            <div class="btn_tab" id="btn-tab-1">
+                <button class="start_button" onclick="handleGoal()">Route</button>
+                <button class="poi_button" onclick="alert('Umgebung')">POI</button>
+            </div>
+        </div>
+    </div>
+    <div class="form_input" id="route_preview">
+        <div class="input_fields">
+            <h1>Route</h1>
+            <ul class="scrollable" id="route_ids">
+            </ul>
+        </div>
+        <div class="form_footer">
+            <div class="btn_tab" id="btn-tab-1">
+                <button class="start_button" onclick="startRoute()">Start</button>
+                <button class="home_button" onclick="window.location.reload();">Home</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="form_input" id="dir_info">
+        <p class="direct_info">Rechts in 150m</p>
+        <div class="input_fields">
+            <div class="nav_img">
+                <img src="arrow_right.svg" alt="Turn right" height="100%" width="100%"/>
+            </div>
+        </div>
+        <div class="form_footer">
+            <div class="btn_tab" id="btn-tab-1">
+                <button class="start_button" onclick="alert('Pause')">Pause</button>
+                <button class="home_button" onclick="window.location.reload();">Home</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p class="copyright">&copy; 2022 HAW Hamburg</p>
+    </footer>
+
+</body>
+
+</html>

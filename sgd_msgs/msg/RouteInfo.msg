@@ -3,7 +3,7 @@
 std_msgs/Header header
 
 # next maneuver
-string nextManeuver
+string next_maneuver
 
 # distance until next maneuver
 uint16 distance

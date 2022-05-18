@@ -94,13 +94,13 @@ controller_server:
 
     # Progress checker parameters
     progress_checker:
-      plugin: "nav2_controller::SimpleProgressChecker"
+      plugin: "sgd_ctrl::SgdProgressChecker"
       required_movement_radius: 0.5
-      movement_time_allowance: 10.0
+      movement_time_allowance: 30.0
     # Goal checker parameters
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.5
+      xy_goal_tolerance: 1.0
       yaw_goal_tolerance: 0.5
       stateful: True
     # DWB parameters
@@ -111,18 +111,18 @@ controller_server:
       min_vel_y: 0.0
       max_vel_x: 0.5
       max_vel_y: 0.0
-      max_vel_theta: 0.3
+      max_vel_theta: 0.5
       min_speed_xy: 0.0
       max_speed_xy: 0.5
       min_speed_theta: 0.0
       # Add high threshold velocity for turtlebot 3 issue.
       # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
-      acc_lim_x: 1.0
+      acc_lim_x: 0.05
       acc_lim_y: 0.0
-      acc_lim_theta: 0.8
-      decel_lim_x: -1.0
+      acc_lim_theta: 0.4
+      decel_lim_x: -0.1
       decel_lim_y: 0.0
-      decel_lim_theta: -0.8
+      decel_lim_theta: -0.4
       vx_samples: 20
       vy_samples: 5
       vtheta_samples: 20
@@ -130,7 +130,7 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.2
-      xy_goal_tolerance: 0.50
+      xy_goal_tolerance: 1.0
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: True
       stateful: True
@@ -250,9 +250,9 @@ planner_server:
     plugins: ["GridBased"]
     use_sim_time: False
     GridBased:
-      plugin: "sgd_local_planner/DubinsCurve"
+      plugin: "sgd_ctrl::DubinsCurve"
       interpolation_resolution: 0.1
-      radius: 1.0
+      radius: 0.5
 
 planner_server_rclcpp_node:
   ros__parameters:
@@ -283,11 +283,11 @@ robot_state_publisher:
 
 subsum_controller:
   ros__parameters:
-    move_topics: ["cmd_vel_master", "cmd_vel_lidar", "cmd_vel_frsky", "cmd_vel"]
+    move_topics: ["cmd_vel_master", "cmd_vel_lidar", "cmd_vel_frsky", "cmd_vel_laser", "cmd_vel"]
     sgd_move_topic: "sgd_move_base"
     use_sim_time: False
 
-lidar_obstacle_checker:
+ros2_obstacle_checker:
   ros__parameters:
     use_sim_time: False
     scan_topic: "scan"
@@ -301,22 +301,58 @@ osm_planner:
     clicked_point_topic: "clicked_point"
     yaml_filename: "lohmuehlenpark.yaml"
 
-frsky_rx8r:
-  ros__parameters:
-    use_sim_time: False
-    port: "/dev/ttyACM0"
-    max_vel: 0.5
-    max_rot_vel: 0.5
-
-uwb_node:
-  ros__parameters:
-    use_sim_time: False
-    port: "/dev/ttyUSB0"
-    tag_defs: "uwb_tag_defs.yaml"
-    publish_wgs84_pose: True
-
 visualizer:
   ros__parameters:
     use_sim_time: False
     topics: ["uwb_local", "gps_local"]
+
+### Hardware parameters ###
+sick_scan2:
+  ros__parameters:
+    use_sim_time: False
+    hostname : "141.22.33.150"
+    frame_id : "base_scan"
+    scanner_name : "sick_tim_5xx"
+    port : 2112
+    min_ang : -2.35619449
+    max_ang : 2.35619449
+
+ublox6_gps:
+  ros__parameters:
+    use_sim_time: False
+    port: "/dev/serial/by-id/usb-u-blox_AG_-_www.u-blox.com_u-blox_GNSS_receiver-if00"
+    parser_file: "/home/pascal/dev_ws/src/ros2-sgd4.0/sgd_bringup/config/nmea.xml"
+    parser_type: "nmea"
+    publish_local_pose: True
+    publish_tf: True
+
+frsky_rx8r:
+  ros__parameters:
+    use_sim_time: False
+    port: "/dev/serial/by-id/usb-Arduino__www.arduino.cc__0042_5573530323435111D172-if00"
+    max_vel: 1.0
+    max_rot_vel: 0.5
+
+wh_fcruiser:
+  ros__parameters:
+    use_sim_time: False
+    port: "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0"
+    odom_topic: "odom"
+
+uwb_node:
+  ros__parameters:
+    use_sim_time: False
+    port: "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_00000000-if00-port0"
+    tag_defs: "uwb_tag_defs.yaml"
+    publish_wgs84_pose: True
+
+feather_handle_ros:
+  ros__parameters:
+    use_sim_time: false
+    port: "/dev/serial/by-id/usb-Adafruit_Feather_M0_C9F072FA50525151322E3120FF0B1C13-if00"
+    imu_topic: "imu"
+
+led_strip:
+  ros__parameters:
+    port: "/dev/serial/by-id/usb-Adafruit_Feather_M0_FAE285E450533830332E3120FF171343-if00"
     

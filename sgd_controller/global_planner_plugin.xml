@@ -1,0 +1,5 @@
+<library path="sgd_controller_plugin">
+	<class name="sgd_controller/DubinsCurve" type="sgd_ctrl::DubinsCurve" base_class_type="nav2_core::GlobalPlanner">
+	  <description>Plugin which generates path from dubins curve.</description>
+	</class>
+</library>
