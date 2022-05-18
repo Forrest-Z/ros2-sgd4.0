@@ -23,6 +23,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "visualization_msgs/msg/marker.hpp"
+#include "sgd_util/geotools.hpp"
+
+#include "tinyxml2.h"
 
 namespace sgd_util
 {
@@ -45,9 +48,13 @@ protected:
   void init_pub_sub();
   rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr publisher;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pub_map_marker;
   std::vector<rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr> subscriber;
 
   double time_at_start_;
+
+  bool is_map_published_;
+  void pub_map_markers();
 
   void on_pose_received(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg, int sensor);
   visualization_msgs::msg::Marker createMarker();

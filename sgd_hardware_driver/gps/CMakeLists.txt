@@ -18,6 +18,8 @@ find_package(nav2_util REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sgd_msgs REQUIRED)
+find_package(sgd_util REQUIRED)
+find_package(sgd_io REQUIRED)
 
 include_directories(include)
 include_directories(lib)
@@ -26,13 +28,15 @@ include_directories(lib)
 add_executable(navilock_ublox6_gps src/navilock_ublox6_gps.cpp)
 
 add_subdirectory(lib)
-target_link_libraries(navilock_ublox6_gps gps_parser_core)
+target_link_libraries(navilock_ublox6_gps gps_parser_core sgd_util::sgd_util_core sgd_io::sgd_io_core)
 
 ament_target_dependencies(navilock_ublox6_gps
     rclcpp
     nav2_util
     sensor_msgs
     sgd_msgs
+    sgd_util
+    sgd_io
 )
 
 install(TARGETS navilock_ublox6_gps

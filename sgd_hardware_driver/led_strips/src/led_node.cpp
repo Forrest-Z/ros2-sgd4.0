@@ -23,7 +23,7 @@ LED_Strip::LED_Strip():
     RCLCPP_DEBUG(get_logger(), "Creating");
 
     declare_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
-    declare_parameter("input_topic", rclcpp::ParameterValue("led"));
+    declare_parameter("input_topic", rclcpp::ParameterValue("lights"));
 }
 
 LED_Strip::~LED_Strip()

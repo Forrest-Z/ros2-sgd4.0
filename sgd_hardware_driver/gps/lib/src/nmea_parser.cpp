@@ -18,11 +18,26 @@
 namespace sgd_hardware_drivers
 {
 
-Nmea_Parser::Nmea_Parser() {}
+Nmea_Parser::Nmea_Parser() {
+    // Write log header file
+    
+    // time_t now = time(0);
+    // tm *ltm = localtime(&now);
+
+    // const char *out = "a-star_%d-%d-%d_%d-%d-%d";
+    // int sz = std::snprintf(nullptr, 0, out, 1900+ltm->tm_year, 1+ltm->tm_mon, ltm->tm_mday,
+    //                         ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
+    // char buf[sz + 1]; // note +1 for null terminator
+    // std::snprintf(&buf[0], sz+1, out, 1900+ltm->tm_year, 1+ltm->tm_mon, ltm->tm_mday,
+    //                         ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
+
+    plog::init(plog::debug, "log/nmea.log");
+}
 
 int
 Nmea_Parser::import_xml(std::string xml_file)
 {
+    PLOGD << "Load xml file " << xml_file;
     tinyxml2::XMLDocument doc;
     doc.LoadFile(xml_file.c_str());
 
@@ -45,6 +60,7 @@ Nmea_Parser::import_xml(std::string xml_file)
             {
                 std::vector<NMEA_PARAM> v;
                 tinyxml2::XMLElement * param = sentenceID->FirstChildElement("param");  // <param ... >
+                //num_params++;
                 
                 while (param != NULL)   // iterate through params
                 {
@@ -71,6 +87,7 @@ Nmea_Parser::parse_msg(std::string msg)
 {
     if (msg.front() != '$') // || line.back() != '\0')
     {
+        PLOGW << "Badly formatted string: " << msg.front();
         Error err(Error::INVALID_ARG, "Badly formatted message: " + msg);
         errors.push_back(err);
         return 1;

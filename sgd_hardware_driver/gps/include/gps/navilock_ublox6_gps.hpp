@@ -22,7 +22,10 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "tf2_ros/transform_listener.h"
+#include "tf2_ros/transform_broadcaster.h"
 #include "tf2_ros/create_timer_ros.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include "tf2/utils.h"
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "sgd_util/geotools.hpp"
@@ -56,9 +59,13 @@ protected:
      * @brief Init parameters
      */
     void init_parameters();
+    bool is_sim_;
     std::string xml_file_;
     std::string parser_type_;
     bool is_pub_local_pose_;
+    bool is_publish_tf_;
+    std::string odom_frame_id_;
+    std::string ros_log_dir_;
 
     /**
      * @brief Initialize publisher
@@ -66,20 +73,61 @@ protected:
     void init_pub_sub();
     rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
     rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::TimerBase::SharedPtr timer_tf_;
     rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::NavSatFix>::SharedPtr pub_navsatfix_;
+    rclcpp_lifecycle::LifecyclePublisher<builtin_interfaces::msg::Time>::SharedPtr pub_utc_time_;
     rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_local_pose_;
+
+    sensor_msgs::msg::NavSatFix last_msg_;
+    double last_heading_ = 0.0;
 
     /**
      * @brief Initialize transforms
      */
     void init_transforms();
+    tf2::Duration transform_tolerance_;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+    std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
     sgd_util::LatLon map_origin;
+
+    // transform from base link to gps frame
+    geometry_msgs::msg::Transform tf_base_gps_;
     
     sgd_io::Serial serial;
     void read_serial();
 
+    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr sub_gps_sim;
+    void on_gps_sim_received(sensor_msgs::msg::NavSatFix::SharedPtr msg);
+
+    /**
+     * @brief Publish transform
+     * 
+     */
+    void publish_tf();
+    double heading_ = 0.0;
+
+    /**
+     * @brief 
+     * 
+     * @param msg 
+     * @return geometry_msgs::msg::PoseWithCovarianceStamped 
+     */
+    geometry_msgs::msg::PoseWithCovarianceStamped to_local(sensor_msgs::msg::NavSatFix msg);
+
+    /**
+     * @brief Get the transform from source_frame to target_frame
+     * 
+     * @param target_frame 
+     * @param source_frame 
+     * @return geometry_msgs::msg::TransformStamped 
+     */
+    geometry_msgs::msg::TransformStamped get_transform(const std::string target_frame, const std::string source_frame);
+
     std::unique_ptr<IGPS_Message> parser_;
-    //void on_serial_received(const sgd_msgs::msg::Serial::SharedPtr msg);
+
+    // logging
+    std::ofstream log_file;
 };
 
 }       // namespace sgd_hardware

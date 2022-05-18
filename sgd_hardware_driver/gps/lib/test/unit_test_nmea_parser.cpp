@@ -23,7 +23,7 @@ static const double error = 1/1E6;
 TEST(NmeaParserTest, ImportXmlOk)
 {
   const std::string xml_file = BASE_PATH + "/nmea_ok.xml";
-  sgd_hardware::Nmea_Parser parser;
+  sgd_hardware_drivers::Nmea_Parser parser;
   parser.import_xml(xml_file);
 
   EXPECT_FALSE(parser.has_error()) << parser.get_last_error().to_string();
@@ -32,7 +32,7 @@ TEST(NmeaParserTest, ImportXmlOk)
 TEST(NmeaParserTest, ImportXmlBadFormat)
 {
   const std::string xml_file = BASE_PATH + "/nmea_bad.xml";
-  sgd_hardware::Nmea_Parser parser;
+  sgd_hardware_drivers::Nmea_Parser parser;
   parser.import_xml(xml_file);
 
   EXPECT_TRUE(parser.has_error());
@@ -41,7 +41,7 @@ TEST(NmeaParserTest, ImportXmlBadFormat)
 TEST(NmeaParserTest, ParseNmeaMsgOk)
 {
   const std::string xml_file = BASE_PATH + "/nmea_ok.xml";
-  sgd_hardware::Nmea_Parser parser;
+  sgd_hardware_drivers::Nmea_Parser parser;
   parser.import_xml(xml_file);
 
   ASSERT_FALSE(parser.has_error()) << parser.get_last_error().to_string();
@@ -51,7 +51,7 @@ TEST(NmeaParserTest, ParseNmeaMsgOk)
 
   ASSERT_FALSE(parser.has_error()) << parser.get_last_error().to_string();
 
-  EXPECT_NEAR(parser.time(), 39233.0, error);
+  EXPECT_NEAR(parser.gps_time(), 39233.0, error);
   EXPECT_NEAR(parser.latitude(), 53.6829550, error);
   EXPECT_NEAR(parser.longitude(), 9.7296933, error);
   double hdop = std::get<double>(parser.get_data("hdop").first);
