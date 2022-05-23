@@ -91,7 +91,7 @@ cd ~/dev_ws/src
 Anschließend können die Dateien von GitHub geklont und gebaut werden. Beim Bauen muss unbedingt darauf geachtet werden, dass nur aus dem `~/dev_ws` Verzeichnis gebaut wird.
 
 ```
-cd ~/dev_ws
+cd ~/dev_ws/src
 git clone https://github.com/PStahr-HAW/ros2-sgd4.0.git
 rosdep install -y -r -q --from-paths src --ignore-src --rosdistro foxy
 
