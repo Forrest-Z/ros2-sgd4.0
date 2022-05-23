@@ -35,7 +35,8 @@ def generate_launch_description():
     param_substitutions = {
         'use_sim_time': use_sim_time,
         'yaml_filename': map_yaml_file,
-        'tag_defs': os.path.join(bringup_dir, 'config', 'uwb_tag_defs.yaml')}
+        'tag_defs': os.path.join(bringup_dir, 'config', 'uwb_tag_defs.yaml'),
+        'parser_file': os.path.join(bringup_dir, 'config', 'nmea.xml')}
 
     configured_params = RewrittenYaml(
         source_file=params_file,
@@ -64,7 +65,7 @@ def generate_launch_description():
 
     # Provide the transform between earth and map frame
     # this is the transformation in WGS84 coordinates to map origin specified in <map>.yaml
-    start_tf2_ros_cmd = Node(
+    start_tf_earth_map_cmd = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
         output='screen',
@@ -74,7 +75,8 @@ def generate_launch_description():
         package='tf2_ros',
         executable='static_transform_publisher',
         output='screen',
-        arguments=["190.0", "213.0", "0.0", "0.5505", "0.0", "0.0", "map", "odom"])
+        #arguments=["190.0", "213.0", "0.0", "0.0", "0.0", "0.0", "map", "odom"])
+        arguments=["0.0", "0.0", "0.0", "0.0", "0.0", "0.0", "map", "odom"])
 
     start_map_server_cmd = Node(
         package='nav2_map_server',
@@ -83,15 +85,13 @@ def generate_launch_description():
         output='screen',
         parameters=[configured_params])
 
-    start_wgs_to_local_cmd = Node(
-        package='sgd_util',
-        executable='wgs_to_local',
-        name='wgs_to_local',
-        output='screen',
-        parameters=[{
-            "gps_topic": "gps",
-            "gps_local_topic": "gps_local"
-        }])
+    start_gps_cmd = Node(
+        package="gps",
+        executable="navilock_ublox6_gps",
+        name="ublox6_gps",
+        output="screen",
+        emulate_tty=True,
+        parameters=[configured_params])
 
     start_amcl_cmd = Node(
         package='nav2_amcl',
@@ -106,7 +106,7 @@ def generate_launch_description():
         name='ekf_filter_node_odom',
         output='screen',
         parameters=[{os.path.join(bringup_dir, 'config', 'dual_ekf.yaml')},
-                    {'use_sim_time': use_sim_time}])
+                        {'use_sim_time': use_sim_time}])
 
     start_map_ekf_cmd = Node(
         package='robot_localization',
@@ -115,6 +115,15 @@ def generate_launch_description():
         output='screen',
         parameters=[{os.path.join(bringup_dir, 'config', 'dual_ekf.yaml')},
                     {'use_sim_time': use_sim_time}])
+
+    start_localizer_odom_base = Node(
+        package='sgd_localization',
+        executable='localizer',
+        name='localization_odom_base',
+        output='screen',
+        emulate_tty=True,
+        parameters=[configured_params]
+    )
 
     start_uwb_cmd = Node(
         package='uwb',
@@ -133,6 +142,22 @@ def generate_launch_description():
         emulate_tty=True,
         parameters=[configured_params])
 
+    start_motorcontroller_cmd = Node(
+        package='motorcontroller',
+        name='wh_fcruiser',
+        executable='motorcontroller',
+        output='screen',
+        emulate_tty=True,
+        parameters=[configured_params])
+
+    start_feather_handle_cmd = Node(
+        package='feather_handle',
+        executable='feather_handle_ros',
+        name='feather_handle_ros',
+        output='screen',
+        emulate_tty=True,
+        parameters=[configured_params])
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -141,17 +166,22 @@ def generate_launch_description():
     ld.add_action(declare_map_cmd)
     ld.add_action(declare_params_cmd)
 
-    # Add the actions to launch all of the navigation nodes
-    ld.add_action(start_tf2_ros_cmd)
-    ld.add_action(start_tf2_global_cmd)
-    ld.add_action(start_map_server_cmd)
-    # transform from WGS84 to local coordinates is only required in simulation
-    if (use_sim_time):
-        ld.add_action(start_wgs_to_local_cmd)
-    ld.add_action(start_amcl_cmd)
+    # nodes publishing transforms
+    ld.add_action(start_tf_earth_map_cmd)
+    #ld.add_action(start_tf2_global_cmd)
     ld.add_action(start_odom_ekf_cmd)
     #ld.add_action(start_map_ekf_cmd)
+    ld.add_action(start_gps_cmd)
+    #ld.add_action(start_localizer_odom_base)
+
+    # Add the actions to launch all of the navigation nodes
+    ld.add_action(start_map_server_cmd)
+    # transform from WGS84 to local coordinates is only required in simulation
+    ld.add_action(start_amcl_cmd)
     ld.add_action(start_uwb_cmd)
     ld.add_action(start_visualizer_cmd)
+
+    #ld.add_action(start_motorcontroller_cmd)
+    #ld.add_action(start_feather_handle_cmd)
 
     return ld

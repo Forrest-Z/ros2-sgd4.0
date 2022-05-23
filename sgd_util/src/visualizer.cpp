@@ -46,6 +46,7 @@ Visualizer::Visualizer() : rclcpp::Node("visualizer"),
 
     // Initialize parameters, pub/sub, services, etc.
     init_pub_sub();
+    is_map_published_ = false;
 }
 
 Visualizer::~Visualizer()
@@ -54,9 +55,70 @@ Visualizer::~Visualizer()
 }
 
 void
+Visualizer::pub_map_markers()
+{
+    // read *.nav file and display points
+    tinyxml2::XMLDocument doc;
+    doc.LoadFile("/home/pascal/dev_ws/src/ros2-sgd4.0/sgd_bringup/maps/lohmuehlenpark.nav");
+    // check error
+    if (doc.ErrorID())
+    {
+        std::cerr << doc.ErrorStr();
+        return;
+    }
+
+    if (doc.RootElement() == NULL)
+    {
+        std::cerr << "Error reading map file\n";
+        return;
+    }
+
+    // go through all nodes
+    visualization_msgs::msg::Marker marker;
+    marker.header.stamp = now();
+    marker.header.frame_id = "map";
+    marker.ns = "sgd";
+    marker.id = now().nanoseconds();
+    marker.type = visualization_msgs::msg::Marker::POINTS;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.scale.x = 0.1;
+    marker.scale.y = 0.1;
+    //marker.scale.z = 10.05;
+    marker.lifetime.sec = 0;
+    std::bitset<3> b{4};
+    marker.color.a = 1.0;
+    marker.color.r = b[0];
+    marker.color.g = b[1];
+    marker.color.b = b[2];
+
+    sgd_util::LatLon origin(53.5532264, 10.0192452);
+    tinyxml2::XMLElement *next_node = doc.RootElement()->FirstChildElement("node");
+    while (next_node != NULL)
+    {
+        long next_id = strtol(next_node->Attribute("id"), NULL, 10);
+        sgd_util::LatLon latlon_(strtod(next_node->Attribute("lat"), NULL), strtod(next_node->Attribute("lon"), NULL));
+        // get local coordinates
+        auto xy = latlon_.to_local(origin);
+
+        geometry_msgs::msg::Point pnt;
+        pnt.x = xy.first;
+        pnt.y = xy.second;
+        pnt.z = 1.0;
+        marker.points.push_back(pnt);
+        marker.colors.push_back(marker.color);
+
+        next_node = next_node->NextSiblingElement();
+    }
+    RCLCPP_INFO(get_logger(), "Publish marker array with %d entries.", marker.points.size());
+    pub_map_marker->publish(marker);
+    return;
+}
+
+void
 Visualizer::init_pub_sub()
 {
     publisher = this->create_publisher<visualization_msgs::msg::Marker>("pose_visualization", default_qos);
+    pub_map_marker = this->create_publisher<visualization_msgs::msg::Marker>("map_visualization", default_qos);
 
     for (uint8_t i = 0; i < in_topics_.size(); i++)
     {
@@ -72,6 +134,12 @@ Visualizer::init_pub_sub()
 void
 Visualizer::on_pose_received(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg, int sensor)
 {
+    if (!is_map_published_)
+    {
+        pub_map_markers();
+        is_map_published_ = true;
+    }
+
     auto marker = createMarker();
     marker.header = msg->header;
     marker.pose = msg->pose.pose;

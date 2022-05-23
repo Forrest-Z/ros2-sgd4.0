@@ -20,8 +20,8 @@ Serial::open_port(std::string port, int baud_rate)
     if (rec_state_ > RECEIVER_STATE::ESTABLISH)
     {
         // connection already established
-        throw io_exception("Could not open connection to serial port. Connection already established.");
-        return;
+        //throw io_exception("Could not open connection to serial port. Connection already established.");
+        //return;
     }
 
     struct termios tty_;

@@ -23,7 +23,7 @@ UWB_Node::UWB_Node():
     // declare parameters with default values
     declare_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
     declare_parameter("tag_defs", rclcpp::ParameterValue("uwb_tag_defs.yaml"));
-    declare_parameter("msg_regex", rclcpp::ParameterValue("'anch': (\\d+), 'dist': '([0-9A-F]+)', 'type': '(-?\\d+)', 'src': '(-?\\d+)'"));
+    declare_parameter("msg_regex", rclcpp::ParameterValue("\"anch\":(\\d+),\"dist\":\"([0-9A-F]+)\",\"type\":\"(\\w+)\",\"src\":(-?\\d+)"));
     declare_parameter("publish_wgs84_pose", rclcpp::ParameterValue(true));
     declare_parameter("exp_meas_frequ", rclcpp::ParameterValue(10));
 
@@ -45,6 +45,7 @@ UWB_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unus
 
     try
     {
+        RCLCPP_INFO(get_logger(), "Open serial port %s", port.c_str());
         serial.set_start_frame('{');
         serial.set_stop_frame('\n');
         serial.open_port(port, 115200);
@@ -190,7 +191,7 @@ UWB_Node::read_serial()
         std::smatch matches;
         std::string msg = serial.get_msg();
         std::regex_search(msg, matches, regex_);
-        
+
         int tag_id;
         double dist;
         // example msg: {'anch': 16661, 'dist': '0A262C4277A9E33F', 'type': 'rng', 'src': 21505}
@@ -199,8 +200,9 @@ UWB_Node::read_serial()
             tag_id = std::stoi(matches[1]);
 
             dist = sgd_util::toDouble(matches[2].str(), true);
-            real_x = std::stoi(matches[3]) / 1000.0;
-            real_y = std::stoi(matches[4]) / 1000.0;
+            //real_x = std::stoi(matches[3]) / 1000.0;
+            //real_y = std::stoi(matches[4]) / 1000.0;
+            //RCLCPP_INFO(get_logger(), "Received dist: %.3f", dist);
             
             // add range to optimizer
             if (optimizer->measuredRanges.find(tag_id) != optimizer->measuredRanges.end())
@@ -229,7 +231,7 @@ UWB_Node::publish_pose(double x, double y)
 {
     //RCLCPP_INFO(get_logger(), "Computed position: %.5f %.5f\tOriginal: %.2f %.2f", x - 165.8265, y - 273.4229,
     //                            real_x, real_y);
-
+    RCLCPP_INFO(get_logger(), "Pos: %.3f, %.3f", x, y);
     // publish position
     geometry_msgs::msg::PoseWithCovarianceStamped pose;
     pose.header.frame_id = "map";

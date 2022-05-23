@@ -27,7 +27,7 @@ class LatLon
 {
 private:
     static constexpr double LATLON_TO_METER = M_PI / 180.0 * 6378137.0;
-    static constexpr double METER_TO_LATLON = 1 / LATLON_TO_METER;
+    static constexpr double METER_TO_LATLON = 1.0 / LATLON_TO_METER;
 
     double lat_, lon_;
 
@@ -43,7 +43,8 @@ public:
     void set_local_coordinates(LatLon origin, double x, double y);
 
     /**
-     * @brief Calculate the euclidian distance from this Lat/Lon to the other Lat/Lon
+     * @brief Calculate the euclidian distance from this Lat/Lon to the other Lat/Lon and returns the
+     * distance in meters.
      * 
      * @param another_latlon the other Lat/Lon
      * @return double the distance
@@ -82,10 +83,18 @@ public:
      * so be careful when using this for large distances
      * 
      * @param other the LatLon to interpolate to
-     * @param points_to_insert how many points to insert
+     * @param points_to_insert how many points to insert, defaults to 1
      * @return the vector containing only the new points
      */
     std::vector<LatLon> interpolate(LatLon other, int points_to_insert = 1);
+
+    /**
+     * @brief Calculates the bearing between the path from this position to the other position. The north axis is defined as 0.
+     * 
+     * @param other 
+     * @return bearing in the interval [0;2*PI]
+     */
+    double bearing(LatLon other);
 
     /**
      * @brief Create string <lat, lon> with 7 digits precision

@@ -121,7 +121,7 @@ namespace sgd_safety
             cmd_vel.linear.x = 0.0;
             pub_cmd_vel->publish(cmd_vel);
         }
-        else if ((now().seconds() - cmd_vel_time) < 1)
+        else if ((now().seconds() - cmd_vel_time) < 1 && speed < 1.0)
         {
             pub_cmd_vel->publish(cmd_vel);
         }

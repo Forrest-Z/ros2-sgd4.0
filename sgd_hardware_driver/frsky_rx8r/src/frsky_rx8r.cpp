@@ -94,7 +94,7 @@ FrSky_RX8R::read_serial()
     if (serial.read_serial())
     {
         std::string msg = serial.get_msg();
-        RCLCPP_INFO(get_logger(), "End of message reached: %c", msg.c_str());
+        //RCLCPP_INFO(get_logger(), "End of message reached: %c", msg.c_str());
 
         if (msg.find("RX8R") == std::string::npos)
         {

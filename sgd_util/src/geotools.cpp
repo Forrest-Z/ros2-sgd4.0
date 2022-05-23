@@ -9,21 +9,21 @@ LatLon::LatLon()
     lon_ = 0.0;
 }
 
-LatLon::LatLon(double lat, double lon) :
+LatLon::LatLon(const double lat, const double lon) :
     lat_(lat), lon_(lon)
 {}
 
 LatLon::~LatLon() {}
 
 void
-LatLon::set_global_coordinates(double lat, double lon)
+LatLon::set_global_coordinates(const double lat, const double lon)
 {
     lat_ = lat;
     lon_ = lon;
 }
 
 void
-LatLon::set_local_coordinates(LatLon origin, double x, double y)
+LatLon::set_local_coordinates(const LatLon origin, const double x, const double y)
 {
     // convert local to WGS84
     lat_ = origin.lat_ + y * METER_TO_LATLON;
@@ -31,17 +31,17 @@ LatLon::set_local_coordinates(LatLon origin, double x, double y)
 }
 
 double
-LatLon::distance_to(LatLon another_latlon)
+LatLon::distance_to(const LatLon another_latlon)
 {
     auto xy = to_local(another_latlon);
+    //return std::hypot(xy.first, xy.second);
     return std::sqrt(std::pow(xy.first, 2) + std::pow(xy.second, 2));
 }
 
 double
-LatLon::distance_to(double lat, double lon)
+LatLon::distance_to(const double lat, const double lon)
 {
-    auto xy = to_local(lat, lon);
-    return std::sqrt(std::pow(xy.first, 2) + std::pow(xy.second, 2));
+    return distance_to(LatLon(lat, lon));
 }
 
 std::pair<double, double>
@@ -67,7 +67,7 @@ LatLon::lon() {
 }
 
 std::vector<LatLon>
-LatLon::interpolate(LatLon other, int points_to_insert)
+LatLon::interpolate(const LatLon other, int points_to_insert)
 {
     // TODO: Take into account the spherical curvature of the earth...
     // Only if we're gonna interpolate points more than 5 km apart.
@@ -81,6 +81,21 @@ LatLon::interpolate(LatLon other, int points_to_insert)
         vec_ll.push_back(ll);
     }
     return vec_ll;
+}
+
+double
+LatLon::bearing(const LatLon other)
+{
+    auto ang = atan2((other.lat_-lat_)/180*M_PI, (other.lon_-lon_)/180*M_PI*cos(lat_/180*M_PI)) * -1.0 + M_PI_2;
+    if (ang < 0)
+    {
+        ang += 2*M_PI;
+    } else if (ang > 2*M_PI)
+    {
+        ang -= 2*M_PI;
+    }
+
+    return ang;
 }
 
 std::string

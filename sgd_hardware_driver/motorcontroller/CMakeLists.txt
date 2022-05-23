@@ -1,44 +1,51 @@
 cmake_minimum_required(VERSION 3.5)
 project(motorcontroller)
 
-# Default to C++14
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
-endif()
+# Default to C++17
+set(CMAKE_CXX_STANDARD 14)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+include(FetchContent)
+FetchContent_Declare(
+  json
+  URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz
+)
+FetchContent_MakeAvailable(json)
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(sgd_msgs REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
-find_package(nav2_util REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
+find_package(sgd_io REQUIRED)
 
 include_directories(include)
 
 # add executable
-add_executable(wh_fcruiser src/wh_fcruiser.cpp)
-ament_target_dependencies(wh_fcruiser
+set(exe_name motorcontroller)
+
+add_executable(${exe_name} src/motorcontroller_ros.cpp include/motorcontroller/wh_fcruiser.hpp)
+target_link_libraries(${exe_name} nlohmann_json::nlohmann_json sgd_io::sgd_io_core)
+ament_target_dependencies(${exe_name}
   rclcpp
-  sgd_msgs
+  rclcpp_lifecycle
+  sgd_io
   geometry_msgs
   nav_msgs
   sensor_msgs
   tf2_ros
   tf2_geometry_msgs
-  nav2_util
 )
 
 install(
-  TARGETS wh_fcruiser
+  TARGETS ${exe_name}
   DESTINATION lib/${PROJECT_NAME})
   
 install(

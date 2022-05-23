@@ -31,11 +31,8 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "geometry_msgs/msg/point_stamped.hpp"
-#include "nav2_msgs/action/follow_waypoints.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "yaml-cpp/yaml.h"
-
-//#include "nav2_util/lifecycle_node.hpp"
 
 #include "sgd_msgs/srv/get_global_plan.hpp"
 #include "sgd_msgs/srv/get_map_info.hpp"
@@ -78,6 +75,7 @@ protected:
     std::string waypoints_topic_;
     std::string clicked_point_topic_;
     std::string yaml_filename_;
+    std::string ros_log_dir;
 
     //! \brief Init Publisher and subscriber
     void init_pub_sub();

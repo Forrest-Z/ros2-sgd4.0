@@ -3,14 +3,15 @@
 ekf_filter_node_odom:
   ros__parameters:
     frequency: 10.0
-    sensor_timeout: 0.5
+    sensor_timeout: 0.1
     two_d_mode: true
     transform_time_offset: 0.0
     transform_timeout: 0.0
     print_diagnostics: true
     debug: false
-    debug_out_file: "/home/ipp/dev_ws/log/ekf_filter_node_odom.txt"
+    debug_out_file: "/home/pascal/dev_ws/log/ekf_filter_node_odom.txt"
     publish_tf: true
+    publish_acceleration: false
     
     map_frame: map
     odom_frame: odom
@@ -21,12 +22,24 @@ ekf_filter_node_odom:
     odom0_config: [true,  true,  false,
                    false, false, false,
                    false, false, false,
-                   false, false, true,
+                   false, false, false,
                    false, false, false]
-    odom0_queue_size: 1
+    odom0_queue_size: 2
     odom0_nodelay: false
     odom0_differential: false
-    odom0_relative: true
+    odom0_relative: false
+
+    imu0: /imu
+    imu0_config: [false, false, false,
+                  false, false,  true,
+                  false, false, false,
+                  false, false, false,
+                  false, false, false]
+    imu0_nodelay: false
+    imu0_differential: false
+    imu0_relative: false
+    imu0_queue_size: 20
+    imu0_remove_gravitational_acceleration: true
 
     #use_control: false
 
@@ -63,7 +76,7 @@ ekf_filter_node_odom:
     #                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    1.0]
 ekf_filter_node_map:
   ros__parameters:
-    frequency: 4.0
+    frequency: 1.0
     sensor_timeout: 0.5
     two_d_mode: true
     transform_time_offset: 0.0
@@ -94,36 +107,13 @@ ekf_filter_node_map:
     pose0_config: [true,  true,  false,
                    false, false, false,
                    false, false, false,
-                   false, false, false,
+                   false, false, true,
                    false, false, false]
     pose0_differential: false
     pose0_relative: true
     pose0_queue_size: 1
     pose0_rejection_threshold: 50.0
     pose0_nodelay: false
-
-    odom0: /odom
-    odom0_config: [true,  true,  false,
-                   false, false, false,
-                   false, false, false,
-                   false, false, true,
-                   false, false, false]
-    odom0_queue_size: 1
-    odom0_nodelay: false
-    odom0_differential: false
-    odom0_relative: true
-
-    #pose1: /amcl_pose
-    #pose1_config: [true,  true,  false,
-    #               false, false, true,
-    #               false, false, false,
-    #               false, false, false,
-    #               false, false, false]
-    #pose1_differential: false
-    #pose1_relative: false
-    #pose1_queue_size: 1
-    #pose1_rejection_threshold: 5.0
-    #pose1_nodelay: false
 
     smooth_lagged_data: true
     use_control: false

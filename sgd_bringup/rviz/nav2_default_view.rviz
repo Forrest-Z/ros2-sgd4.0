@@ -530,6 +530,18 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /pose_visualization
       Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: MapMarker
+      Namespaces:
+        sgd: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /map_visualization
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -564,7 +576,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
+      Angle: 3.14159
       Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549

@@ -11,8 +11,8 @@ int main(int argc, char **argv)
 {
   rclcpp::init(argc, argv);
 
-  if (argc != 3) {
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "usage: add_two_ints_client X Y");
+  if (argc != 2) {
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "usage: client <address>");
       return 1;
   }
 
@@ -21,9 +21,7 @@ int main(int argc, char **argv)
     node->create_client<sgd_msgs::srv::GetGlobalPlan>("get_global_plan");
 
   auto request = std::make_shared<sgd_msgs::srv::GetGlobalPlan::Request>();
-  //request->dest_id = "{100000200, 100004800, 100012300}";
-  request->dest_id = "Berliner Tor 21";
-  //request->b = atoll(argv[2]);
+  request->dest_id = std::string(argv[1]);
 
   while (!client->wait_for_service(1s)) {
     if (!rclcpp::ok()) {

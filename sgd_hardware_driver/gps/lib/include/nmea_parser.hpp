@@ -15,6 +15,9 @@
 #ifndef GPS__NMEA_PARSER_HPP_
 #define GPS__NMEA_PARSER_HPP_
 
+#include <ctime>
+#include <chrono>
+
 #include <fstream>
 #include <iostream>
 
@@ -31,6 +34,8 @@
 
 #include "nmea_param.hpp"
 #include "tinyxml2.h"
+#include <plog/Log.h>
+#include "plog/Initializers/RollingFileInitializer.h"
 
 #include "IGPS_Message.hpp"
 

@@ -1,0 +1,11 @@
+{
+    "addresslist" : [
+        {"address":"Berliner Tor 21", "nodes": ["100020404", "100013400"]},
+        {"address": "Berliner Tor 5", "nodes": ["1741175461", "313339214", "4623635466"]},
+        {"address": "Berliner Tor 7", "nodes": ["1741175439", "1741175455"]},
+        {"address": "Berliner Tor 3", "nodes": ["364125358"]},
+        {"address": "Stiftraße 69", "nodes": ["7156477916", "5139451961"]},
+        {"address": "Testfahrt1", "nodes": ["261831268"]},
+        {"address": "Testfahrt2", "nodes": ["5018571326"]}
+    ]
+}

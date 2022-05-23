@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nmea>
+
+<!-- 
+	0: genau eine Zahl
+	c: genau ein Zeichen
+	+: ein oder mehrmals das vorige Token
+	?: 0 oder ein Mal das vorige Token
+	*: 0 oder mehrmals das vorige Token
+	\: escape character
+ -->
+
+	<!-- GPRMC,105353.000,A,5340.9773,N,00943.7816,E,0.00,182.10,150321,,,A*6F -->
+	<sentenceId name="GPRMC" parse="false">
+		<param type="time">(\d{2})(\d{2})(\d{2}\.\d{3})</param> 		<!-- UTC of pos fix -->
+		<param type="char">c</param> 				<!-- status -->
+		<param type="double64">0000.0000</param> 	<!-- latitude -->
+		<param type="char">c</param> 				<!-- direction -->
+		<param type="double64">00000.0000</param> 	<!-- longitude -->
+		<param type="char">c</param> 				<!-- direction -->
+		<param type="double">0.00</param> 			<!-- speed over ground -->
+		<param type="double">0+.00</param> 			<!-- track made good -->
+		<param type="time">ddmmyy</param> 			<!-- UTC date of fix -->
+		<param type="double">0+.00</param> 			<!-- magnetic variation -->
+		<param type="char">c</param> 				<!-- variation sense -->
+		<param type="checksum">c\*cc</param>
+	</sentenceId>
+
+	<!-- GPGGA,105353.000,5340.9773,N,00943.7816,E,1,08,0.9,15.2,M,45.1,M,,0000*64 -->
+	<sentenceId name="GNGGA" parse="true">
+		<param name="time" type="time">(\d{2})(\d{2})(\d{2}\.\d{2})</param>
+		<param name="latitude" type="latlon">(\d{2})(\d{2}\.\d{7})</param>
+		<param name="dir_NS" type="string">[NS]</param>
+		<param name="longitude" type="latlon">(\d{3})(\d{2}\.\d{7})</param>
+		<param name="dir_EW" type="string">[EW]</param>
+		<param name="status" type="int">[012]</param> <!-- status indicator -->
+		<param type="int">(\d+)</param>    	<!-- number of sats -->
+		<param name="hdop" type="double">(\d+\.\d+)</param>     <!-- HDOP -->
+		<param type="double">(\d+\.\d+)</param>    	<!-- antenna height -->
+		<param type="char">\w</param>  		<!-- antenna height unit -->
+		<param type="double">(\d+\.\d+)</param>    	<!-- geoidal separation -->
+		<param type="char">\w</param> 		<!-- geoidal separation unit -->
+		<param type="double">(\d+\.\d+)</param> 	<!-- age of diff. data -->
+		<param type="int">(\d{4})</param> 		<!-- station ID -->
+		<param type="checksum">([0-9A-F]+\*[0-9A-F]{2})</param>
+	</sentenceId>
+
+	<!-- GPGLL,5340.9773,N,00943.7816,E,105353.000,A,A*56 -->
+	<sentenceId name="GPGLL" parse="false">
+		<param name="latitude" type="double">ddmm.mmmm</param>
+		<param name="dir_NS" type="char">c</param>
+		<param name="longitude" type="double">ddmmm.mmmm</param>
+		<param name="dir_EW" type="char">c</param>
+		<param name="time" type="time">hhmmss.sss</param>
+		<param name="status" type="char">c</param>
+		<param type="checksum">([0-9A-F]+\*[0-9A-F]{2})</param>
+	</sentenceId>
+
+	<!-- GPGSA,A,3,15,19,24,17,25,06,12,32,,,,,1.6,0.9,1.3*31 -->
+	<sentenceId name="GNGSA" parse="true">
+		<param type="char">[MA]</param> 		<!-- aquisition mode -->
+		<param name="fix" type="int">[123]</param>
+		<param type="int">(\d{2})</param> 		<!-- sat prn used -->
+		<param type="int">(\d{2})</param> 		<!-- sat prn used -->
+		<param type="int">(\d{2})</param> 		<!-- sat prn used -->
+		<param type="int">(\d{2})</param> 		<!-- sat prn used -->
+		<param type="int">(\d{2})</param> 		<!-- sat prn used -->
+		<param type="int">(\d{2})</param> 		<!-- sat prn used -->
+		<param type="int">(\d{2})</param> 		<!-- sat prn used -->
+		<param type="int">(\d{2})</param> 		<!-- sat prn used -->
+		<param type="int">(\d{2})</param> 		<!-- sat prn used -->
+		<param type="int">(\d{2})</param> 		<!-- sat prn used -->
+		<param type="int">(\d{2})</param> 		<!-- sat prn used -->
+		<param type="int">(\d{2})</param> 		<!-- sat prn used -->
+		<param type="double">(\d\.\d)</param> 		<!-- position dilution of precision -->
+		<param type="double">(\d\.\d)</param> 	<!-- horizontal dilution -->
+		<param type="double">(\d\.\d)</param> 	<!-- vertical dilution -->
+		<param type="checksum">([0-9A-F]+\*[0-9A-F]{2})</param>
+	</sentenceId>
+
+	<!-- GPGSV,3,1,12,01,03,001,,02,00,131,,06,09,099,29,10,12,273,20*78
+		 GPGSV,3,2,12,12,64,235,23,15,19,183,26,17,28,046,34,19,44,069,27*76
+		 GPGSV,3,3,12,23,02,244,24,24,72,137,29,25,22,244,16,32,26,312,30*74 -->
+	<sentenceId name="GPGSV" parse="false">
+		<param type="int">0</param> 		<!-- number of messages -->
+		<param type="int">0</param> 		<!-- message number -->
+		<param type="int">0+</param> 		<!-- satellites in view -->
+		<param type="int">00</param> 		<!-- sat prn number -->
+		<param type="int">00</param> 		<!-- elevation (deg) -->
+		<param type="int">000</param> 		<!-- azimuth (deg True) -->
+		<param type="int">00</param> 		<!-- SNR (dB) -->
+		<param type="int">00</param> 		<!-- sat prn number -->
+		<param type="int">00</param> 		<!-- elevation (deg) -->
+		<param type="int">000</param> 		<!-- azimuth (deg True) -->
+		<param type="int">00</param> 		<!-- SNR (dB) -->
+		<param type="int">00</param> 		<!-- sat prn number -->
+		<param type="int">00</param> 		<!-- elevation (deg) -->
+		<param type="int">000</param> 		<!-- azimuth (deg True) -->
+		<param type="int">00</param> 		<!-- SNR (dB) -->
+		<param type="int">00</param> 		<!-- sat prn number -->
+		<param type="int">00</param> 		<!-- elevation (deg) -->
+		<param type="int">000</param> 		<!-- azimuth (deg True) -->
+		<param type="int">00</param> 		<!-- SNR (dB) -->
+		<param type="checksum">c\*cc</param>
+	</sentenceId>
+
+	<!-- GPVTG,182.10,T,,M,0.00,N,0.0,K,A*07 -->
+	<sentenceId name="GPVTG" parse="false">
+		<param type="double">0+.00</param>
+		<param type="char">c</param>
+		<param type="double">0+.00</param>
+		<param type="char">c</param>
+		<param type="double">0.00</param>
+		<param type="char">c</param>
+		<param type="double">0.00</param>
+		<param type="char">c</param>
+		<param type="checksum">c\*cc</param>
+	</sentenceId>
+</nmea>

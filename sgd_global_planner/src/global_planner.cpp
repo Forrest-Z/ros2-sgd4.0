@@ -15,6 +15,7 @@ Global_Planner_OSM::Global_Planner_OSM():
     declare_parameter("waypoints_topic", rclcpp::ParameterValue("global_plan"));
     declare_parameter("clicked_point_topic", rclcpp::ParameterValue("clicked_point"));
     declare_parameter("yaml_filename", rclcpp::ParameterValue("map.yaml"));
+    declare_parameter("log_dir", rclcpp::ParameterValue("/home/pascal/.ros/log/"));
 }
 
 Global_Planner_OSM::~Global_Planner_OSM()
@@ -31,6 +32,7 @@ Global_Planner_OSM::on_configure(const rclcpp_lifecycle::State & state __attribu
     get_parameter("waypoints_topic", waypoints_topic_);
     get_parameter("clicked_point_topic", clicked_point_topic_);
     get_parameter("yaml_filename", yaml_filename_);
+    get_parameter("log_dir", ros_log_dir);
 
     init_transforms();
     init_yaml();
@@ -58,7 +60,7 @@ Global_Planner_OSM::on_activate(const rclcpp_lifecycle::State & state __attribut
     RCLCPP_INFO(get_logger(), "Activating");
 
     a_star_users = std::make_shared<A_Star_Users>(users_filename);
-    a_star = std::make_unique<A_Star>(map_filename, a_star_users);
+    a_star = std::make_unique<A_Star>(map_filename, a_star_users, ros_log_dir);
 
     // read address file
     std::string line, json = "";
@@ -102,9 +104,6 @@ Global_Planner_OSM::init_pub_sub()
 {
     publisher_path_ = this->create_publisher<nav_msgs::msg::Path>(waypoints_topic_, default_qos);
     
-    //sub_clicked_point_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
-    //    clicked_point_topic_, default_qos, std::bind(&Global_Planner_OSM::computePath, this, _1));
-
     RCLCPP_INFO(get_logger(), "Initialised publisher on topic %s",
             waypoints_topic_.c_str());
 
@@ -113,16 +112,6 @@ Global_Planner_OSM::init_pub_sub()
         std::bind(&Global_Planner_OSM::getMapInfo, this, _1, _2));
     compute_path_srv = create_service<sgd_msgs::srv::GetGlobalPlan>("get_global_plan",
         std::bind(&Global_Planner_OSM::computePath, this, _1, _2));
-    
-    // create waypoint follower action
-    // auto options = rclcpp::NodeOptions().arguments(
-    //     {"--ros-args --remap __node:=navigation_dialog_action_client"});
-    // client_node_ = std::make_shared<rclcpp::Node>("_follow", options);
-    // waypoint_follower_action_client_ = 
-    //     rclcpp_action::create_client<nav2_msgs::action::FollowWaypoints>(
-    //     client_node_,
-    //     "FollowWaypoints");
-    // waypoint_follower_goal_ = nav2_msgs::action::FollowWaypoints::Goal();
 
     RCLCPP_INFO(get_logger(), "Publisher and subscriber initialized.");
 }
@@ -232,29 +221,40 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
     best_route_.cost = 1E9;
 
     // get destination ids from json
-    std::vector<int> dest_ids;
+    std::vector<int64_t> dest_ids;
     for (auto& adr : js["addresslist"])
     {
         if (adr["address"] == request->dest_id)
         {
-            for (auto& nd : adr["node"])
+            for (auto& nd : adr["nodes"])
             {
-                dest_ids.push_back(std::stoi(nd.get<std::string>()));
+                try
+                {
+                    dest_ids.push_back(std::stoll(nd.get<std::string>()));
+                }
+                catch(const std::exception& e)
+                {
+                    RCLCPP_ERROR(get_logger(), "Could not parse %s", nd.get<std::string>().c_str());
+                }
             }
         }
     }
 
-    for (int dest_id : dest_ids)
+    RCLCPP_INFO(get_logger(), "Set start position to %s", position.to_string().c_str());
+    a_star->set_start(position);
+
+    for (auto dest_id : dest_ids)
     {
         RCLCPP_INFO(get_logger(), "Compute path to node %d", dest_id);
         try
         {
             // set start and destination
-            a_star->set_start(position);
+            RCLCPP_INFO(get_logger(), "Set dest position to %d", dest_id);
             a_star->set_dest(dest_id);
 
+            RCLCPP_INFO(get_logger(), "Start path computation");
             auto route = a_star->compute_path();
-            if (route.cost < best_route_.cost)
+            if (route.waypoints.size() > 2 && route.cost < best_route_.cost)
             {
                 best_route_ = route;
             }
@@ -262,9 +262,71 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
         }
         catch(const std::exception& e)
         {
-            std::cerr << e.what() << '\n';
             RCLCPP_WARN(get_logger(), "Path computation error: %s", e.what());
         }
+    }
+
+    if (request->dest_id == "Testfahrt1")
+    {
+        // temporary path for BSVH demonstration -> Testfahrt1
+        std::vector<sgd_util::LatLon> tmp_ll_;
+        sgd_util::LatLon ll0(53.5554353, 10.0219323);
+        tmp_ll_.push_back(ll0);
+        sgd_util::LatLon ll1(53.5554552, 10.0219729);
+        tmp_ll_.push_back(ll1);
+        sgd_util::LatLon ll2(53.5554757, 10.0220057);
+        tmp_ll_.push_back(ll2);
+        sgd_util::LatLon ll3(53.5554877, 10.0220434);
+        tmp_ll_.push_back(ll3);
+        sgd_util::LatLon ll4(53.5555123, 10.022077);
+        tmp_ll_.push_back(ll4);
+        sgd_util::LatLon ll5(53.5555369, 10.0221107);
+        tmp_ll_.push_back(ll5);
+        sgd_util::LatLon ll6(53.5555562, 10.0221566);
+        tmp_ll_.push_back(ll6);
+        sgd_util::LatLon ll7(53.5555944, 10.0221975);
+        tmp_ll_.push_back(ll7);
+        sgd_util::LatLon ll8(53.555633, 10.0222388);
+        tmp_ll_.push_back(ll8);
+        sgd_util::LatLon ll9(53.5556698, 10.0222595);
+        tmp_ll_.push_back(ll9);
+        sgd_util::LatLon ll10(53.5557055, 10.0222795);
+        tmp_ll_.push_back(ll10);
+        sgd_util::LatLon ll11(53.5557346, 10.022296);
+        tmp_ll_.push_back(ll11);
+        best_route_.waypoints = tmp_ll_;
+    }
+    else if (request->dest_id == "Testfahrt2")
+    {
+        // temporary path for BSVH demonstration -> Testfahrt2
+        std::vector<sgd_util::LatLon> tmp_ll_;
+        sgd_util::LatLon ll1(53.5557375, 10.0222817);
+        tmp_ll_.push_back(ll1);
+        sgd_util::LatLon ll2(53.5557083, 10.0222652);
+        tmp_ll_.push_back(ll2);
+        sgd_util::LatLon ll3(53.5556726, 10.0222451);
+        tmp_ll_.push_back(ll3);
+        sgd_util::LatLon ll4(53.5556408, 10.0222114);
+        tmp_ll_.push_back(ll4);
+        sgd_util::LatLon ll5(53.555604, 10.0221719);
+        tmp_ll_.push_back(ll5);
+        sgd_util::LatLon ll6(53.5555668, 10.022132);
+        tmp_ll_.push_back(ll6);
+        sgd_util::LatLon ll7(53.5555426, 10.0220989);
+        tmp_ll_.push_back(ll7);
+        sgd_util::LatLon ll8(53.555518, 10.0220653);
+        tmp_ll_.push_back(ll8);
+        sgd_util::LatLon ll9(53.5554946, 10.0220338);
+        tmp_ll_.push_back(ll9);
+        sgd_util::LatLon ll10(53.5554836, 10.0219986);
+        tmp_ll_.push_back(ll10);
+        sgd_util::LatLon ll11(53.5554722, 10.0219631);
+        tmp_ll_.push_back(ll11);
+        sgd_util::LatLon ll12(53.5554591, 10.0219233);
+        tmp_ll_.push_back(ll12);
+        sgd_util::LatLon ll13(53.5554267, 10.0219118);
+        tmp_ll_.push_back(ll13);
+        best_route_.waypoints = tmp_ll_;
     }
 
     // we need at least two waypoints to get a valid path
@@ -273,9 +335,8 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
         RCLCPP_WARN(get_logger(), "No route available.");
         response->length = -1;
         return;
-    }    
+    }
 
-    RCLCPP_INFO(get_logger(), "Route has %d waypoints", best_route_.waypoints.size());
     std::vector<geometry_msgs::msg::Point> points;
     for (auto ll : best_route_.waypoints)
     {
@@ -291,11 +352,12 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
     response->waypoints = points;
     
     //Smoothen path
-    PathSmoothing path_object;
-    auto smoothened_path = path_object.smoothen_path(best_route_.waypoints);
+    //PathSmoothing path_object;
+    //auto smoothened_path = path_object.smoothen_path(best_route_.waypoints);
     
+    RCLCPP_INFO(get_logger(), "Route has %d waypoints", best_route_.waypoints.size());
     // publish path
-    auto poses = create_poses_from_waypoints(smoothened_path);
+    auto poses = create_poses_from_waypoints(best_route_.waypoints);
     publish_path(poses);
 }
 

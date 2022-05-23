@@ -18,11 +18,14 @@
 #include "sgd_global_planner/a_star.hpp"
 
 static std::string BASE_PATH("");
+static std::string ROS_LOG_DIR("");
 
 TEST(TestAStar, ComputeWayDest)
 {
   // compute way for different destinations
-  nav_sgd::A_Star a_star(BASE_PATH + "map.nav", BASE_PATH + "users.xml");
+  std::shared_ptr<nav_sgd::A_Star_Users> a_star_users = std::make_shared<nav_sgd::A_Star_Users>(BASE_PATH + "users.xml");
+  auto t = std::chrono::system_clock::now().time_since_epoch().count();
+  nav_sgd::A_Star a_star(BASE_PATH + "lohmuehlenpark.nav", a_star_users, ROS_LOG_DIR + "a_star_" + std::to_string(t) + ".log");
 }
 
 TEST(TestAStar, ComputeWayUsers)
@@ -38,7 +41,8 @@ TEST(TestAStar, ComputeWayLength)
 int main(int argc, char **argv)
 {
   auto exe = std::string(argv[0]);
-  BASE_PATH = exe.substr(0,exe.find_last_of("/")) + "/test/data";
+  BASE_PATH = exe.substr(0,exe.find_last_of("/")) + "/test/data/";
+  ROS_LOG_DIR = exe.substr(0, exe.find_last_of("/")) + "../log/";
 
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

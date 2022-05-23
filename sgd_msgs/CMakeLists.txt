@@ -21,6 +21,8 @@ set(msg_files
   "msg/Light.msg"
   "msg/Touch.msg"
   "msg/SpeedAccel.msg"
+  "msg/RouteInfo.msg"
+  "msg/SensorDiagnostics.msg"
 )
 
 set(srv_files

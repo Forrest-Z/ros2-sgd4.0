@@ -79,7 +79,7 @@ public:
     virtual bool msg_complete() = 0;
 
     //! \brief Returns timestamp of last valid gps message.
-    double time() {
+    double gps_time() {
         return data_double_.find("time") != data_double_.end() ? data_double_.at("time") : 0;
     }
 

@@ -1,0 +1,12 @@
+<class_libraries>
+  <library path="sgd_progress_checker">
+    <class type="sgd_ctrl::SgdProgressChecker" base_class_type="nav2_core::ProgressChecker">
+      <description>Checks if distance between current and previous pose is above a threshold</description>
+    </class>
+  </library>
+  <library path="sgd_dubins_planner">
+	<class type="sgd_ctrl::DubinsCurve" base_class_type="nav2_core::GlobalPlanner">
+	  <description>Plugin which generates path from dubins curve.</description>
+	</class>
+</library>
+</class_libraries>

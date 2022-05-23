@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Shared Guide Dog</title>
+<link rel="stylesheet" href="sgd_style.css">
+
+<script type="text/javascript" src="js/eventemitter2.min.js"></script>
+<script type="text/javascript" src="js/roslib.min.js"></script>
+
+<script type="text/javascript">
+
+  // var ros = new ROSLIB.Ros({
+  //   url : 'ws://localhost:9090'
+  // });
+
+  function handleGoal() {
+    // get destination from input element
+    let dest = document.getElementById("dest").value;
+    // call service to start path computation
+    var addTwoIntsClient = new ROSLIB.Service({
+      ros : ros,
+      name : '/add_two_ints',
+      serviceType : 'example_interfaces/AddTwoInts'
+    });
+
+    var request = new ROSLIB.ServiceRequest({
+      a : 1,
+      b : 4
+    });
+
+    addTwoIntsClient.callService(request, function(result) {
+      console.log('Result for service call on '
+        + addTwoIntsClient.name
+        + ': '
+        + result.sum);
+    });
+    alert(result);
+  }
+
+</script>
+
+</head>
+<body>
+
+<div class="form_input" style="display: flex;">
+  <div id="dest_chooser" class="input_fields">
+    <h1>Zieleingabe</h1>
+    <input class="adrlist" list="destinations" name="dest" id="dest" required>
+    <datalist id="destinations">
+      <option value="Berliner Tor 21" >
+      <option value="U-Bahn Lohmühlenstraße" >
+      <option value="Stiftstraße 69">
+    </datalist>
+  </div>
+  <div id="route_preview" class="input_fields">
+    <h1>Route</h1>
+    <pre class="scrollable">
+      53.5556457, 10.0214457
+      53.5556431, 10.0214467
+      53.5556408, 10.0214477
+      53.5556392, 10.0214487
+      53.5556457, 10.0214457
+      53.5556431, 10.0214467
+      53.5556408, 10.0214477
+      53.5556392, 10.0214487
+      53.5556457, 10.0214457
+      53.5556431, 10.0214467
+      53.5556408, 10.0214477
+      53.5556392, 10.0214487
+      53.5556457, 10.0214457
+      53.5556431, 10.0214467
+      53.5556408, 10.0214477
+      53.5556392, 10.0214487
+      53.5556457, 10.0214457
+      53.5556431, 10.0214467
+      53.5556408, 10.0214477
+      53.5556392, 10.0214487
+      53.5556457, 10.0214457
+      53.5556431, 10.0214467
+      53.5556408, 10.0214477
+      53.5556392, 10.0214487
+    </pre>
+  </div>
+  <div class="form_footer">
+    <div class="btn_tab" id="btn-tab-1">
+      <button class="start_button" onclick="handleGoal()">Route</button>
+      <button class="poi_button" onclick="alert('Umgebung')">POI</button>
+      <button class="home_button" onclick="window.location.assign('start.html')">Home</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
