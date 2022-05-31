@@ -14,6 +14,9 @@ find_package(rclcpp_lifecycle REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
+find_package(realsense2 REQUIRED)
+##target_link_libraries(${PROJECT_NAME} ${realsense2_LIBRARY})
+
 include(FetchContent)
 FetchContent_Declare(
   googletest
