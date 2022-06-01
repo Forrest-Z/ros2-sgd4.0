@@ -132,7 +132,6 @@ def generate_launch_description():
             name='osm_planner',
             output='screen',
             emulate_tty=True,
-            arguments=[('__log_level:=debug')],
             parameters=[configured_params]),
 
         Node(

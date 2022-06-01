@@ -18,8 +18,7 @@ from nav2_common.launch import RewrittenYaml
 def generate_launch_description():
     # Get the launch directory
     bringup_dir = get_package_share_directory('sgd_bringup')
-    sim_dir = get_package_share_directory('sgd_gazebo_sim')
-    log_dir = '~/home/.ros/log/'
+    #sim_dir = get_package_share_directory('sgd_gazebo_sim')
     launch_dir = os.path.join(bringup_dir, 'launch')
 
     # Launch variables
@@ -28,10 +27,12 @@ def generate_launch_description():
 
     # Create the launch configuration variables
     map_yaml_file = LaunchConfiguration('map')
-    #osm_map_file = LaunchConfiguration('osm_map')
     params_file = LaunchConfiguration('params_file')
-    hardware_params_file = LaunchConfiguration('hardware_params_file')
     default_bt_xml_filename = LaunchConfiguration('default_bt_xml_filename')
+
+    # Variables for logging
+    log_dir = LaunchConfiguration('log_dir')
+    log_severity = LaunchConfiguration('log_severity')
 
     # Launch configuration variables specific to simulation
     rviz_config_file = LaunchConfiguration('rviz_config_file')
@@ -87,6 +88,18 @@ def generate_launch_description():
             bringup_dir, 'behavior_trees', 'navigate_w_replanning_and_recovery_sgd.xml'),
         description='Full path to the behavior tree xml file to use')
 
+    declare_log_dir_cmd = DeclareLaunchArgument(
+        'log_dir',
+        default_value=os.path.join(os.path.expanduser('~'), '.ros', 'log'),
+        description='Path to log directory'
+    )
+
+    declare_log_sev_cmd = DeclareLaunchArgument(
+        'log_severity',
+        default_value='I',
+        description='Log severity - E/W/I/D/V - Error/Warn/Info/Debug/Verbose'
+    )
+
     declare_rviz_config_file_cmd = DeclareLaunchArgument(
         'rviz_config_file',
         default_value=os.path.join(bringup_dir, 'rviz', 'nav2_default_view.rviz'),
@@ -104,10 +117,13 @@ def generate_launch_description():
 
     param_substitutions = {
         'use_sim_time': sim,
+        'log_dir': log_dir,
+        'log_severity': log_severity,
         'default_bt_xml_filename': default_bt_xml_filename,
         'map_subscribe_transient_local': 'true',
         'yaml_filename': map_yaml_file,
-        'log_dir': log_dir}
+        'tag_defs': os.path.join(bringup_dir, 'config', 'uwb_tag_defs.yaml'),
+        'parser_file': os.path.join(bringup_dir, 'config', 'nmea.xml')}
 
     configured_params = RewrittenYaml(
             source_file=params_file,
@@ -154,28 +170,26 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'slam_launch.py')),
             condition=IfCondition(slam),
             launch_arguments={'use_sim_time': sim,
-                            'params_file': params_file}.items())
+                              'params_file': configured_params}.items())
 
     localization_cmd = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'localization_launch.py')),
             condition=IfCondition(PythonExpression(['not ', slam])),
             launch_arguments={'map': map_yaml_file,
-                            'use_sim_time': sim,
-                            'params_file': params_file}.items())
+                              'use_sim_time': sim,
+                              'params': configured_params}.items())
 
     navigation_cmd = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'navigation_launch.py')),
             launch_arguments={'use_sim_time': sim,
-                            'params_file': params_file,
-                            'default_bt_xml_filename': default_bt_xml_filename,
-                            'map_subscribe_transient_local': 'true'}.items())
+                              'params_file': configured_params}.items())
 
     hardware_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(launch_dir, 'hardware_launch.py')),
-        condition=IfCondition(PythonExpression(['not ', sim])),
+        #condition=IfCondition(PythonExpression(['not ', sim])),
         launch_arguments={'map': map_yaml_file,
                           'use_sim_time': sim,
-                          'params_file': params_file}.items())
+                          'params': params_file}.items())
     
     start_lifecycle_cmd = Node(
         package='sgd_lifecycle_manager',
@@ -202,7 +216,8 @@ def generate_launch_description():
     ld.add_action(declare_params_file_cmd)
     ld.add_action(declare_hardware_params_file_cmd)
     ld.add_action(declare_bt_xml_cmd)
-
+    ld.add_action(declare_log_dir_cmd)
+    ld.add_action(declare_log_sev_cmd)
     ld.add_action(declare_rviz_config_file_cmd)
     ld.add_action(declare_simulator_cmd)
     ld.add_action(declare_world_cmd)

@@ -12,6 +12,7 @@ LevMarq::LevMarq()
 std::pair<double, double>
 LevMarq::estimatePose()
 {
+	//std::cout << "Received " << measuredRanges.size() << " ranges." << std::endl;
     LMFunctor functor;
     functor.tags = tags;
 	functor.measuredRanges = measuredRanges;

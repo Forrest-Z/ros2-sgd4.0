@@ -32,7 +32,7 @@ LED_Strip::~LED_Strip()
 }
 
 CallbackReturn
-LED_Strip::on_configure(const rclcpp_lifecycle::State & state)
+LED_Strip::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Configuring");
 
@@ -46,7 +46,7 @@ LED_Strip::on_configure(const rclcpp_lifecycle::State & state)
 }
 
 CallbackReturn
-LED_Strip::on_activate(const rclcpp_lifecycle::State & state)
+LED_Strip::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Activating");
 
@@ -54,21 +54,21 @@ LED_Strip::on_activate(const rclcpp_lifecycle::State & state)
 }
 
 CallbackReturn
-LED_Strip::on_deactivate(const rclcpp_lifecycle::State & state)
+LED_Strip::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Deactivating");
     return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn
-LED_Strip::on_cleanup(const rclcpp_lifecycle::State & state)
+LED_Strip::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Cleanup");
     return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn
-LED_Strip::on_shutdown(const rclcpp_lifecycle::State & state)
+LED_Strip::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Shutdown");
     return CallbackReturn::SUCCESS;
@@ -101,8 +101,7 @@ LED_Strip::on_msg_received(const sgd_msgs::msg::Light::SharedPtr msg)
 std::string
 LED_Strip::compute_msg(const sgd_msgs::msg::Light::SharedPtr msg)
 {
-    std::string light_status = "L";
-    light_status.append(std::to_string(msg->mode)+",");
+    std::string light_status = std::to_string(msg->mode)+",";
     light_status.append(std::to_string(msg->strip)+",");
     light_status.append(std::to_string(msg->rgb[0])+",");
     light_status.append(std::to_string(msg->rgb[1])+",");

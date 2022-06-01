@@ -19,6 +19,7 @@
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
 #include "geometry_msgs/msg/twist.hpp"
+#include "sgd_msgs/msg/light.hpp"
 
 namespace sgd_ctrl
 {
@@ -46,6 +47,7 @@ protected:
     void init_pub_sub();
     rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
     rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::Twist>::SharedPtr pub_cmd_vel;
+    rclcpp_lifecycle::LifecyclePublisher<sgd_msgs::msg::Light>::SharedPtr pub_light_;
     std::vector<rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr> subscriber;
 
     // layer data
@@ -53,6 +55,8 @@ protected:
     std::vector<double> last_time_received_;
 
     void on_cmd_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg, int layer);
+
+    void pub_lights(int layer);
 
 public:
     Subsum_Controller();

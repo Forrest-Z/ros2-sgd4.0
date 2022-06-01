@@ -56,7 +56,7 @@
 
     <!-- The model must be included in the world file to ensure the proper connection between the frames -->
     <model name="blindenhund">
-      <pose>190 213 0.12 0 0 0.5505</pose>
+      <pose>178 238 0.12 0 0 2.0</pose>
 
       <link name="base_link">
         <pose>0 0 0 0 0 0</pose>
@@ -249,7 +249,7 @@
       </link>
 
       <link name="imu_link">
-        <pose>0 0 0.3 0 0 0</pose>
+        <pose>0.4 0 0.95 0 0 0</pose>
         <visual name="imu_visual">
           <pose>0 0 0 0 0 0</pose>
           <geometry>
@@ -349,7 +349,7 @@
       </link>
 
       <link name="base_scan">
-        <pose>0.6 -0 0.3 3.14159 -0 0</pose>
+        <pose>0.85 0 0.42 3.14159 -0 0</pose>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
@@ -421,7 +421,7 @@
       </link>
 
       <link name="gps_link">
-        <pose>0.5 0 0.3 0 0 0</pose>
+        <pose>0.75 0 0.7 0 0 0</pose>
         <inertial>
           <pose>0 0 0 0 0 0</pose>
           <inertia>
@@ -437,18 +437,20 @@
         <visual name="gps_visual">
           <pose>0 0 0 0 0 0</pose>
           <geometry>
-            <box>
-              <size>0.05 0.05 0.05</size>
-            </box>
+            <cylinder>
+              <radius>0.05</radius>
+              <length>0.07</length>
+            </cylinder>
           </geometry>
         </visual>
         <collision name="gps_collision">
           <max_contacts>10</max_contacts>
           <pose>0 0 0 0 0 0</pose>
           <geometry>
-            <box>
-              <size>0.05 0.05 0.05</size>
-            </box>
+            <cylinder>
+              <radius>0.05</radius>
+              <length>0.07</length>
+            </cylinder>
           </geometry>
         </collision>
         <sensor name="gps_sensor" type="gps">

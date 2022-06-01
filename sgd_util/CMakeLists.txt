@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(sgd_util)
+project(sgd_util CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -31,6 +31,7 @@ set(HPP_FILES
     include/sgd_util/angle_utils.hpp
     include/sgd_util/sensor_filter.hpp
     include/sgd_util/ieee_754_conv.hpp
+    include/sgd_util/log_utils.hpp
 )
 set(dependencies
   geometry_msgs

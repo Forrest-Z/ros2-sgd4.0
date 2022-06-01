@@ -27,22 +27,22 @@ def generate_launch_description():
     bringup_dir = get_package_share_directory('sgd_bringup')
 
     use_sim_time = LaunchConfiguration('use_sim_time')
-    params_file = LaunchConfiguration('params_file')
+    params = LaunchConfiguration('params')
 
     # Create our own temporary YAML files that include substitutions
-    param_substitutions = {
-        'use_sim_time': use_sim_time,
-        'parser_file': os.path.join(bringup_dir, 'config', 'nmea.xml')}
+    # param_substitutions = {
+    #     'use_sim_time': use_sim_time,
+    #     'parser_file': os.path.join(bringup_dir, 'config', 'nmea.xml')}
 
-    configured_params = RewrittenYaml(
-        source_file=params_file,
-        param_rewrites=param_substitutions,
-        convert_types=True)
+    # configured_params = RewrittenYaml(
+    #     source_file=params_file,
+    #     param_rewrites=param_substitutions,
+    #     convert_types=True)
 
-    declare_params_file_cmd = DeclareLaunchArgument(
-        'params_file',
-        default_value=os.path.join(bringup_dir, 'config', 'sgd_params.yaml'),
-        description='Full path to the ROS2 parameters file to use for all launched nodes')
+    # declare_params_file_cmd = DeclareLaunchArgument(
+    #     'params_file',
+    #     default_value=os.path.join(bringup_dir, 'config', 'sgd_params.yaml'),
+    #     description='Full path to the ROS2 parameters file to use for all launched nodes')
 
     start_sick_lidar_cmd = Node(
         package='sick_scan2',
@@ -50,7 +50,7 @@ def generate_launch_description():
         executable='sick_generic_caller',
         output='screen',
         emulate_tty=True,
-        parameters = [configured_params])
+        parameters = [params])
 
     start_led_strip_cmd = Node(
         package='led_strips',
@@ -58,7 +58,7 @@ def generate_launch_description():
         executable='led_strip',
         output='screen',
         emulate_tty=True,
-        parameters=[configured_params])
+        parameters=[params])
 
     start_motorcontroller_cmd = Node(
         package='motorcontroller',
@@ -66,7 +66,7 @@ def generate_launch_description():
         executable='motorcontroller',
         output='screen',
         emulate_tty=True,
-        parameters=[configured_params])
+        parameters=[params])
 
     start_feather_handle_cmd = Node(
         package='feather_handle',
@@ -74,11 +74,11 @@ def generate_launch_description():
         name='feather_handle_ros',
         output='screen',
         emulate_tty=True,
-        parameters=[configured_params])
+        parameters=[params])
 
     # Create the launch description and populate
     ld = LaunchDescription()
-    ld.add_action(declare_params_file_cmd)
+    #ld.add_action(declare_params_file_cmd)
 
     # Add the actions to launch all of the navigation nodes
     ld.add_action(start_sick_lidar_cmd)

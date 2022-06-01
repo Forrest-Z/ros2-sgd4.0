@@ -13,7 +13,11 @@ FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
 )
-FetchContent_MakeAvailable(googletest)
+FetchContent_Declare(
+  json
+  URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz
+)
+FetchContent_MakeAvailable(googletest json)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -25,6 +29,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(sgd_io REQUIRED)
 find_package(sgd_util REQUIRED)
+find_package(yaml_cpp_vendor REQUIRED)
 
 include_directories(include)
 include_directories(lib)
@@ -33,7 +38,7 @@ set(executable_name uwb_node)
 add_executable(${executable_name} src/uwb_node.cpp)
 
 add_subdirectory(lib)
-target_link_libraries(${executable_name} multilateration_core sgd_io::sgd_io_core)
+target_link_libraries(${executable_name} multilateration_core sgd_io::sgd_io_core nlohmann_json::nlohmann_json)
 
 ament_target_dependencies(${executable_name}
     rclcpp
@@ -44,12 +49,13 @@ ament_target_dependencies(${executable_name}
     visualization_msgs
     sgd_io
     sgd_util
+    yaml_cpp_vendor
 )
 
 install(TARGETS
   ${executable_name}
   RUNTIME DESTINATION lib/${PROJECT_NAME})
-  
+
 install(
   DIRECTORY include/
   DESTINATION include/)

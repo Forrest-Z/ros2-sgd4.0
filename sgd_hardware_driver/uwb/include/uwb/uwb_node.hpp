@@ -20,26 +20,29 @@
 #include <fstream>
 #include <charconv>
 #include <string_view>
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <bitset>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/create_timer_ros.h"
+#include "tf2/utils.h"
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "visualization_msgs/msg/marker.hpp"
 #include "sgd_io/serial.hpp"
 #include "sgd_util/geotools.hpp"
 #include "sgd_util/ieee_754_conv.hpp"
-
-#include "ieee754.h"
+#include "sgd_util/log_utils.hpp"
+#include "yaml-cpp/yaml.h"
 
 #include "include/levmarq.hpp"
-
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <bitset>
+#include "nlohmann/json.hpp"
+#include <plog/Log.h>
+#include "plog/Initializers/RollingFileInitializer.h"
 
 namespace sgd_hardware_drivers
 {
@@ -71,12 +74,18 @@ protected:
     std::regex regex_;
     std::string tag_definitions_;
     bool is_pub_wgs84_pose_;
+    bool is_pub_marker_;
     int exp_frequ_;
     
     /**
      * @brief Initialize publisher and subscriber.
      */
     void init_pub_sub();
+
+    /**
+     * @brief Read the map yaml and parse parameters
+     */
+    CallbackReturn init_yaml();
 
     /**
      * @brief Publish the computed pose
@@ -89,12 +98,19 @@ protected:
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_position_;
     rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::NavSatFix>::SharedPtr pub_wgs84_pose_;
+    rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::Marker>::SharedPtr pub_tag_marker_;
+    rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::Marker>::SharedPtr pub_dist_marker_;
 
     /**
      * @brief Initialize transforms if the local output is set.
      */
     void init_transforms();
+    geometry_msgs::msg::TransformStamped get_transform(std::string target_frame, std::string source_frame);
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
     sgd_util::LatLon map_origin;
+    // transform from base link to uwb frame
+    geometry_msgs::msg::Transform tf_base_uwb_;
 
     /**
      * @brief Class to read from / write to serial port.
@@ -108,13 +124,19 @@ protected:
 
     std::unique_ptr<IMultilateration> optimizer;
 
+    /**
+     * @brief 
+     * 
+     * @param tag_id 
+     */
+    void publish_marker(int tag_id, double x, double y);
+
+    void publish_dist_marker(int tag_id, double dist);
+
     uint num_tags;   // number of tags
     //int num_ranges; // number of received measurements
     bool is_last_estimate_valid;
     double t_last_meas = 0.0;   // time of last received measurement
-
-    // robo position for debugging
-    float real_x, real_y;
 };
 
 }

@@ -2,13 +2,13 @@
 #include <memory>
 #include <string>
 
-#include "sgd_controller/plugins/dubins.hpp"
-#include "sgd_controller/plugins/sgd_dubins_planner.hpp"
+#include "sgd_controller/plugins/path_smoothing.hpp"
+#include "sgd_controller/plugins/sgd_local_planner.hpp"
 
 namespace sgd_ctrl
 {
 
-    void DubinsCurve::configure(
+    void LocalPlanner::configure(
         rclcpp_lifecycle::LifecycleNode::SharedPtr parent, std::string name,
         std::shared_ptr<tf2_ros::Buffer> tf,
         std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros)
@@ -32,6 +32,8 @@ namespace sgd_ctrl
         node_->get_parameter(name_ + ".radius", radius_);
         node_->get_parameter(name_ + ".global_plan_topic", global_plan_topic_);
 
+        path_smoothing = std::make_unique<PathSmoothing>(0.1, 0.9, 1E-6, interpolation_resolution_);
+
         std::string route_info_topic;
         node_->get_parameter(name_ + ".route_info_topic", route_info_topic);
         pub_route_info = node_->create_publisher<sgd_msgs::msg::RouteInfo>(route_info_topic, default_qos);
@@ -43,35 +45,37 @@ namespace sgd_ctrl
         last_route_update_ = node_->now();
     }
 
-    void DubinsCurve::cleanup()
+    void LocalPlanner::cleanup()
     {
-        RCLCPP_INFO(node_->get_logger(), "CleaningUp plugin %s of type Dubins Curve Planner",
+        RCLCPP_INFO(node_->get_logger(), "CleaningUp plugin %s of type SGD Local Planner",
                     name_.c_str());
     }
 
-    void DubinsCurve::activate()
+    void LocalPlanner::activate()
     {
         sub_global_plan = node_->create_subscription<nav_msgs::msg::Path>(global_plan_topic_, default_qos,
-                                std::bind(&DubinsCurve::on_global_plan_received, this, std::placeholders::_1));
+                                std::bind(&LocalPlanner::on_global_plan_received, this, std::placeholders::_1));
 
         pub_route_info->on_activate();
         route_analyzer = std::make_unique<RouteAnalyzer>();
 
-        RCLCPP_INFO(node_->get_logger(), "Activated plugin %s of type Dubins Curve Planner",
+        RCLCPP_INFO(node_->get_logger(), "Activated plugin %s of type SGD Local Planner",
                     name_.c_str());
     }
 
-    void DubinsCurve::deactivate()
+    void LocalPlanner::deactivate()
     {
         RCLCPP_INFO(node_->get_logger(),
-                    "Deactivating plugin %s of type Dubins Curve Planner", name_.c_str());
+                    "Deactivating plugin %s of type SGD Local Planner", name_.c_str());
         pub_route_info->on_deactivate();
     }
 
     nav_msgs::msg::Path
-    DubinsCurve::createPlan(const geometry_msgs::msg::PoseStamped &start,
+    LocalPlanner::createPlan(const geometry_msgs::msg::PoseStamped &start,
                             const geometry_msgs::msg::PoseStamped &goal)
     {
+        //RCLCPP_INFO(node_->get_logger(), "Received goal pose %.2f %.2f", goal.pose.position.x, goal.pose.position.y);
+
         // Checking if the goal and start state is in the global frame
         if (start.header.frame_id != global_frame_)
         {
@@ -94,12 +98,11 @@ namespace sgd_ctrl
         std::vector<geometry_msgs::msg::Pose> goal_poses;
         // add start to poses
         goal_poses.push_back(start.pose);
-        // Check if global plan is available and has the same goal position
         if (global_plan.poses.size() > 0 && distance(goal, global_plan.poses.back()) < 0.5)
         {
             // Wenn global plan available, dann immer die nächsten 2 Punkte mit einbeziehen
             // get next waypoints
-            for (std::size_t i = 0; i < 2; i++)
+            for (std::size_t i = 0; i < global_plan.poses.size(); i++)
             {
                 // add next two waypoints if available
                 if (next_wp_+i >= global_plan.poses.size())      break;
@@ -111,6 +114,7 @@ namespace sgd_ctrl
                 RCLCPP_INFO(node_->get_logger(), "Reached waypoint %d", next_wp_);
                 // distance to next waypoint is smaller than a threshold, so count up next_wp_
                 next_wp_ = (next_wp_ >= global_plan.poses.size()-1) ? next_wp_ : next_wp_+1;
+                route_analyzer->next_wp();
             }
         }
         else
@@ -122,55 +126,75 @@ namespace sgd_ctrl
         global_path.header.stamp = node_->now();
         global_path.header.frame_id = global_frame_;
 
-        // Minimum size for goal poses is 2 (start and end pose)
-        for (std::size_t i = 1; i < goal_poses.size(); i++)
+        //Smoothen path
+        std::vector<xy_pnt> waypoints_;
+        for (auto p : goal_poses)
         {
-            DubinsPath path;
-            // set start pose
-            double q0[] = {goal_poses.at(i-1).position.x, goal_poses.at(i-1).position.y,
-                           tf2::getYaw(goal_poses.at(i-1).orientation)};
-            // Final position (x, y, theta)
-            double q1[] = {goal_poses.at(i).position.x, goal_poses.at(i).position.y,
-                           tf2::getYaw(goal_poses.at(i).orientation)};
-
-            // Calculates and saves the path
-            dubins_shortest_path(&path, q0, q1, radius_);
-            // Samples the path and adds the pose at every step
-            double q[3];
-            double x = 0.0;
-            double length = dubins_path_length(&path);
+            waypoints_.push_back({p.position.x, p.position.y});
+        }
+        
+        auto smoothened_path = path_smoothing->smoothen_path(waypoints_);
+        for (std::size_t i = 0; i < smoothened_path.size(); i++)
+        {
             geometry_msgs::msg::PoseStamped pose;
+            pose.pose.position.x = smoothened_path.at(i).first;
+            pose.pose.position.y = smoothened_path.at(i).second;
+            pose.pose.position.z = 0.0;
+
             tf2::Quaternion qpose;
-            while (x < length)
+            double ang = 0.0;
+            if (i < 1)
             {
-                dubins_path_sample(&path, x, q);
-                x += interpolation_resolution_;
-                pose.pose.position.x = q[0];
-                pose.pose.position.y = q[1];
-                pose.pose.position.z = 0.0;
-
-                qpose.setRPY(0, 0, q[2]);
-                pose.pose.orientation = tf2::toMsg(qpose);
-
-                pose.header.stamp = node_->now();
-                pose.header.frame_id = global_frame_;
-                global_path.poses.push_back(pose); 
+                // no last waypoint available -> take angle to next waypoint
+                ang = atan2(smoothened_path.at(i+1).second - smoothened_path.at(i).second,
+                            smoothened_path.at(i+1).first - smoothened_path.at(i).first);
+                //RCLCPP_INFO(node_->get_logger(), "First waypoint");
             }
+            else if (i >= (smoothened_path.size() - 1))
+            {
+                // no next waypoint available
+                ang = atan2(smoothened_path.at(i).second - smoothened_path.at(i-1).second,
+                            smoothened_path.at(i).first - smoothened_path.at(i-1).first);
+                //RCLCPP_INFO(node_->get_logger(), "Last waypoint");
+            }
+            else
+            {
+                // last and next waypoint available
+                ang = (atan2(smoothened_path.at(i+1).second - smoothened_path.at(i).second,
+                             smoothened_path.at(i+1).first - smoothened_path.at(i).first)
+                     + atan2(smoothened_path.at(i).second - smoothened_path.at(i-1).second,
+                             smoothened_path.at(i).first - smoothened_path.at(i-1).first)) / 2;
+            }
+            // RCLCPP_INFO(node_->get_logger(), "WP %.2f, %.2f ==> Angle: %.2f",
+            //         smoothened_path.at(i).first, smoothened_path.at(i).second, ang);
+            qpose.setRPY(0.0, 0.0, ang);
+            pose.pose.orientation = tf2::toMsg(qpose);
+
+            pose.header.stamp = node_->now();
+            pose.header.frame_id = global_frame_;
+            global_path.poses.push_back(pose); 
         }
 
         // if current time - last pub time > publisher frequency
-        if ((node_->now() - last_route_update_) > route_update_timeout_)
+        if ((node_->now() - last_route_update_) > route_update_timeout_ && goal_poses.size() > 2)
         {
-            auto next_maeuver = route_analyzer->next_step(start.pose.position.x, start.pose.position.y);
+            auto next_maeuver = route_analyzer->info(start.pose.position.x, start.pose.position.y);
             last_route_update_ = node_->now();
-            RCLCPP_INFO(node_->get_logger(), "Next maneuver is: %s", next_maeuver.text.c_str());
+
+            sgd_msgs::msg::RouteInfo info_;
+            info_.header.stamp = node_->now();
+            info_.header.frame_id = "map";
+
+            info_.distance = next_maeuver.distance;
+            info_.angle = next_maeuver.angle;
+            pub_route_info->publish(info_);
         }
 
         return global_path;
     }
 
     void
-    DubinsCurve::on_global_plan_received(const nav_msgs::msg::Path::SharedPtr path)
+    LocalPlanner::on_global_plan_received(const nav_msgs::msg::Path::SharedPtr path)
     {
         global_plan = *path;
         next_wp_ = 0;
@@ -190,4 +214,4 @@ namespace sgd_ctrl
 } // namespace sgd_ctrl
 
 #include "pluginlib/class_list_macros.hpp"
-PLUGINLIB_EXPORT_CLASS(sgd_ctrl::DubinsCurve, nav2_core::GlobalPlanner)
+PLUGINLIB_EXPORT_CLASS(sgd_ctrl::LocalPlanner, nav2_core::GlobalPlanner)

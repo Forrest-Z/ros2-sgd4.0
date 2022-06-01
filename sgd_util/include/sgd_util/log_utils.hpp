@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SGD_UTIL_HPP_
-#define SGD_UTIL_HPP_
+#ifndef SGD_UTIL__LOG_UTILS_HPP_
+#define SGD_UTIL__LOG_UTILS_HPP_
 
 #include <utility>
 
@@ -24,22 +24,17 @@
 namespace sgd_util
 {
 
-//! \brief Convert from local coordinate system to WGS84 coordinate system.
-//! \param x x coordinate
-//! \param y y coordinate
-//! \return pair with latitude and longitude
-std::pair<double, double> local_to_WGS84(double x, double y);
+std::string create_log_dir(std::string sensor_id)
+{
+    time_t now = time(0);
+    tm *ltm = localtime(&now);
 
-//! \brief Convert from WGS84 coordinate system to local coordinate system.
-//! \param lat latitude
-//! \param lon longitude
-//! \return pair with x and y coordinates
-std::pair<double, double> WGS84_to_local(double lat, double lon);
-
-//! \brief Calculate quaternion from rotation around z axis.
-//! \param angle_z angle around z axis
-//! \return Quaternion as standard ros2 geometry msg
-geometry_msgs::msg::Quaternion rotation_around_z(double angle_z);
+    char buf[24];
+    std::sprintf(&buf[0], "%4d-%02d-%02d_%02d-%02d-%02d.log", 1900+ltm->tm_year, 1+ltm->tm_mon, ltm->tm_mday,
+                            ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
+    std::string log_file_(buf);
+    return sensor_id + "_" + log_file_;
+}
 
 }   // namespace sgd_util
 #endif

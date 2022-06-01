@@ -39,7 +39,6 @@
 #include "sgd_util/geotools.hpp"
 #include "a_star.hpp"
 #include "a_star_users.hpp"
-#include "path_smoothing.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -48,9 +47,8 @@ namespace nav_sgd
 
 using namespace std::placeholders;
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
-//using CallbackReturn = nav2_util::CallbackReturn;
 
-class Global_Planner_OSM : public rclcpp_lifecycle::LifecycleNode // nav2_util::LifecycleNode // 
+class Global_Planner_OSM : public rclcpp_lifecycle::LifecycleNode
 {
 
 //! \brief Struct to hold position information latitude, longitude and angle around z in radians.
@@ -80,9 +78,7 @@ protected:
     //! \brief Init Publisher and subscriber
     void init_pub_sub();
     rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-    rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>::SharedPtr publisher_path_;
-    //rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr sub_clicked_point_;
-    
+    rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>::SharedPtr publisher_path_;    
 
     //! \brief Init transforms
     void init_transforms();

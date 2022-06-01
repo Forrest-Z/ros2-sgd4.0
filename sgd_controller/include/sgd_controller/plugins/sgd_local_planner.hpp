@@ -21,11 +21,11 @@
 namespace sgd_ctrl
 {
 
-    class DubinsCurve : public nav2_core::GlobalPlanner
+    class LocalPlanner : public nav2_core::GlobalPlanner
     {
     public:
-        DubinsCurve() = default;
-        ~DubinsCurve() = default;
+        LocalPlanner() = default;
+        ~LocalPlanner() = default;
 
         // plugin configure
         void configure(
@@ -65,6 +65,9 @@ namespace sgd_ctrl
         double radius_;
         std::string global_plan_topic_;
         nav_msgs::msg::Path global_path;
+
+        // Path smoothing
+        std::unique_ptr<PathSmoothing> path_smoothing;
 
         // global plan from osm planner
         ulong next_wp_; // next waypoint from global plan

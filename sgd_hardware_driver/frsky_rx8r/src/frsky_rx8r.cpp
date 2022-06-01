@@ -19,7 +19,7 @@ FrSky_RX8R::~FrSky_RX8R()
 }
 
 CallbackReturn
-FrSky_RX8R::on_configure(const rclcpp_lifecycle::State & state)
+FrSky_RX8R::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Configuring");
 
@@ -34,7 +34,7 @@ FrSky_RX8R::on_configure(const rclcpp_lifecycle::State & state)
 }
 
 CallbackReturn
-FrSky_RX8R::on_activate(const rclcpp_lifecycle::State & state)
+FrSky_RX8R::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Activating");
     publish_cmd_vel_master_->on_activate();
@@ -44,7 +44,7 @@ FrSky_RX8R::on_activate(const rclcpp_lifecycle::State & state)
 }
 
 CallbackReturn
-FrSky_RX8R::on_deactivate(const rclcpp_lifecycle::State & state)
+FrSky_RX8R::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Deactivating");
     publish_cmd_vel_master_->on_deactivate();
@@ -54,7 +54,7 @@ FrSky_RX8R::on_deactivate(const rclcpp_lifecycle::State & state)
 }
 
 CallbackReturn
-FrSky_RX8R::on_cleanup(const rclcpp_lifecycle::State & state)
+FrSky_RX8R::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Cleanup");
     publish_cmd_vel_master_.reset();
@@ -64,7 +64,7 @@ FrSky_RX8R::on_cleanup(const rclcpp_lifecycle::State & state)
 }
 
 CallbackReturn
-FrSky_RX8R::on_shutdown(const rclcpp_lifecycle::State & state)
+FrSky_RX8R::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Shutdown");
     return CallbackReturn::SUCCESS;

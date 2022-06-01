@@ -20,23 +20,6 @@ find_package(TinyXML2 REQUIRED)
 
 include_directories(include)
 
-#set(library_name ${PROJECT_NAME}_core)
-#add_library(${library_name} STATIC src/lf_node_factory.cpp)
-
-#ament_target_dependencies(${library_name} INTERFACE
-#  TinyXML2)
-#ament_export_dependencies(tinyxml2_vendor TinyXML2)
-#ament_export_targets(${library_name})
-
-#target_include_directories(${library_name} PUBLIC
-#  ${CMAKE_CURRENT_SOURCE_DIR})
-
-#install(TARGETS ${library_name}
-#  ARCHIVE DESTINATION lib
-#  LIBRARY DESTINATION lib
-#  RUNTIME DESTINATION bin
-#)
-
 set(executable_name lifecycle_manager)
 set(dependencies
   rclcpp
@@ -62,15 +45,15 @@ install(
 ament_package()
 
 ### testing
-enable_testing()
+# enable_testing()
 
-set(test_executable unit_test_lf_node_factory)
-add_executable(${test_executable} test/unit_test_lf_node_factory.cpp src/lf_node_factory.cpp)
-add_test(NAME ${test_executable} COMMAND ${test_executable} ${CMAKE_CURRENT_SOURCE_DIR})
-ament_target_dependencies(${test_executable} ${dependencies})
-target_link_libraries(${test_executable} gtest_main)
+# set(test_executable unit_test_lf_node_factory)
+# add_executable(${test_executable} test/unit_test_lf_node_factory.cpp src/lf_node_factory.cpp)
+# add_test(NAME ${test_executable} COMMAND ${test_executable} ${CMAKE_CURRENT_SOURCE_DIR})
+# ament_target_dependencies(${test_executable} ${dependencies})
+# target_link_libraries(${test_executable} gtest_main)
 
-file(COPY test/data DESTINATION ${CMAKE_BINARY_DIR}/test)
+# file(COPY test/data DESTINATION ${CMAKE_BINARY_DIR}/test)
 
-include(GoogleTest)
-gtest_discover_tests(${test_executable})
+# include(GoogleTest)
+# gtest_discover_tests(${test_executable})

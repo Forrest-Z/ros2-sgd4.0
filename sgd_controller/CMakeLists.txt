@@ -22,7 +22,6 @@ find_package(builtin_interfaces REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
 find_package(pluginlib REQUIRED)
-find_package(sgd_util REQUIRED)
 find_package(nav2_msgs REQUIRED)
 
 include_directories(include)
@@ -33,6 +32,7 @@ ament_target_dependencies(subsum_controller
   rclcpp
   rclcpp_lifecycle
   geometry_msgs
+  sgd_msgs
 )
 
 add_executable(master_control_unit src/master_control_unit.cpp)
@@ -41,6 +41,7 @@ ament_target_dependencies(master_control_unit
   rclcpp_action
   geometry_msgs
   nav2_msgs
+  sgd_msgs
 )
 
 install(
@@ -63,13 +64,13 @@ ament_target_dependencies(sgd_progress_checker
 # prevent pluginlib from using boost
 target_compile_definitions(sgd_progress_checker PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 
-add_library(sgd_dubins_planner SHARED
-  plugins/sgd_dubins_planner.cpp
-  plugins/dubins.cpp
+add_library(sgd_local_planner SHARED
+  plugins/sgd_local_planner.cpp
+  plugins/path_smoothing.cpp
   include/sgd_controller/plugins/route_analyzer.hpp
 )
 
-ament_target_dependencies(sgd_dubins_planner
+ament_target_dependencies(sgd_local_planner
   rclcpp
   rclcpp_action
   rclcpp_lifecycle
@@ -89,10 +90,10 @@ ament_target_dependencies(sgd_dubins_planner
 )
 
 # prevent pluginlib from using boost
-target_compile_definitions(sgd_dubins_planner PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
+target_compile_definitions(sgd_local_planner PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 
 install(
-  TARGETS sgd_progress_checker sgd_dubins_planner
+  TARGETS sgd_progress_checker sgd_local_planner
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin)
@@ -105,7 +106,7 @@ install(FILES plugins.xml
   DESTINATION share/${PROJECT_NAME}
 )
 
-ament_export_libraries(sgd_dubins_planner sgd_progress_checker)
+ament_export_libraries(sgd_local_planner sgd_progress_checker)
 ament_export_definitions("PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 pluginlib_export_plugin_description_file(nav2_core plugins.xml)
 #pluginlib_export_plugin_description_file(nav2_core global_planner_plugin.xml)

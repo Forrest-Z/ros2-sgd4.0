@@ -23,12 +23,15 @@ Navilock_UBlox6_GPS::Navilock_UBlox6_GPS():
     RCLCPP_DEBUG(get_logger(), "Creating");
 
     declare_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
-    //declare_parameter("use_sim_time", rclcpp::ParameterValue(true));
     declare_parameter("parser_file", rclcpp::ParameterValue("/home/ipp/dev_ws/src/ros2-sgd4.0/sgd_hardware_driver/gps/params/nmea_0183.xml"));
     declare_parameter("parser_type", rclcpp::ParameterValue("nmea"));
     declare_parameter("publish_local_pose", rclcpp::ParameterValue(true));
     declare_parameter("publish_tf", rclcpp::ParameterValue(true));
+
+    declare_parameter("transform_to_base_link", rclcpp::ParameterValue(true));
+    declare_parameter("base_link_frame_id", rclcpp::ParameterValue("base_link"));
     declare_parameter("odom_frame_id", rclcpp::ParameterValue("odom"));
+
     declare_parameter("log_dir", rclcpp::ParameterValue(""));
 }
 
@@ -129,7 +132,11 @@ Navilock_UBlox6_GPS::init_parameters()
     get_parameter("parser_type", parser_type_);
     get_parameter("publish_local_pose", is_pub_local_pose_);
     get_parameter("publish_tf", is_publish_tf_);
+    
+    get_parameter("transform_to_base_link", is_tf_to_base_link_);
+    get_parameter("base_link_frame_id", base_link_frame_id_);
     get_parameter("odom_frame_id", odom_frame_id_);
+
     get_parameter("log_dir", ros_log_dir_);
 }
 
@@ -158,17 +165,13 @@ Navilock_UBlox6_GPS::init_pub_sub()
     if (is_pub_local_pose_)
     {
         pub_local_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("gps_local", default_qos);
+        pub_local_pose_->on_activate();
         log_.append(" and on topic 'gps_local'.");
     }
 
     // activate publisher
     pub_navsatfix_->on_activate();
-    if (is_pub_local_pose_)
-    {
-        pub_local_pose_->on_activate();
-    }
-
-    RCLCPP_DEBUG(get_logger(), "Initialised publisher on topic 'gps' and on topic 'gps_local'.");
+    RCLCPP_INFO(get_logger(), log_);
 }
 
 void
@@ -227,6 +230,12 @@ Navilock_UBlox6_GPS::read_serial()
 void
 Navilock_UBlox6_GPS::on_gps_sim_received(sensor_msgs::msg::NavSatFix::SharedPtr msg)
 {
+    if (is_tf_to_base_link_)
+    {
+        // transform received position from gps_frame to base_link_frame
+        // TODO
+    }
+
     pub_navsatfix_->publish(*msg);
     if (pub_local_pose_)
     {
@@ -302,7 +311,7 @@ Navilock_UBlox6_GPS::init_transforms()
     }
 
     auto tf_ = get_transform("earth", "map");
-    auto tmp_tf_base_gps_ = get_transform("base_link", "gps_link");
+    auto tmp_tf_base_gps_ = get_transform(base_link_frame_id_, "gps_link");
     tf_base_gps_ = tmp_tf_base_gps_.transform;
     map_origin.set_global_coordinates(tf_.transform.translation.y, tf_.transform.translation.x);
 }
@@ -346,9 +355,14 @@ Navilock_UBlox6_GPS::to_local(sensor_msgs::msg::NavSatFix msg)
     sgd_util::LatLon ll(msg.latitude, msg.longitude);
     auto xy = ll.to_local(map_origin);
 
+    // orientation of robot
+    tf2::Quaternion q;
+    auto tf_odom_ = get_transform("odom", "base_link");
+    auto rot_z_ = tf2::getYaw(tf_odom_.transform.rotation);
+
     // publish local pose
-    pose.pose.pose.position.x = xy.first;
-    pose.pose.pose.position.y = xy.second;
+    pose.pose.pose.position.x = xy.first - tf_base_gps_.translation.x * cos(rot_z_);
+    pose.pose.pose.position.y = xy.second - tf_base_gps_.translation.x * sin(rot_z_);
     return pose;
 }
 

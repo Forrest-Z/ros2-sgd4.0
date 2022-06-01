@@ -60,7 +60,7 @@ include_directories(include)
 
 # add executable
 set(EXE_NAME global_planner)
-set(CPP_FILES src/global_planner.cpp src/a_star.cpp src/path_smoothing.cpp)
+set(CPP_FILES src/global_planner.cpp src/a_star.cpp)
 set(HPP_FILES include/sgd_global_planner/a_star_node.hpp include/sgd_global_planner/a_star_users.hpp)
 add_executable(${EXE_NAME} ${CPP_FILES} ${HPP_FILES})
 target_link_libraries(${EXE_NAME} sgd_util::sgd_util_core nlohmann_json::nlohmann_json)
@@ -97,4 +97,4 @@ file(COPY test/data DESTINATION ${CMAKE_BINARY_DIR}/lib/test)
 #include(GoogleTest)
 #gtest_discover_tests(${testname})
 
-#ament_package()
+ament_package()

@@ -1,6 +1,7 @@
 #ifndef SGD_HARDWARE__VL53L1X_HPP_
 #define SGD_HARDWARE__VL53L1X_HPP_
 
+#include <algorithm>
 #include "nlohmann/json.hpp"
 
 #include <plog/Log.h>
@@ -15,7 +16,14 @@ public:
     VL53L1X(const std::string log_dir);
     ~VL53L1X();
 
-    void init(double max_range, double min_range);
+    /**
+     * @brief Initialize sensor and set minimum and maximum velocity
+     * 
+     * @param goal_dist goal distance in mm
+     * @param max_vel max velocity in percent
+     * @param min_vel min velocity in percent
+     */
+    void init(int goal_dist, double max_vel, double min_vel);
 
     /**
      * @brief 
@@ -39,8 +47,11 @@ protected:
     double peak_ = 0.0;
     double ambient_ = 0.0;
 
+    double kp_ = 1.0/400.0;
+
     // parameters
-    double b_, m_, max_range_, min_range_;
+    int goal_dist_;
+    double b_, m_, max_vel_, min_vel_;
 };
 
 VL53L1X::VL53L1X(std::string log_dir)
@@ -55,19 +66,17 @@ VL53L1X::VL53L1X(std::string log_dir)
     log_file_ = log_dir + log_file_;
     plog::init(plog::info, log_file_.c_str());
 
-    init(0.3, 0.8);
+    init(350, 1.0, 0.0);
 }
 
 VL53L1X::~VL53L1X() {}
 
 void
-VL53L1X::init(double min_range, double max_range)
+VL53L1X::init(int goal_dist, double max_vel, double min_vel)
 {
-    max_range_ = max_range;
-    min_range_ = min_range;
-
-    m_ = -1.0 / (max_range - min_range);
-    b_ = -m_ * max_range;
+    max_vel_ = max_vel;
+    min_vel_ = min_vel;
+    goal_dist_ = goal_dist;
 }
 
 int
@@ -80,7 +89,7 @@ VL53L1X::parse_msg(std::string msg)
     if (s_id == "laser1d")
     {
         // message contains acceleration, gyro, heading, etc.
-        if (js.count("range"))      range_mm_ = round((range_mm_*9+js["range"].get<int>())/10);
+        if (js.count("range"))      range_mm_ = round((range_mm_*4+js["range"].get<int>())/5);
         if (js.count("status"))     status_ = js["status"].get<int>();
         if (js.count("peak"))       peak_ = js["peak"].get<double>();
         if (js.count("amb"))        ambient_ = js["amb"].get<double>();
@@ -95,8 +104,10 @@ VL53L1X::get_vel_p()
 {
     if (peak_ < 1.0)    return 0.0;
 
-    double vel_ = range_mm_/1000.0 * m_ + b_;
-    return (range_mm_/1000.0 > max_range_ ? 0.0 : (range_mm_/1000.0 < min_range_ ? 1.0 : vel_));
+    int soll_ist = goal_dist_ - range_mm_;
+    double vel_ = std::min(std::max(soll_ist*kp_+1.0, min_vel_), max_vel_);
+
+    return vel_;
 }
 
 }

@@ -15,8 +15,8 @@ class RouteAnalyzer
 
 struct RouteInfo
 {
-    int next_maneuver;
-    std::string text;
+    double angle;
+    double distance;
 };
 
 struct Pos2D
@@ -28,32 +28,36 @@ struct Pos2D
 private:
     std::list<Pos2D> global_plan_;
     double last_dist = 10.0;    // last distance to next waypoint
-    std::map<double, std::string> maneuvers_;
 public:
     RouteAnalyzer(/* args */);
     ~RouteAnalyzer();
 
+    /**
+     * @brief 
+     * 
+     * @param waypoints 
+     */
     void add_waypoints(std::vector<std::pair<double, double>> waypoints);
-    RouteInfo next_step(double pos_x, double pos_y);
+
+    /**
+     * @brief 
+     * 
+     * @param pos_x 
+     * @param pos_y 
+     * @return RouteInfo 
+     */
+    RouteInfo info(double pos_x, double pos_y);
+
+    /**
+     * @brief Set next waypoint
+     */
+    void next_wp();
+
 };
 
-RouteAnalyzer::RouteAnalyzer(/* args */)
-{
-    maneuvers_.insert({-2.618, "Nach rechts umkehren in "});
-    maneuvers_.insert({-2.094, "Stark rechts abbiegen in "});
-    maneuvers_.insert({-1.047, "Rechts abbiegen in "});
-    maneuvers_.insert({-0.349, "Leicht rechts in "});
-    maneuvers_.insert({0.349, "Geradeaus in "});
-    maneuvers_.insert({1.047, "Leicht links in "});
-    maneuvers_.insert({2.094, "Links abbiegen in "});
-    maneuvers_.insert({2.618, "Stark links abbiegen in "});
-    maneuvers_.insert({3.142, "Nach links umkehren in "});
-    maneuvers_.insert({4.0, "Ziel erreicht in "});
-}
+RouteAnalyzer::RouteAnalyzer() {}
 
-RouteAnalyzer::~RouteAnalyzer()
-{
-}
+RouteAnalyzer::~RouteAnalyzer() {}
 
 void
 RouteAnalyzer::add_waypoints(std::vector<std::pair<double, double>> waypoints)
@@ -77,8 +81,8 @@ RouteAnalyzer::add_waypoints(std::vector<std::pair<double, double>> waypoints)
         
         // calculate angle
         pos.angle = sgd_util::delta_angle(waypoints.at(i-1).first, waypoints.at(i-1).second,
-                                          waypoints.at(i).first  , waypoints.at(i).first,
-                                          waypoints.at(i+1).first, waypoints.at(i+1).first);
+                                          waypoints.at(i).first  , waypoints.at(i).second,
+                                          waypoints.at(i+1).first, waypoints.at(i+1).second) - M_PI;
         global_plan_.push_back(pos);
     }
 
@@ -90,32 +94,21 @@ RouteAnalyzer::add_waypoints(std::vector<std::pair<double, double>> waypoints)
 }
 
 RouteAnalyzer::RouteInfo
-RouteAnalyzer::next_step(double pos_x, double pos_y)
+RouteAnalyzer::info(double pos_x, double pos_y)
 {
     // if distance < 1.0m and distance > last_dist -> remove current waypoint
     auto wp = global_plan_.front();
-    double distance = std::hypot(wp.x - pos_x, wp.y - pos_y);
-    if (distance < 1.0 && distance > last_dist)
-    {
-        // remove first waypoint
-        global_plan_.pop_front();
-        wp = global_plan_.front();
-    }
-
-    auto it = maneuvers_.begin();
-    int i = 0;
-    while (wp.angle > it->first && it != maneuvers_.end())
-    {
-        i++;
-        it++;     
-    }
-
-    last_dist = std::hypot(wp.x - pos_x, wp.y - pos_y);
-
     RouteInfo info;
-    info.next_maneuver = 1;
-    info.text = it->second + std::to_string(round(distance)) + "m";
+    info.angle = wp.angle;
+    info.distance = std::hypot(wp.x - pos_x, wp.y - pos_y);
     return info;
+}
+
+void
+RouteAnalyzer::next_wp()
+{
+    // remove first waypoint
+    global_plan_.pop_front();
 }
 
 } // namespace sgd_ctrl

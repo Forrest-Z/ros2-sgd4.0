@@ -29,7 +29,7 @@ Feather_Handle_ROS::~Feather_Handle_ROS()
 }
 
 CallbackReturn
-Feather_Handle_ROS::on_configure(const rclcpp_lifecycle::State & state)
+Feather_Handle_ROS::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_INFO(get_logger(), "Configuring");
 
@@ -53,7 +53,7 @@ Feather_Handle_ROS::on_configure(const rclcpp_lifecycle::State & state)
 }
 
 CallbackReturn
-Feather_Handle_ROS::on_activate(const rclcpp_lifecycle::State & state)
+Feather_Handle_ROS::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_INFO(get_logger(), "Activating");
 
@@ -67,7 +67,7 @@ Feather_Handle_ROS::on_activate(const rclcpp_lifecycle::State & state)
 }
 
 CallbackReturn
-Feather_Handle_ROS::on_deactivate(const rclcpp_lifecycle::State & state)
+Feather_Handle_ROS::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_INFO(get_logger(), "Deactivating");
 
@@ -79,7 +79,7 @@ Feather_Handle_ROS::on_deactivate(const rclcpp_lifecycle::State & state)
 }
 
 CallbackReturn
-Feather_Handle_ROS::on_cleanup(const rclcpp_lifecycle::State & state)
+Feather_Handle_ROS::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_INFO(get_logger(), "Cleanup");
     imu_pub_.reset();
@@ -89,7 +89,7 @@ Feather_Handle_ROS::on_cleanup(const rclcpp_lifecycle::State & state)
 }
 
 CallbackReturn
-Feather_Handle_ROS::on_shutdown(const rclcpp_lifecycle::State & state)
+Feather_Handle_ROS::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_INFO(get_logger(), "Shutdown");
     return CallbackReturn::SUCCESS;
@@ -190,7 +190,8 @@ Feather_Handle_ROS::on_cmd_vel_received(geometry_msgs::msg::Twist::SharedPtr msg
         cmd_vel.linear.x = msg_->linear.x * vl53l1x_->get_vel_p();
         cmd_vel.angular.z = msg_->angular.z * vl53l1x_->get_vel_p();
 
-        //RCLCPP_INFO(get_logger(), "cmd_vel_laser (lin, ang): %.2f, %.2f", cmd_vel.linear.x, cmd_vel.angular.z);
+        // RCLCPP_INFO(get_logger(), "cmd_vel (lin, ang): %.2f %.2f --> cmd_vel_laser: %.2f, %.2f",
+        //             msg_->linear.x, msg_->angular.z, cmd_vel.linear.x, cmd_vel.angular.z);
 
         laser_pub_->publish(cmd_vel);
     }

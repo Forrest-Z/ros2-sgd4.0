@@ -37,12 +37,16 @@ double delta_angle(double x1, double y1, double x2, double y2, double x3, double
     if (ang1 < 0)   ang1 = ang1+2*M_PI;
     if (ang2 < 0)   ang2 = ang2+2*M_PI;    
 
-    if (abs(ang2 - ang1) > M_PI)
+    double diff_ang = abs(ang2 - ang1);
+
+    std::cout << "Winkel 1: " << ang1 << ", Winkel 2: " << ang2 << std::endl;
+
+    if (diff_ang > M_PI)
     {
         return abs(ang2 - ang1 - 2*M_PI);
     } else
     {
-        return abs(ang2 - ang1);
+        return diff_ang;
     }
 }
 

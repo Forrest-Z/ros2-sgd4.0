@@ -7,7 +7,7 @@ namespace sgd_hardware_drivers
 {
 
 #define RIGHT_WHEEL_FACTOR 57.93
-#define LEFT_WHEEL_FACTOR 59.00 
+#define LEFT_WHEEL_FACTOR 51.50
 
 class WH_FCruiser
 {
@@ -42,12 +42,16 @@ public:
      */
     void get_position(double &pos_x, double &pos_y);
 
+    void set_initial_position(double x, double y);
+
     /**
      * @brief Get the relative orientation
      * 
      * @return double 
      */
     double get_orientation();
+
+    void set_initial_orientation(double ang);
 
     /**
      * @brief Get the linear velocity
@@ -110,9 +114,8 @@ WH_FCruiser::parse_msg(std::string msg)
     try
     {
         auto js = nlohmann::json::parse(msg);
-        auto& s_id = js["s_id"];
 
-        if (s_id == "hover")
+        if (js["s_id"] == "hover")
         {
             // save values to temporary variable
             ulong tmp_time_;
@@ -127,14 +130,18 @@ WH_FCruiser::parse_msg(std::string msg)
             if (millis_ == 0)   millis_ = tmp_time_;
 
             // calculate current position
-            tmp_rm_ /= RIGHT_WHEEL_FACTOR;
+            tmp_rm_ /= (LEFT_WHEEL_FACTOR * 0.9819);
             tmp_lm_ /= LEFT_WHEEL_FACTOR;
 
             vel_lin_x_ = ((tmp_rm_ + tmp_lm_) * wheel_circ_) / 2;
-            vel_ang_z_ = ((tmp_rm_ - tmp_lm_) * wheel_circ_) / wheel_sep_ * 1.14;
+            vel_ang_z_ = ((tmp_rm_ - tmp_lm_) * wheel_circ_) / wheel_sep_ * 0.95;
             
             // set orientation
             ori_z_ += vel_ang_z_ * (tmp_time_ - millis_) / 1000.0;
+            if (abs(ori_z_) > 2*M_PI)
+            {
+                ori_z_ -= ori_z_ / abs(ori_z_) * 2*M_PI;
+            }
 
             pos_x_ = pos_x_ + vel_lin_x_ * (tmp_time_ - millis_) / 1000.0 * cos(ori_z_);
             pos_y_ = pos_y_ - vel_lin_x_ * (tmp_time_ - millis_) / 1000.0 * sin(ori_z_);
@@ -145,7 +152,7 @@ WH_FCruiser::parse_msg(std::string msg)
     catch(const nlohmann::json::exception& e)
     {
         std::cerr << "JSON parse error. JSON string: " << msg << ", error: " << e.what() << std::endl;
-    }   
+    }
 }
 
 void
@@ -155,10 +162,23 @@ WH_FCruiser::get_position(double &pos_x, double &pos_y)
     pos_y = pos_y_;
 }
 
+void
+WH_FCruiser::set_initial_position(double x, double y)
+{
+    pos_x_ = x;
+    pos_y_ = y;
+}
+
 double
 WH_FCruiser::get_orientation()
 {
     return ori_z_;
+}
+
+void
+WH_FCruiser::set_initial_orientation(double ang)
+{
+    ori_z_ = ang;
 }
 
 double
@@ -176,6 +196,7 @@ WH_FCruiser::get_angular_vel()
 float
 WH_FCruiser::get_batt_voltage()
 {
+    //std::cout << "ODOM (x,y,w): " << pos_x_ << ", " << pos_y_ << ", " << ori_z_ << std::endl;
     return volt_;
 }
 
@@ -192,8 +213,10 @@ WH_FCruiser::cmd_vel(double vel_lin_x, double vel_ang_z)
     double r = (vel_lin_x + vel_ang_z/2) * 250;
     double l = (-vel_ang_z + (vel_lin_x + vel_ang_z/2)) * 250;
     
-    l += sign(l)*50;
-    r += sign(r)*50;
+    //l += sign(l)*50;
+    //r += sign(r)*50;
+
+    //std::cout << "Send to motor: " << std::to_string((int)round(r)) << ", " << std::to_string((int)round(l)) << std::endl;
     // send: right, left
     return std::to_string((int)round(r)) + "," + std::to_string((int)round(l));
 }

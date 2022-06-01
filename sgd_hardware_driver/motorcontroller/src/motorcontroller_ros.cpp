@@ -15,15 +15,17 @@ Motorcontroller::Motorcontroller() : rclcpp_lifecycle::LifecycleNode("motorcontr
 
     // ros parameters
     declare_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
-    //declare_parameter("msg_regex", rclcpp::ParameterValue("HS:(\\d+),Rm:(-?\\d+),Lm:(-?\\d+),V:(\\d+),T:(\\d+),S:(\\d?)"));
     declare_parameter("odom_topic", rclcpp::ParameterValue("odom"));
+    declare_parameter("odom_sim_topic", rclcpp::ParameterValue("sim/odom"));
     declare_parameter("battery_state_topic", rclcpp::ParameterValue("battery"));
     declare_parameter("vel_twist_topic", rclcpp::ParameterValue("sgd_move_base"));
 
     // motor parameters
     declare_parameter("wheel_separation", rclcpp::ParameterValue(0.71));
     declare_parameter("wheel_circumference", rclcpp::ParameterValue(0.68));
-    declare_parameter("kp", rclcpp::ParameterValue(0.2));
+    declare_parameter("sim_battery_state", rclcpp::ParameterValue(37.0));
+
+    declare_parameter("relative", rclcpp::ParameterValue(true));
 }
 
 Motorcontroller::~Motorcontroller()
@@ -32,11 +34,13 @@ Motorcontroller::~Motorcontroller()
 }
 
 CallbackReturn
-Motorcontroller::on_configure(const rclcpp_lifecycle::State & state)
+Motorcontroller::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Configuring");
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
+
+    if (is_sim_) return CallbackReturn::SUCCESS;
 
     // Open serial port
     std::string port;
@@ -51,22 +55,18 @@ Motorcontroller::on_configure(const rclcpp_lifecycle::State & state)
 }
 
 CallbackReturn
-Motorcontroller::on_activate(const rclcpp_lifecycle::State & state)
+Motorcontroller::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Activating");
 
     wh_fcruiser = std::make_unique<WH_FCruiser>(wheel_circum_, wheel_separation_);
-
     init_pub_sub();
-
-    pub_odom_->on_activate();
-    pub_battery_->on_activate();
 
     return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn
-Motorcontroller::on_deactivate(const rclcpp_lifecycle::State & state)
+Motorcontroller::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Deactivating");
 
@@ -77,7 +77,7 @@ Motorcontroller::on_deactivate(const rclcpp_lifecycle::State & state)
 }
 
 CallbackReturn
-Motorcontroller::on_cleanup(const rclcpp_lifecycle::State & state)
+Motorcontroller::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Cleanup");
     pub_odom_.reset();
@@ -87,7 +87,7 @@ Motorcontroller::on_cleanup(const rclcpp_lifecycle::State & state)
 }
 
 CallbackReturn
-Motorcontroller::on_shutdown(const rclcpp_lifecycle::State & state)
+Motorcontroller::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     RCLCPP_DEBUG(get_logger(), "Shutdown");
     return CallbackReturn::SUCCESS;
@@ -96,45 +96,59 @@ Motorcontroller::on_shutdown(const rclcpp_lifecycle::State & state)
 void
 Motorcontroller::init_parameters()
 {
-    get_parameter("port", port_);
-    //get_parameter("msg_regex", msg_regex_);
     get_parameter("odom_topic", odom_topic_);
-    RCLCPP_INFO(get_logger(), "oodom topic is %s", odom_topic_.c_str());
+    get_parameter("odom_sim_topic", odom_sim_topic_);
     get_parameter("battery_state_topic", battery_state_topic_);
     get_parameter("vel_twist_topic", vel_twist_topic_);
     
     get_parameter("wheel_separation", wheel_separation_);
     get_parameter("wheel_circumference", wheel_circum_);
+    get_parameter("sim_battery_state", sim_battery_state_);
+
+    get_parameter("use_sim_time", is_sim_);
+    get_parameter("relative", is_relative_);
 }
 
 void
 Motorcontroller::init_pub_sub()
 {
-    //regex_ = std::regex(msg_regex_);
+    // Publisher for odometry
+    pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>(odom_topic_, default_qos);
+    pub_odom_->on_activate();
 
-    timer_ = this->create_wall_timer(100ms, std::bind(&Motorcontroller::publish_motor_cmd, this));
-    timer_serial_ = this->create_wall_timer(10ms, std::bind(&Motorcontroller::read_serial, this));
+    if (is_sim_)
+    {
+        sub_odom_sim_ = this->create_subscription<nav_msgs::msg::Odometry>(odom_sim_topic_, default_qos,
+                std::bind(&Motorcontroller::on_odom_sim_received, this, std::placeholders::_1));
+    } 
+    else
+    {
+        // Receive velocity command from local controller
+        sub_cmd_vel_ = this->create_subscription<geometry_msgs::msg::Twist>(vel_twist_topic_, default_qos,
+            std::bind(&Motorcontroller::on_cmd_vel_received, this, std::placeholders::_1));
+            
+        timer_ = this->create_wall_timer(100ms, std::bind(&Motorcontroller::publish_motor_cmd, this));
+        timer_serial_ = this->create_wall_timer(10ms, std::bind(&Motorcontroller::read_serial, this));
+        
+        sub_gps_ = this->create_subscription<geometry_msgs::msg::PoseWithCovariance>("gps_local", default_qos,
+                std::bind(&Motorcontroller::on_gps_received, this, std::placeholders::_1));
+    }
+
     timer_vol_ = this->create_wall_timer(10000ms, std::bind(&Motorcontroller::publish_battery_state, this));
 
-    // Publish odometry
-    pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>(odom_topic_, default_qos);
-
-    // Receive velocity command from local controller
-    sub_cmd_vel_ = this->create_subscription<geometry_msgs::msg::Twist>(vel_twist_topic_, default_qos,
-        std::bind(&Motorcontroller::on_cmd_vel_received, this, std::placeholders::_1));
+    // Publish battery state
+    pub_battery_ = this->create_publisher<sensor_msgs::msg::BatteryState>(battery_state_topic_, default_qos);
+    pub_battery_->on_activate();
 
     // Receive initial orientation from imu
     sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>("imu", default_qos,
                 std::bind(&Motorcontroller::on_imu_received, this, std::placeholders::_1));
-
-    // Publish battery state
-    pub_battery_ = this->create_publisher<sensor_msgs::msg::BatteryState>(battery_state_topic_, default_qos);
 }
 
 void
 Motorcontroller::read_serial()
 {
-    if (serial.read_serial() && imu_msgs_rec_ > 10)
+    if (serial.read_serial())
     {
         std::string msg = "{" + serial.get_msg();
         wh_fcruiser->parse_msg(msg);
@@ -156,30 +170,36 @@ Motorcontroller::read_serial()
         odom.pose.pose.position.z = 0.142176;
         
         tf2::Quaternion q;
-        q.setRPY(0, 0, wh_fcruiser->get_orientation() + initial_orientation_);
+        q.setRPY(0, 0, wh_fcruiser->get_orientation());
         odom.pose.pose.orientation = tf2::toMsg(q);
 
         pub_odom_->publish(odom);
+        return;
     }
 }
 
 void
 Motorcontroller::publish_battery_state()
 {
-    RCLCPP_INFO(get_logger(), "ODOM initial: %.2f, rel: %.2f", initial_orientation_, wh_fcruiser->get_orientation());
-
     sensor_msgs::msg::BatteryState msg;
     msg.header.stamp = now();
     msg.header.frame_id = "odom";
-
-    if (wh_fcruiser->get_batt_voltage() < 30.0)
-    {
-        RCLCPP_WARN(get_logger(), "Battery voltage low!");
-    }
-
     msg.power_supply_health = sensor_msgs::msg::BatteryState::POWER_SUPPLY_HEALTH_GOOD;
     msg.power_supply_technology = sensor_msgs::msg::BatteryState::POWER_SUPPLY_TECHNOLOGY_LION;
-    msg.voltage = wh_fcruiser->get_batt_voltage();
+
+    if (is_sim_)
+    {
+        msg.voltage = sim_battery_state_;
+    }
+    else
+    {
+        if (wh_fcruiser->get_batt_voltage() < 30.0)
+        {
+            //TODO: put this to mcu
+            RCLCPP_WARN(get_logger(), "Battery voltage low!");
+        }
+        msg.voltage = wh_fcruiser->get_batt_voltage();
+    }
     pub_battery_->publish(msg);
 }
 
@@ -198,11 +218,48 @@ Motorcontroller::on_imu_received(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
         tmp_init_ori_ += tf2::getYaw(msg->orientation);
         imu_msgs_rec_++;
-    } else if (imu_msgs_rec_ == 10)
+    }
+    else if (imu_msgs_rec_ == 10)
     {
-        initial_orientation_ = tmp_init_ori_ / 10.0;
+        //wh_fcruiser->set_initial_orientation(tmp_init_ori_/10.0);
         imu_msgs_rec_++;
     }
+}
+
+void
+Motorcontroller::on_gps_received(const geometry_msgs::msg::PoseWithCovariance::SharedPtr msg)
+{
+    // take 10 measurements and calculate initial position
+    if (gps_msgs_rec_ < 10 && !is_relative_)
+    {
+        initial_pos_.first += msg->pose.position.x;
+        initial_pos_.second += msg->pose.position.y;
+        gps_msgs_rec_++;
+    }
+    else if (gps_msgs_rec_ == 10 || is_relative_)
+    {
+        RCLCPP_INFO(get_logger(), "GPS local received: %i", gps_msgs_rec_);
+        wh_fcruiser->set_initial_position(initial_pos_.first / 10.0, initial_pos_.second / 10.0);
+        gps_msgs_rec_ = 11;
+        is_relative_ = false;
+    }
+}
+
+void
+Motorcontroller::on_odom_sim_received(const nav_msgs::msg::Odometry::SharedPtr msg)
+{
+    if (is_relative_)
+    {
+        // set initial pose
+        initial_pos_.first = msg->pose.pose.position.x;
+        initial_pos_.second = msg->pose.pose.position.y;
+        is_relative_ = false;
+    }
+
+    msg->pose.pose.position.x -= initial_pos_.first;
+    msg->pose.pose.position.y -= initial_pos_.second;
+
+    pub_odom_->publish(*msg);
 }
 
 void
@@ -210,7 +267,7 @@ Motorcontroller::publish_motor_cmd()
 {
     std::string msg;
 
-    if ((now().seconds() - cmd_vel_seconds_) > 5)
+    if ((now().seconds() - cmd_vel_seconds_) > 1)
     {
         msg = "0,0";
     }

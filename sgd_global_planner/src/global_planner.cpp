@@ -200,8 +200,7 @@ void
 Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPlan::Request> request,
                                 std::shared_ptr<sgd_msgs::srv::GetGlobalPlan::Response> response)
 {
-    // get current position in WGS84 coordinates
-    RCLCPP_INFO(get_logger(), "Get current position");
+    // get current position in local coordinate frame
     sgd_util::LatLon position;
     try
     {
@@ -249,16 +248,15 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
         try
         {
             // set start and destination
-            RCLCPP_INFO(get_logger(), "Set dest position to %d", dest_id);
             a_star->set_dest(dest_id);
 
+            // Hier gibt es einen Fehler -> dauert viel zu lange
             RCLCPP_INFO(get_logger(), "Start path computation");
-            auto route = a_star->compute_path();
-            if (route.waypoints.size() > 2 && route.cost < best_route_.cost)
-            {
-                best_route_ = route;
-            }
-            RCLCPP_INFO(get_logger(), "Route has length of %.3f m", route.length_m);
+            //auto route = a_star->compute_path();
+            //if (route.waypoints.size() > 2 && route.cost < best_route_.cost)
+            //{
+            //    best_route_ = route;
+            //}
         }
         catch(const std::exception& e)
         {
@@ -351,11 +349,8 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
     response->length = best_route_.length_m;
     response->waypoints = points;
     
-    //Smoothen path
-    //PathSmoothing path_object;
-    //auto smoothened_path = path_object.smoothen_path(best_route_.waypoints);
-    
-    RCLCPP_INFO(get_logger(), "Route has %d waypoints", best_route_.waypoints.size());
+    RCLCPP_INFO(get_logger(), "Route consists of %d waypoints and has a length of %.3f m",
+                    best_route_.waypoints.size(), best_route_.length_m);
     // publish path
     auto poses = create_poses_from_waypoints(best_route_.waypoints);
     publish_path(poses);

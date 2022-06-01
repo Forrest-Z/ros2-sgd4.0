@@ -2,8 +2,8 @@
 
 std_msgs/Header header
 
-# next maneuver
-string next_maneuver
+# angle to next segment
+float64 angle
 
-# distance until next maneuver
+# distance in m until next maneuver
 uint16 distance

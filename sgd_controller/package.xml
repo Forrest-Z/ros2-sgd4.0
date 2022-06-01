@@ -12,6 +12,8 @@
   <depend>rclcpp_lifecyclce</depend>
   <depend>geometry_msgs</depend>
   <depend>nav2_msgs</depend>
+  <depend>sgd_util</depend>
+  <depend>sgd_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

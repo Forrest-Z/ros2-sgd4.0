@@ -4,9 +4,9 @@
       <description>Checks if distance between current and previous pose is above a threshold</description>
     </class>
   </library>
-  <library path="sgd_dubins_planner">
-	<class type="sgd_ctrl::DubinsCurve" base_class_type="nav2_core::GlobalPlanner">
-	  <description>Plugin which generates path from dubins curve.</description>
+  <library path="sgd_local_planner">
+	<class type="sgd_ctrl::LocalPlanner" base_class_type="nav2_core::GlobalPlanner">
+	  <description>Plugin which generates path from global plan.</description>
 	</class>
 </library>
 </class_libraries>

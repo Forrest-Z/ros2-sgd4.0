@@ -12,8 +12,13 @@ Master_Control_Unit::Master_Control_Unit()
     RCLCPP_DEBUG(get_logger(), "Creating");
 
     // Add parameters
-    declare_parameter("move_topics", in_topics_);
-    declare_parameter("sgd_move_topic", rclcpp::ParameterValue("sgd_move_base"));
+    declare_parameter("goal_pose_topic", rclcpp::ParameterValue("goalpose"));
+    declare_parameter("route_info_topic", rclcpp::ParameterValue("route_info"));
+    declare_parameter("light_topic", rclcpp::ParameterValue("lights"));
+
+    get_parameter("goal_pose_topic", goal_pose_topic_);
+    get_parameter("route_info_topic", route_info_topic_);
+    get_parameter("light_topic", light_topic_);
 
     // Was soll diese Node alles können?
     // - handling von user requests
@@ -33,7 +38,7 @@ Master_Control_Unit::Master_Control_Unit()
     nav_to_pose_goal_ = nav2_msgs::action::NavigateToPose::Goal();
 
     init_pub_sub();
-
+    init_maneuvers();
 }
 
 Master_Control_Unit::~Master_Control_Unit() {}
@@ -42,9 +47,28 @@ void
 Master_Control_Unit::init_pub_sub()
 {
     //pub_cmd_vel = this->create_publisher<geometry_msgs::msg::Twist>("sgd_move_base", default_qos);
-    subscriber = this->create_subscription<geometry_msgs::msg::Point>("goalpose", default_qos,
+    sub_goal_pose_ = this->create_subscription<geometry_msgs::msg::Point>(goal_pose_topic_, default_qos,
                         std::bind(&Master_Control_Unit::on_goalpose_received, this, std::placeholders::_1));
     
+    sub_route_info_ = this->create_subscription<sgd_msgs::msg::RouteInfo>(route_info_topic_, default_qos,
+                        std::bind(&Master_Control_Unit::on_route_info_received, this, std::placeholders::_1));
+
+    //pub_light_ = this->create_publisher<sgd_msgs::msg::Light>(light_topic_, default_qos);
+}
+
+void
+Master_Control_Unit::init_maneuvers()
+{
+    maneuvers_.insert({-2.618, "Nach rechts umkehren in "});
+    maneuvers_.insert({-2.094, "Stark rechts abbiegen in "});
+    maneuvers_.insert({-1.047, "Rechts abbiegen in "});
+    maneuvers_.insert({-0.349, "Leicht rechts in "});
+    maneuvers_.insert({0.349, "Geradeaus in "});
+    maneuvers_.insert({1.047, "Leicht links in "});
+    maneuvers_.insert({2.094, "Links abbiegen in "});
+    maneuvers_.insert({2.618, "Stark links abbiegen in "});
+    maneuvers_.insert({3.142, "Nach links umkehren in "});
+    maneuvers_.insert({4.0, "Ziel erreicht in "});
 }
 
 void
@@ -79,6 +103,20 @@ Master_Control_Unit::on_goalpose_received(const geometry_msgs::msg::Point::Share
         RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server.");
         return;
     }
+}
+
+void
+Master_Control_Unit::on_route_info_received(const sgd_msgs::msg::RouteInfo::SharedPtr msg_)
+{
+    auto it = maneuvers_.begin();
+    while (msg_->angle > it->first && it != maneuvers_.end())
+    {
+        it++;
+    }
+    RCLCPP_INFO(get_logger(), "Next maneuver: %s (angle: %.2f) in %i m", it->second.c_str(), msg_->angle, msg_->distance);
+
+    // TODO control lights
+
 }
 
 }   // namespace sgd_ctrl

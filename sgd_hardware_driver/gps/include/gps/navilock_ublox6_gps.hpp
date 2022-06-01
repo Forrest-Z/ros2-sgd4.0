@@ -64,7 +64,9 @@ protected:
     std::string parser_type_;
     bool is_pub_local_pose_;
     bool is_publish_tf_;
-    std::string odom_frame_id_;
+
+    bool is_tf_to_base_link_;
+    std::string base_link_frame_id_, odom_frame_id_;
     std::string ros_log_dir_;
 
     /**

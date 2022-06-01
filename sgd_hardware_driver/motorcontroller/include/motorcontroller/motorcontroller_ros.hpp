@@ -8,6 +8,7 @@
 
 #include "sgd_io/serial.hpp"
 #include "geometry_msgs/msg/twist.hpp"
+#include "geometry_msgs/msg/pose_with_covariance.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "sensor_msgs/msg/battery_state.hpp"
 #include "sensor_msgs/msg/imu.hpp"
@@ -38,16 +39,19 @@ protected:
 
   //! \brief Init parameters
   void init_parameters();
-  std::string port_;
-  std::string msg_regex_;
-  std::string odom_topic_;
+  std::string odom_topic_, odom_sim_topic_;
   std::string battery_state_topic_;
   std::string vel_twist_topic_;
   std::string imu_topic_;
+  bool is_sim_;
+  bool is_relative_;
   double wheel_separation_;
   double wheel_circum_;
+  float sim_battery_state_;
+
   double initial_orientation_ = 0.0;
-  int imu_msgs_rec_ = 0;
+  std::pair<double, double> initial_pos_ = std::pair<double, double>(0.0,0.0);
+  int imu_msgs_rec_ = 0, gps_msgs_rec_ = 0;
   double tmp_init_ori_ = 0.0;
 
   //! \brief Init publisher and subscriber
@@ -58,14 +62,18 @@ protected:
   rclcpp::TimerBase::SharedPtr timer_vol_;
   rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
   rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::BatteryState>::SharedPtr pub_battery_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_sim_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovariance>::SharedPtr sub_gps_;
 
   std::unique_ptr<WH_FCruiser> wh_fcruiser;
   
   void publish_battery_state();
   void on_imu_received(const sensor_msgs::msg::Imu::SharedPtr msg);
+  void on_gps_received(const geometry_msgs::msg::PoseWithCovariance::SharedPtr msg);
   void on_cmd_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg);
+  void on_odom_sim_received(const nav_msgs::msg::Odometry::SharedPtr msg);
   double cmd_vel_seconds_;
   geometry_msgs::msg::Twist last_cmd_vel_;
   void publish_motor_cmd();

@@ -18,7 +18,7 @@ namespace sgd_util
 {
 
 Visualizer::Visualizer() : rclcpp::Node("visualizer"),
-                            in_topics_{"uwb_local", "gps_local"}
+                            in_topics_{"uwb/local", "gps_local"}
 {
     RCLCPP_DEBUG(get_logger(), "Creating");
     // Add parameters - a maximum of 6 topics is allowed
