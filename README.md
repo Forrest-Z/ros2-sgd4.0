@@ -105,26 +105,12 @@ cd ~/dev_ws/src
 git clone https://github.com/PStahr-HAW/ros2-sgd4.0.git
 rosdep install -y -r -q --from-paths src --ignore-src --rosdistro foxy
 
+cd ~/dev_ws
 colcon build --symlink-install
-```
-
-Wenn der build-Befehl scheitert, kann der folgende Workaround versucht werden:
-
-```
-colcon build --symlink-install --packages-select sgd_msgs
-colcon build --symlink-install --packages-select sgd_util
-colcon build --symlink-install
-```
-
-Anschließend muss noch das Geazebo_Sim Package gebaut werden.
-
-```
-cd ~/dev_ws/src/ros2_sgd4.0/sgd_gazebo_sim/build
-cmake ..
-make
-
 source ~/dev_ws/install/local_setup.bash
 ```
+
+
 
 Um USB Ports ohne root Rechte nutzen zu können, müssen die folgenden Befehle ausgeführt werden.
 ```
