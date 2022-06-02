@@ -214,7 +214,7 @@ export GAZEBO_MODEL_PATH=~/dev_ws/src/ros2-sgd4.0/sgd_gazebo_sim/models:$GAZEBO_
 Ein Test der Simulationsumgebung kann mit dem folgenden Befehl durchgeführt werden. Es dürfen keine Fehler auftreten und die Welt muss vollständig geladen werden.
 
 ```
-gazebo --verbose ~/dev_ws/src/ros2-sgd4.0/sgd_bringup/worlds/model_static.model
+gazebo --verbose ~/dev_ws/src/ros2-sgd4.0/sgd_bringup/worlds/lohmuehlenpark.model
 ```
 
 ![Gazebo example](/doc/gazebo_example.png)
