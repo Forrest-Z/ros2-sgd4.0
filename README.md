@@ -18,7 +18,7 @@ Im Rahmen des Forschungsvorhabens "Blindenhund 4.0" wird an der HAW Hamburg in i
 Zum Starten von ROS2 für den Shared Guide Dog 4.0 wird ein Launch-Script verwendet. Dieses befindet sich im Package *sgd_bringup*. Daneben sind weitere Dateien in diesem Package zu finden. Unter anderem die Konfigurationsdateien, Maps, die URDF Beschreibung des Roboters und das Simulationsmodell der Umgebung. Der Shared Guide Dog kann über den Befehl
 
 ```
-ros2 launch sgd_bringup sgd_startup.launch.py sim:=[True|False] slam:=[True|False]
+ros2 launch sgd_bringup sgd_startup.launch.py sim:=[True|False] slam:=[True|False] log_severity:=["E"|"W"|"I"|"D"|"V"]
 ```
 
 gestartet werden. Die beiden Parameter *sim* und *slam* sind optional. Standardmäßig ist `sim:=False` und `slam:=False`.
@@ -86,43 +86,6 @@ Um Navigation 2 bei jedem Terminalstart zu sourcen, den folgenden Codeblock ans 
 ```sh
 if [ -f ~/nav2_ws/install/local_setup.bash ]; then
   source ~/nav2_ws/install/local_setup.bash
-fi
-```
-
-## Installation ROS2 for Blindenhund
-
-Für die Entwicklung des Blindenhunds wird ein neuer Workspace angelegt.
-
-```
-mkdir -p ~/dev_ws/src
-cd ~/dev_ws/src
-```
-
-Anschließend können die Dateien von GitHub geklont und gebaut werden. Beim Bauen muss unbedingt darauf geachtet werden, dass nur aus dem `~/dev_ws` Verzeichnis gebaut wird.
-
-```
-cd ~/dev_ws/src
-git clone https://github.com/PStahr-HAW/ros2-sgd4.0.git
-rosdep install -y -r -q --from-paths src --ignore-src --rosdistro foxy
-
-cd ~/dev_ws
-colcon build --symlink-install
-source ~/dev_ws/install/local_setup.bash
-```
-
-
-
-Um USB Ports ohne root Rechte nutzen zu können, müssen die folgenden Befehle ausgeführt werden.
-```
-sudo apt remove modemmanager
-sudo adduser $USER dialout
-```
-
-Um ROS2 für den Blindenhund bei jedem Terminalstart zu sourcen, den folgenden Codeblock ans Ende der .bashrc einfügen.
-
-```sh
-if [ -f ~/dev_ws/install/local_setup.bash ]; then
-  source ~/dev_ws/install/local_setup.bash
 fi
 ```
 
@@ -197,6 +160,42 @@ Zum Schluss noch das Einfügen in die .bashrc.
 ```sh
 if [ -f ~/robot_localization_ws/install/setup.bash ]; then
   ~/robot_localization_ws/install/setup.bash
+fi
+```
+
+## Installation ROS2 for Blindenhund
+
+Für die Entwicklung des Blindenhunds wird ein neuer Workspace angelegt.
+
+```
+mkdir -p ~/dev_ws/src
+cd ~/dev_ws/src
+```
+
+Anschließend können die Dateien von GitHub geklont und gebaut werden. Beim Bauen muss unbedingt darauf geachtet werden, dass nur aus dem `~/dev_ws` Verzeichnis gebaut wird.
+
+```
+cd ~/dev_ws/src
+git clone https://github.com/PStahr-HAW/ros2-sgd4.0.git
+rosdep install -y -r -q --from-paths src --ignore-src --rosdistro foxy
+
+cd ~/dev_ws
+colcon build --symlink-install
+source ~/dev_ws/install/local_setup.bash
+```
+
+
+Um USB Ports ohne root Rechte nutzen zu können, müssen die folgenden Befehle ausgeführt werden.
+```
+sudo apt remove modemmanager
+sudo adduser $USER dialout
+```
+
+Um ROS2 für den Blindenhund bei jedem Terminalstart zu sourcen, den folgenden Codeblock ans Ende der .bashrc einfügen.
+
+```sh
+if [ -f ~/dev_ws/install/local_setup.bash ]; then
+  source ~/dev_ws/install/local_setup.bash
 fi
 ```
 
