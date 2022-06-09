@@ -159,7 +159,7 @@ Zum Schluss noch das Einfügen in die .bashrc.
 
 ```sh
 if [ -f ~/robot_localization_ws/install/setup.bash ]; then
-  ~/robot_localization_ws/install/setup.bash
+  source ~/robot_localization_ws/install/setup.bash
 fi
 ```
 
