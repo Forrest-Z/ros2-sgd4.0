@@ -20,7 +20,8 @@ namespace sgd_hardware_drivers
 Navilock_UBlox6_GPS::Navilock_UBlox6_GPS():
     LifecycleNode("navilock_ublox6_gps")
 {
-    RCLCPP_DEBUG(get_logger(), "Creating");
+    declare_parameter("log_dir", rclcpp::ParameterValue(".ros/log/"));
+    declare_parameter("log_severity", rclcpp::ParameterValue("I"));
 
     declare_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
     declare_parameter("parser_file", rclcpp::ParameterValue("/home/ipp/dev_ws/src/ros2-sgd4.0/sgd_hardware_driver/gps/params/nmea_0183.xml"));
@@ -28,23 +29,30 @@ Navilock_UBlox6_GPS::Navilock_UBlox6_GPS():
     declare_parameter("publish_local_pose", rclcpp::ParameterValue(true));
     declare_parameter("publish_tf", rclcpp::ParameterValue(true));
 
+    declare_parameter("local_pose_topic", rclcpp::ParameterValue("gps/local"));
+    declare_parameter("gps_sim_topic", rclcpp::ParameterValue("gps/sim"));
+    declare_parameter("utc_topic", rclcpp::ParameterValue("clock/utc"));
+    declare_parameter("gps_topic", rclcpp::ParameterValue("gps"));
+
     declare_parameter("transform_to_base_link", rclcpp::ParameterValue(true));
     declare_parameter("base_link_frame_id", rclcpp::ParameterValue("base_link"));
     declare_parameter("odom_frame_id", rclcpp::ParameterValue("odom"));
 
-    declare_parameter("log_dir", rclcpp::ParameterValue(""));
+    // initialize logging
+    std::string log_dir_, log_sev_;
+    get_parameter("log_dir", log_dir_);
+    get_parameter("log_severity", log_sev_);
+    std::string log_file(log_dir_ + "/" + sgd_util::create_log_file("gps"));
+
+    plog::init(plog::severityFromString(log_sev_.c_str()), log_file.c_str());
+    PLOGD << "Message: utc; lat; lon; x; y";
 }
 
-Navilock_UBlox6_GPS::~Navilock_UBlox6_GPS()
-{
-    // Destroy
-}
+Navilock_UBlox6_GPS::~Navilock_UBlox6_GPS() {}
 
 CallbackReturn
 Navilock_UBlox6_GPS::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_INFO(get_logger(), "Configuring");
-
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
     if (is_pub_local_pose_)
@@ -55,17 +63,29 @@ Navilock_UBlox6_GPS::on_configure(const rclcpp_lifecycle::State & state __attrib
     if (is_sim_) return CallbackReturn::SUCCESS;
     std::string port;
     get_parameter("port", port);
-    serial.set_start_frame('$');
-    serial.set_stop_frame('\n');
-    serial.open_port(port, 115200);
-
+    
+    try
+    {
+        serial.set_start_frame('$');
+        serial.set_stop_frame('\n');
+        serial.open_port(port, 115200);
+    }
+    catch(const std::exception& e)
+    {
+        PLOGE << e.what();
+        RCLCPP_ERROR(get_logger(), e.what());
+        return CallbackReturn::FAILURE;
+    }
+    
     // Initialize parser
     if (parser_type_ == "nmea")
     {
+        RCLCPP_INFO(get_logger(), "Initialize parser for nmea data");
         parser_ = std::make_unique<Nmea_Parser>();
     }
     else
     {
+        RCLCPP_INFO(get_logger(), "Initialize parser for ubx data");
         parser_ = std::make_unique<Ubx_Parser>();
     }
     
@@ -75,12 +95,12 @@ Navilock_UBlox6_GPS::on_configure(const rclcpp_lifecycle::State & state __attrib
 CallbackReturn
 Navilock_UBlox6_GPS::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused))) 
 {
-    RCLCPP_INFO(get_logger(), "Activating");
     init_pub_sub();
 
     if (is_sim_) return CallbackReturn::SUCCESS;
 
     // initialize parser if is_sim_ == false
+    RCLCPP_DEBUG(get_logger(), "Import parser file %s", xml_file_.c_str());
     parser_->import_xml(xml_file_);
 
     if (parser_->has_error())
@@ -89,15 +109,12 @@ Navilock_UBlox6_GPS::on_activate(const rclcpp_lifecycle::State & state __attribu
         return CallbackReturn::FAILURE;
     }
 
-    pub_utc_time_->on_activate();
-
     return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn
 Navilock_UBlox6_GPS::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Deactivating");
     pub_navsatfix_->on_deactivate();
     if (is_pub_local_pose_)
     {
@@ -110,7 +127,6 @@ Navilock_UBlox6_GPS::on_deactivate(const rclcpp_lifecycle::State & state __attri
 CallbackReturn
 Navilock_UBlox6_GPS::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Cleanup");
     pub_navsatfix_.reset();
     if (is_pub_local_pose_) pub_local_pose_.reset();
     return CallbackReturn::SUCCESS;
@@ -119,8 +135,6 @@ Navilock_UBlox6_GPS::on_cleanup(const rclcpp_lifecycle::State & state __attribut
 CallbackReturn
 Navilock_UBlox6_GPS::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Shutdown");
-
     return CallbackReturn::SUCCESS;
 }
 
@@ -132,26 +146,32 @@ Navilock_UBlox6_GPS::init_parameters()
     get_parameter("parser_type", parser_type_);
     get_parameter("publish_local_pose", is_pub_local_pose_);
     get_parameter("publish_tf", is_publish_tf_);
+
+    // topics
+    get_parameter("local_pose_topic", local_pose_topic_);
+    get_parameter("gps_sim_topic", gps_sim_topic_);
+    get_parameter("utc_topic", utc_clock_topic_);
+    get_parameter("gps_topic", gps_topic_);
     
     get_parameter("transform_to_base_link", is_tf_to_base_link_);
     get_parameter("base_link_frame_id", base_link_frame_id_);
     get_parameter("odom_frame_id", odom_frame_id_);
-
-    get_parameter("log_dir", ros_log_dir_);
 }
 
 void
 Navilock_UBlox6_GPS::init_pub_sub()
 {
-    RCLCPP_DEBUG(get_logger(), "Init pub sub");
     if (!is_sim_)
     {
         timer_ = this->create_wall_timer(10ms, std::bind(&Navilock_UBlox6_GPS::read_serial, this));
-        pub_utc_time_ = this->create_publisher<builtin_interfaces::msg::Time>("clock_utc", default_qos);
+        PLOGD << "Create publisher on topic " << utc_clock_topic_;
+        pub_utc_time_ = this->create_publisher<builtin_interfaces::msg::Time>(utc_clock_topic_, default_qos);
+        pub_utc_time_->on_activate();
     }
     else
     {
-        sub_gps_sim = this->create_subscription<sensor_msgs::msg::NavSatFix>("gps_sim", default_qos,
+        PLOGD << "Create subscription for topic " << gps_sim_topic_;
+        sub_gps_sim = this->create_subscription<sensor_msgs::msg::NavSatFix>(gps_sim_topic_, default_qos,
                         std::bind(&Navilock_UBlox6_GPS::on_gps_sim_received, this, std::placeholders::_1));
     }
 
@@ -160,18 +180,17 @@ Navilock_UBlox6_GPS::init_pub_sub()
         timer_tf_ = this->create_wall_timer(100ms, std::bind(&Navilock_UBlox6_GPS::publish_tf, this));
     }
     
-    std::string log_("Initialised publisher on topic 'gps'");
-    pub_navsatfix_ = this->create_publisher<sensor_msgs::msg::NavSatFix>("gps", default_qos);
+    PLOGD << "Create publisher on topic " << gps_topic_;
+    pub_navsatfix_ = this->create_publisher<sensor_msgs::msg::NavSatFix>(gps_topic_, default_qos);
+    pub_navsatfix_->on_activate();
+
     if (is_pub_local_pose_)
     {
-        pub_local_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("gps_local", default_qos);
+        // create publisher for pose in local coordinates
+        PLOGD << "Create publisher on topic " << local_pose_topic_;
+        pub_local_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(local_pose_topic_, default_qos);
         pub_local_pose_->on_activate();
-        log_.append(" and on topic 'gps_local'.");
     }
-
-    // activate publisher
-    pub_navsatfix_->on_activate();
-    RCLCPP_INFO(get_logger(), log_);
 }
 
 void
@@ -181,7 +200,7 @@ Navilock_UBlox6_GPS::read_serial()
     {
         std::string msg = "$" + serial.get_msg();
         parser_->parse_msg(msg);
-
+        
         // wait for all nmea messages
         if (parser_->msg_complete())
         {
@@ -190,6 +209,7 @@ Navilock_UBlox6_GPS::read_serial()
             utc.sec = parser_->gps_time();
             utc.nanosec = (parser_->gps_time() - floor(parser_->gps_time())) * 1E9;
             pub_utc_time_->publish(utc);
+            std::string debug_msg = std::to_string(parser_->gps_time()) + ";";
 
             // Create NavSatFix message and publish data
             sensor_msgs::msg::NavSatFix nsf;
@@ -203,26 +223,26 @@ Navilock_UBlox6_GPS::read_serial()
             if (val.second == 1)
             {
                 hdop = std::get<double>(val.first);
-                //RCLCPP_INFO(get_logger(), "HDOP is %f", hdop);
             }
 
             nsf.status.status = (parser_->fix() > 1 ? sensor_msgs::msg::NavSatStatus::STATUS_FIX
                         : sensor_msgs::msg::NavSatStatus::STATUS_NO_FIX);
 
             // publish message and transforms
+            debug_msg += std::to_string(nsf.latitude) + ";" + std::to_string(nsf.longitude) + ";";
             pub_navsatfix_->publish(nsf);
             
             if (is_pub_local_pose_)
             {
-                pub_local_pose_->publish(to_local(nsf));
+                auto local = to_local(nsf);
+                debug_msg += std::to_string(local.pose.pose.position.x) + ";" + std::to_string(local.pose.pose.position.y);
+                pub_local_pose_->publish(local);
             }
-
-            // log to file
 
             // Clear old message
             parser_->clear();
-
             last_msg_ = nsf;
+            PLOGD << debug_msg;
         }
     }
 }
@@ -230,12 +250,11 @@ Navilock_UBlox6_GPS::read_serial()
 void
 Navilock_UBlox6_GPS::on_gps_sim_received(sensor_msgs::msg::NavSatFix::SharedPtr msg)
 {
-    if (is_tf_to_base_link_)
-    {
-        // transform received position from gps_frame to base_link_frame
-        // TODO
-    }
-
+    // if (is_tf_to_base_link_)
+    // {
+    //     // transform received position from gps_frame to base_link_frame
+    //     // TODO
+    // }
     pub_navsatfix_->publish(*msg);
     if (pub_local_pose_)
     {
@@ -263,7 +282,6 @@ Navilock_UBlox6_GPS::on_gps_sim_received(sensor_msgs::msg::NavSatFix::SharedPtr 
 void
 Navilock_UBlox6_GPS::publish_tf()
 {
-    // TODO add orientation
     auto pose = to_local(last_msg_);
     geometry_msgs::msg::TransformStamped t;
 
@@ -271,7 +289,6 @@ Navilock_UBlox6_GPS::publish_tf()
         transform_tolerance_;
     t.header.stamp = tf2_ros::toMsg(transform_expiration);
 
-    //t.header.stamp = last_msg_.header.stamp;
     t.header.frame_id = "map";
     t.child_frame_id = "odom";
 
@@ -286,8 +303,6 @@ Navilock_UBlox6_GPS::publish_tf()
     t.transform.translation.x = pose.pose.pose.position.x - tf_odom_.transform.translation.x - tf_base_gps_x_;
     t.transform.translation.y = pose.pose.pose.position.y - tf_odom_.transform.translation.y - tf_base_gps_y_;
     t.transform.translation.z = 0.0;
-
-    //RCLCPP_INFO(get_logger(), "Transform base -> gps: %.2f, %.2f", tf_base_gps_x_, tf_base_gps_y_);
 
     tf_broadcaster_->sendTransform(t);
 }
@@ -325,7 +340,7 @@ Navilock_UBlox6_GPS::get_transform(std::string target_frame, std::string source_
     while (rclcpp::ok() && !tf_buffer_->canTransform(target_frame, source_frame, tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
         && retries < 10)
     {
-        RCLCPP_INFO(this->get_logger(), "Timeout waiting for transform. Tf error: %s", err.c_str());
+        RCLCPP_DEBUG(get_logger(), "Timeout waiting for transform. Tf error: %s", err.c_str());
         err.clear();
         rclcpp::sleep_for(500000000ns);
         retries++;
@@ -340,7 +355,8 @@ Navilock_UBlox6_GPS::get_transform(std::string target_frame, std::string source_
 
     // transformation from earth -> map in WGS84 coordinates
     // according to REP-105 the x-axis points east (lon) and the y-axis north (lat)
-    return tf_buffer_->lookupTransform(target_frame, source_frame, rclcpp::Time(0), rclcpp::Duration(5,0));
+    auto tf = tf_buffer_->lookupTransform(target_frame, source_frame, rclcpp::Time(0), rclcpp::Duration(5,0));
+    return tf;
 }
 
 geometry_msgs::msg::PoseWithCovarianceStamped
@@ -363,6 +379,12 @@ Navilock_UBlox6_GPS::to_local(sensor_msgs::msg::NavSatFix msg)
     // publish local pose
     pose.pose.pose.position.x = xy.first - tf_base_gps_.translation.x * cos(rot_z_);
     pose.pose.pose.position.y = xy.second - tf_base_gps_.translation.x * sin(rot_z_);
+
+    for (uint8_t i = 0; i < 36; i+=7)
+    {
+        // set diagonal of cov matrix
+        pose.pose.covariance[i] = 1.2;
+    }
     return pose;
 }
 

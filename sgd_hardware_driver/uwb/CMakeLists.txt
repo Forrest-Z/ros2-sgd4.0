@@ -29,13 +29,14 @@ find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(sgd_io REQUIRED)
 find_package(sgd_util REQUIRED)
+find_package(sgd_msgs REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 
 include_directories(include)
 include_directories(lib)
 
 set(executable_name uwb_node)
-add_executable(${executable_name} src/uwb_node.cpp)
+add_executable(${executable_name} src/uwb_node.cpp src/sgd_uwb_pf.cpp)
 
 add_subdirectory(lib)
 target_link_libraries(${executable_name} multilateration_core sgd_io::sgd_io_core nlohmann_json::nlohmann_json)
@@ -49,6 +50,7 @@ ament_target_dependencies(${executable_name}
     visualization_msgs
     sgd_io
     sgd_util
+    sgd_msgs
     yaml_cpp_vendor
 )
 

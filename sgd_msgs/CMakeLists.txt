@@ -23,6 +23,7 @@ set(msg_files
   "msg/SpeedAccel.msg"
   "msg/RouteInfo.msg"
   "msg/SensorDiagnostics.msg"
+  "msg/OdomImproved.msg"
 )
 
 set(srv_files

@@ -6,8 +6,7 @@
 namespace sgd_hardware_drivers
 {
 
-#define RIGHT_WHEEL_FACTOR 57.93
-#define LEFT_WHEEL_FACTOR 51.50
+#define FACTOR_LIN_TO_WHEEL 74.00681
 
 class WH_FCruiser
 {
@@ -24,7 +23,18 @@ private:
     double wheel_sep_;      // wheel separation
 
 public:
+    /**
+     * @brief Construct a new wh fcruiser object
+     * 
+     * @param wheel_circ 
+     * @param wheel_sep 
+     */
     WH_FCruiser(double wheel_circ, double wheel_sep);
+
+    /**
+     * @brief Destroy the wh fcruiser object
+     * 
+     */
     ~WH_FCruiser();
 
     /**
@@ -42,6 +52,12 @@ public:
      */
     void get_position(double &pos_x, double &pos_y);
 
+    /**
+     * @brief Set the initial position object
+     * 
+     * @param x 
+     * @param y 
+     */
     void set_initial_position(double x, double y);
 
     /**
@@ -51,6 +67,11 @@ public:
      */
     double get_orientation();
 
+    /**
+     * @brief Set the initial orientation
+     * 
+     * @param ang 
+     */
     void set_initial_orientation(double ang);
 
     /**
@@ -91,137 +112,14 @@ public:
      */
     std::string cmd_vel(double vel_lin_x, double vel_ang_z);
 
-    inline int sign(double x)
-    {
-        return (x < 0.0 ? -1 : (x > 0.0));
-    }
+    /**
+     * @brief Returns millis from last json message
+     * 
+     * @return ulong 
+     */
+    ulong millis();
 };
 
-WH_FCruiser::WH_FCruiser(double wheel_circ, double wheel_sep)
-{
-    wheel_circ_ = wheel_circ;
-    wheel_sep_ = wheel_sep;
-}
-
-WH_FCruiser::~WH_FCruiser()
-{
-}
-
-void
-WH_FCruiser::parse_msg(std::string msg)
-{
-    // msg: {"s_id": "hover", "time": 123, "Rm": 0, "Lm": 0, "volt": 0, "temp": 0}
-    try
-    {
-        auto js = nlohmann::json::parse(msg);
-
-        if (js["s_id"] == "hover")
-        {
-            // save values to temporary variable
-            ulong tmp_time_;
-            double tmp_rm_, tmp_lm_;
-
-            if (js.count("time"))   tmp_time_ = js["time"].get<ulong>();
-            if (js.count("Rm"))     tmp_rm_ = js["Rm"].get<int>();
-            if (js.count("Lm"))     tmp_lm_ = js["Lm"].get<int>();
-            if (js.count("volt"))   volt_ = (2 * volt_ + js["volt"].get<int>()/100.0) / 3.0;
-            if (js.count("temp"))   temp_ = js["temp"].get<int>()/10.0;
-            
-            if (millis_ == 0)   millis_ = tmp_time_;
-
-            // calculate current position
-            tmp_rm_ /= (LEFT_WHEEL_FACTOR * 0.9819);
-            tmp_lm_ /= LEFT_WHEEL_FACTOR;
-
-            vel_lin_x_ = ((tmp_rm_ + tmp_lm_) * wheel_circ_) / 2;
-            vel_ang_z_ = ((tmp_rm_ - tmp_lm_) * wheel_circ_) / wheel_sep_ * 0.95;
-            
-            // set orientation
-            ori_z_ += vel_ang_z_ * (tmp_time_ - millis_) / 1000.0;
-            if (abs(ori_z_) > 2*M_PI)
-            {
-                ori_z_ -= ori_z_ / abs(ori_z_) * 2*M_PI;
-            }
-
-            pos_x_ = pos_x_ + vel_lin_x_ * (tmp_time_ - millis_) / 1000.0 * cos(ori_z_);
-            pos_y_ = pos_y_ - vel_lin_x_ * (tmp_time_ - millis_) / 1000.0 * sin(ori_z_);
-
-            millis_ = tmp_time_;
-        }
-    }
-    catch(const nlohmann::json::exception& e)
-    {
-        std::cerr << "JSON parse error. JSON string: " << msg << ", error: " << e.what() << std::endl;
-    }
-}
-
-void
-WH_FCruiser::get_position(double &pos_x, double &pos_y)
-{
-    pos_x = pos_x_;
-    pos_y = pos_y_;
-}
-
-void
-WH_FCruiser::set_initial_position(double x, double y)
-{
-    pos_x_ = x;
-    pos_y_ = y;
-}
-
-double
-WH_FCruiser::get_orientation()
-{
-    return ori_z_;
-}
-
-void
-WH_FCruiser::set_initial_orientation(double ang)
-{
-    ori_z_ = ang;
-}
-
-double
-WH_FCruiser::get_linear_vel()
-{
-    return vel_lin_x_;
-}
-
-double
-WH_FCruiser::get_angular_vel()
-{
-    return vel_ang_z_;
-}
-
-float
-WH_FCruiser::get_batt_voltage()
-{
-    //std::cout << "ODOM (x,y,w): " << pos_x_ << ", " << pos_y_ << ", " << ori_z_ << std::endl;
-    return volt_;
-}
-
-float
-WH_FCruiser::get_temp()
-{
-    return temp_;
-}
-
-std::string
-WH_FCruiser::cmd_vel(double vel_lin_x, double vel_ang_z)
-{
-    // max motor speed 1000
-    double r = (vel_lin_x + vel_ang_z/2) * 250;
-    double l = (-vel_ang_z + (vel_lin_x + vel_ang_z/2)) * 250;
-    
-    //l += sign(l)*50;
-    //r += sign(r)*50;
-
-    //std::cout << "Send to motor: " << std::to_string((int)round(r)) << ", " << std::to_string((int)round(l)) << std::endl;
-    // send: right, left
-    return std::to_string((int)round(r)) + "," + std::to_string((int)round(l));
-}
-
 } // namespace sgd_hardware_drivers
-
 
 #endif

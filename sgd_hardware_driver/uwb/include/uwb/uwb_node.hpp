@@ -37,12 +37,15 @@
 #include "sgd_util/geotools.hpp"
 #include "sgd_util/ieee_754_conv.hpp"
 #include "sgd_util/log_utils.hpp"
+#include "sgd_msgs/msg/odom_improved.hpp"
 #include "yaml-cpp/yaml.h"
 
 #include "include/levmarq.hpp"
 #include "nlohmann/json.hpp"
 #include <plog/Log.h>
 #include "plog/Initializers/RollingFileInitializer.h"
+
+#include "sgd_uwb_pf.h"
 
 namespace sgd_hardware_drivers
 {
@@ -96,10 +99,12 @@ protected:
     void publish_pose(double x, double y);
     rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
     rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::TimerBase::SharedPtr timer_marker_;
     rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_position_;
     rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::NavSatFix>::SharedPtr pub_wgs84_pose_;
     rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::Marker>::SharedPtr pub_tag_marker_;
     rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::Marker>::SharedPtr pub_dist_marker_;
+    rclcpp::Subscription<sgd_msgs::msg::OdomImproved>::SharedPtr sub_odom_impr;
 
     /**
      * @brief Initialize transforms if the local output is set.
@@ -126,10 +131,8 @@ protected:
 
     /**
      * @brief 
-     * 
-     * @param tag_id 
      */
-    void publish_marker(int tag_id, double x, double y);
+    void publish_marker();
 
     void publish_dist_marker(int tag_id, double dist);
 
@@ -137,6 +140,10 @@ protected:
     //int num_ranges; // number of received measurements
     bool is_last_estimate_valid;
     double t_last_meas = 0.0;   // time of last received measurement
+
+    SGD_UWB_ParticleFilter uwb_pf;
+
+    void on_odom_impr_received(sgd_msgs::msg::OdomImproved::SharedPtr msg);
 };
 
 }

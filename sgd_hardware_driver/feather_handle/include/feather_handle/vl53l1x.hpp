@@ -13,7 +13,7 @@ namespace sgd_hardware_drivers
 class VL53L1X
 {
 public:
-    VL53L1X(const std::string log_dir);
+    VL53L1X();
     ~VL53L1X();
 
     /**
@@ -54,18 +54,8 @@ protected:
     double b_, m_, max_vel_, min_vel_;
 };
 
-VL53L1X::VL53L1X(std::string log_dir)
+VL53L1X::VL53L1X()
 {
-    time_t now = time(0);
-    tm *ltm = localtime(&now);
-
-    char buf[32];
-    std::sprintf(&buf[0], "vl53l1x_%4d-%2d-%2d_%2d-%2d-%2d.log", 1900+ltm->tm_year, 1+ltm->tm_mon, ltm->tm_mday,
-                            ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
-    std::string log_file_(buf);
-    log_file_ = log_dir + log_file_;
-    plog::init(plog::info, log_file_.c_str());
-
     init(350, 1.0, 0.0);
 }
 

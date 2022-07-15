@@ -36,7 +36,8 @@ UWB_Node::UWB_Node():
     get_parameter("log_dir", log_dir_);
     std::string log_sev_;
     get_parameter("log_severity", log_sev_);
-    plog::init(plog::severityFromString(log_sev_.c_str()), (log_dir_ + "/" + sgd_util::create_log_dir("uwb")).c_str());
+    plog::init(plog::severityFromString(log_sev_.c_str()), (log_dir_ + "/" + sgd_util::create_log_file("uwb")).c_str());
+    PLOGD << "Message: tag_id, dist_m | x;y";
 }
 
 UWB_Node::~UWB_Node()
@@ -47,22 +48,21 @@ UWB_Node::~UWB_Node()
 CallbackReturn
 UWB_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    PLOGD << "Configuring";
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
     std::string port;
     get_parameter("port", port);
     try
     {
-        PLOGI << "Open serial port " << port;
+        RCLCPP_INFO(get_logger(), "Open serial port %s", port.c_str());
         serial.set_start_frame('{');
         serial.set_stop_frame('\n');
         serial.open_port(port, 115200);
     }
     catch(const sgd_io::io_exception& e)
     {
-        PLOGE << e.what();
         RCLCPP_ERROR(get_logger(), e.what());
+        return CallbackReturn::FAILURE;
     }
     
     init_transforms();
@@ -74,7 +74,6 @@ UWB_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unus
 CallbackReturn
 UWB_Node::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    PLOGD << "Activating";
     init_pub_sub();
 
     pub_position_->on_activate();
@@ -90,7 +89,6 @@ UWB_Node::on_activate(const rclcpp_lifecycle::State & state __attribute__((unuse
 CallbackReturn
 UWB_Node::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    PLOGD << "Deactivating";
     pub_position_->on_deactivate();
     if (is_pub_wgs84_pose_) pub_wgs84_pose_->on_deactivate();
     return CallbackReturn::SUCCESS;
@@ -99,7 +97,6 @@ UWB_Node::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unu
 CallbackReturn
 UWB_Node::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Cleanup");
     pub_position_.reset();
     if (is_pub_wgs84_pose_) pub_wgs84_pose_.reset();
     return CallbackReturn::SUCCESS;
@@ -108,14 +105,12 @@ UWB_Node::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused
 CallbackReturn
 UWB_Node::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Shutdown");
     return CallbackReturn::SUCCESS;
 }
 
 void
 UWB_Node::init_parameters()
 {
-    PLOGD << "Init parameters";
     get_parameter("tag_defs", tag_definitions_);
     get_parameter("publish_local_pose", is_pub_wgs84_pose_);
     get_parameter("publish_marker", is_pub_marker_);
@@ -125,28 +120,33 @@ UWB_Node::init_parameters()
 void
 UWB_Node::init_pub_sub()
 {
-    PLOGD << "Init publisher and subscriber";
+    RCLCPP_DEBUG(get_logger(), "Create Publisher on topic 'uwb/local'");
     pub_position_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("uwb/local", default_qos);
+
+    sub_odom_impr = this->create_subscription<sgd_msgs::msg::OdomImproved>("odom/improved", default_qos,
+            std::bind(&UWB_Node::on_odom_impr_received, this, std::placeholders::_1));
+
     if (is_pub_marker_)
     {
+        RCLCPP_DEBUG(get_logger(), "Create Publisher on topic 'uwb/tags'");
         pub_tag_marker_ = this->create_publisher<visualization_msgs::msg::Marker>("uwb/tags", default_qos);
+        RCLCPP_DEBUG(get_logger(), "Create Publisher on topic 'uwb/distance'");
         pub_dist_marker_ = this->create_publisher<visualization_msgs::msg::Marker>("uwb/distance", default_qos);
     }
     
     if (is_pub_wgs84_pose_)
     {
+        RCLCPP_DEBUG(get_logger(), "Create Publisher on topic 'uwb/global'");
         pub_wgs84_pose_ = this->create_publisher<sensor_msgs::msg::NavSatFix>("uwb/global", default_qos);
     }
 
     timer_ = this->create_wall_timer(10ms, std::bind(&UWB_Node::read_serial, this));
-
-    PLOGD << "Initialised publisher on topic uwb/local";
+    timer_marker_ = this->create_wall_timer(30s, std::bind(&UWB_Node::publish_marker, this));
 }
 
 CallbackReturn
 UWB_Node::init_yaml()
 {
-    PLOGD << "Init yaml from file " << tag_definitions_;
     num_tags = 0;
     YAML::Node doc = YAML::LoadFile(tag_definitions_);
     if (doc["anchors"])
@@ -158,27 +158,34 @@ UWB_Node::init_yaml()
                 auto nd = doc["anchors"][i];
                 if (nd["id"] && nd["pos"])
                 {
-                    auto tag_id = nd["id"].as<uint16_t>();
+                    auto tag_id = nd["id"].as<SGD_UWB_BEACON_ID_TYPE>();
                     auto vec = nd["pos"].as<std::vector<double>>();
 
                     // compute position in map frame
                     auto ll = sgd_util::LatLon(vec[0], vec[1]);
                     auto xy = ll.to_local(map_origin);
+                    
+                    // TODO : Remove to in order to switch to lat/long coordinates:
+                    xy.first = vec[0];
+                    xy.second = vec[1];
+
                     optimizer->tags.insert({tag_id, xy});
 
-                    PLOGI << "Insert tag with id " << tag_id << " at " << xy.first << ", " << xy.second;
-                    publish_marker(tag_id, xy.first, xy.second);
+                    uwb_pf.registerBeacon(xy.first, xy.second, tag_id);
+                    
+                    PLOGI << "Insert tag with id " << tag_id << ";" << xy.first << ";" << xy.second;
                     num_tags++;
                 }
             }
             catch(const YAML::Exception& e)
             {
-                PLOGE << "YAML parse error: " << e.what();
+                RCLCPP_ERROR(get_logger(), "YAML parse error: %s", e.what());
             }
         }
+        publish_marker();
     }
 
-    PLOGI << "Read " << optimizer->tags.size() << " tag definitions.";
+    RCLCPP_INFO(get_logger(), "Read %i tag definitions.", optimizer->tags.size());
     return (num_tags > 0 ? CallbackReturn::SUCCESS : CallbackReturn::FAILURE);
 }
 
@@ -188,27 +195,25 @@ UWB_Node::read_serial()
     // compute condition for optimization
     // get time since last received measurement
     double t = now().nanoseconds() / 1.0E6; // current time in milliseconds
-    if ((t - t_last_meas) > 2000.0/exp_frequ_)
-    {
-        if (optimizer->measuredRanges.size() > 2)   // at least 3 measurements are required to calculate a position
-        {
-            // if the last measurement was received more than 1/frequ ago
-            auto pos = optimizer->estimatePose();
-            publish_pose(pos.first, pos.second);
-        }
-        else if (is_last_estimate_valid)    // print warning only once
-        {
-            PLOGW << "Not enough range measurements to calculate position.";
-            RCLCPP_WARN(get_logger(), "Not enough range measurements to calculate position.");
-            is_last_estimate_valid = false;
-        }
-    }
+    // if ((t - t_last_meas) > 2000.0/exp_frequ_)
+    // {
+    //     if (optimizer->measuredRanges.size() > 2)   // at least 3 measurements are required to calculate a position
+    //     {
+    //         // if the last measurement was received more than 1/frequ ago
+    //         auto pos = optimizer->estimatePose();
+    //         publish_pose(pos.first, pos.second);
+    //     }
+    //     else if (is_last_estimate_valid)    // print warning only once
+    //     {
+    //         RCLCPP_WARN(get_logger(), "Not enough range measurements to calculate position.");
+    //         is_last_estimate_valid = false;
+    //     }
+    // }
 
     if (serial.read_serial())
     {
         // json string parsing
         std::string msg = "{" + serial.get_msg();
-        PLOGD << "Received json " << msg;
 
         nlohmann::json js;
         try
@@ -217,45 +222,23 @@ UWB_Node::read_serial()
         }
         catch(const std::exception& e)
         {
-            PLOGW << "Error parsing json: " << e.what();
+            PLOGW << "JSON error: " << e.what();
             return;
         }
         
-        int tag_id;
+        SGD_UWB_BEACON_ID_TYPE tag_id;
         double dist;
         // example msg: {'anch': 16661, 'dist': '0A262C4277A9E33F', 'type': 'rng', 'src': 21505}
         if (js.count("anch") && js.count("dist"))
         {
+            PLOGD << msg;
             // message is from anchor
-            tag_id = js["anch"].get<int>();
+            tag_id = js["anch"].get<SGD_UWB_BEACON_ID_TYPE>();
             dist = sgd_util::toDouble(js["dist"].get<std::string>(), true);
 
-            // add range to optimizer
-            if (optimizer->measuredRanges.find(tag_id) != optimizer->measuredRanges.end())
-            {
-                // measurement from this tag is already contained in map -> start optimization (map is cleared afterwards)
-                auto pos = optimizer->estimatePose();
-                publish_pose(pos.first, pos.second);
-            }
-
-            if (optimizer->tags.count(tag_id))
-            {
-                PLOGD << "Insert range from tag " << tag_id << ": " << dist;
-                optimizer->measuredRanges.insert({tag_id, dist});
-                if (is_pub_marker_)     publish_dist_marker(tag_id, dist);
-            }
-            else
-            {
-                PLOGW << "Received distance from tag " << tag_id << " but has no information about this tag.";
-            }
-
-            // if the size of the map equalds the number of tags -> start optimization
-            // at least three measurements are required
-            if (num_tags <= optimizer->measuredRanges.size() && optimizer->measuredRanges.size() > 2)
-            {
-                auto pos = optimizer->estimatePose();
-                publish_pose(pos.first, pos.second);
-            }
+            uwb_pf.updateUwbMeasurement(dist, tag_id);
+            PLOGD << "Publish marker " << dist << ";" << tag_id;
+            publish_dist_marker(tag_id, dist);
         }
         t_last_meas = now().nanoseconds() / 1.0E6;
     }
@@ -264,7 +247,6 @@ UWB_Node::read_serial()
 void
 UWB_Node::publish_pose(double x, double y)
 {
-    PLOGD << "Publish pose: " << x << ", " << y;
     is_last_estimate_valid = true;
     
     // publish position
@@ -280,37 +262,57 @@ UWB_Node::publish_pose(double x, double y)
     // publish local pose
     pose.pose.pose.position.x = x - tf_base_uwb_.translation.x * cos(rot_z_);
     pose.pose.pose.position.y = y - tf_base_uwb_.translation.x * sin(rot_z_);
-    PLOGI << "Publish local pose: " << pose.pose.pose.position.x << ", " << pose.pose.pose.position.y;
+    //PLOGD << "Publish local pose: " << pose.pose.pose.position.x << ", " << pose.pose.pose.position.y;
+    PLOGD << "0;" << pose.pose.pose.position.x << ";" << pose.pose.pose.position.y;
 
     pose.pose.pose.position.z = 0.1;
     pose.pose.pose.orientation.w = 1.0;
     pose.pose.pose.orientation.x = 0.0;
     pose.pose.pose.orientation.y = 0.0;
     pose.pose.pose.orientation.z = 0.0;
+
+    // Covariance -> 6x6 matrix
+    for (uint8_t i = 0; i < 36; i+=7)
+    {
+        // set diagonal to variance
+        pose.pose.covariance[i] = std::pow(uwb_pf.meanError(), 2);
+    }
+    
     pub_position_->publish(pose);
 }
 
 void
-UWB_Node::publish_marker(int tag_id, double x, double y)
+UWB_Node::publish_marker()
 {
     visualization_msgs::msg::Marker marker;
     marker.header.frame_id = "map";
     marker.ns = "sgd";
-    marker.id = tag_id;
-    marker.type = visualization_msgs::msg::Marker::CYLINDER;
+    marker.id = 0;
+    marker.type = visualization_msgs::msg::Marker::POINTS;
     marker.action = visualization_msgs::msg::Marker::ADD;
-    marker.scale.x = 0.5;
-    marker.scale.y = 0.5;
+    marker.scale.x = 0.3;
+    marker.scale.y = 0.3;
     marker.scale.z = 0.05;
-    marker.lifetime.sec = 0;
+    marker.lifetime.sec = 30;
     marker.color.a = 1.0;
     marker.color.r = 0.0;
     marker.color.g = 0.8;
     marker.color.b = 0.0;
 
-    marker.pose.position.x = x;
-    marker.pose.position.y = y;
+    for (auto tag : optimizer->tags)
+    {
+        geometry_msgs::msg::Point p;
+        p.x = tag.second.first;
+        p.y = tag.second.second;
+        marker.points.push_back(p);
 
+        std_msgs::msg::ColorRGBA rgba;
+        rgba.r = 0.0;
+        rgba.g = 0.8;
+        rgba.b = 0.0;
+        rgba.a = 1.0;
+        marker.colors.push_back(rgba);
+    }
     pub_tag_marker_->publish(marker);
 }
 
@@ -345,8 +347,18 @@ UWB_Node::publish_dist_marker(int tag_id, double dist)
 }
 
 void
+UWB_Node::on_odom_impr_received(sgd_msgs::msg::OdomImproved::SharedPtr msg)
+{
+    uwb_pf.updateOdometry(msg->dx, msg->dy);
+    
+    if (uwb_pf.hasSolution())
+    {
+        publish_pose(uwb_pf.x(), uwb_pf.y());
+    }
+}
+
+void
 UWB_Node::init_transforms() {
-    PLOGD << "Init transforms";
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(get_clock());
     auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
         get_node_base_interface(),
@@ -360,20 +372,17 @@ UWB_Node::init_transforms() {
     auto tmp_tf_base_gps_ = get_transform("base_link", "uwb_link");
     tf_base_uwb_ = tmp_tf_base_gps_.transform;
     map_origin.set_global_coordinates(tf_.transform.translation.y, tf_.transform.translation.x);
-    PLOGD << "Received map origin (lat,lon): " << map_origin.to_string();
 }
 
 geometry_msgs::msg::TransformStamped
 UWB_Node::get_transform(std::string target_frame, std::string source_frame)
 {
-    PLOGD << "Get transform from " << target_frame << " to " << source_frame;
     // Wait for transform to be available
     std::string err;
     int retries = 0;
     while (rclcpp::ok() && !tf_buffer_->canTransform(target_frame, source_frame, tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
         && retries < 10)
     {
-        PLOGI << "Timeout waiting for transform. Tf error: " << err;
         err.clear();
         rclcpp::sleep_for(500000000ns);
         retries++;
@@ -381,7 +390,6 @@ UWB_Node::get_transform(std::string target_frame, std::string source_frame)
 
     if (retries > 9)
     {
-        PLOGE << "Could not retrieve transform from " << target_frame << " to " << source_frame;
         RCLCPP_ERROR(get_logger(), "Could not retrieve transform from %s to %s.", target_frame.c_str(), source_frame.c_str());
         geometry_msgs::msg::TransformStamped ts;
         return ts;
@@ -390,7 +398,6 @@ UWB_Node::get_transform(std::string target_frame, std::string source_frame)
     // transformation from earth -> map in WGS84 coordinates
     // according to REP-105 the x-axis points east (lon) and the y-axis north (lat)
     auto tf_tmp_ = tf_buffer_->lookupTransform(target_frame, source_frame, rclcpp::Time(0), rclcpp::Duration(5,0));
-    PLOGD << "Received tf (x,y): " << tf_tmp_.transform.translation.x << ", " << tf_tmp_.transform.translation.y;
     return tf_tmp_;
 }
 

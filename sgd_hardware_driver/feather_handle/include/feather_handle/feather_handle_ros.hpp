@@ -14,6 +14,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "sgd_io/serial.hpp"
+#include "sgd_util/log_utils.hpp"
 
 #include <plog/Log.h>
 #include "plog/Initializers/RollingFileInitializer.h"

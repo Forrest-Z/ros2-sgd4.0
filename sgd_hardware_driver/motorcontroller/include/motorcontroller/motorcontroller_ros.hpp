@@ -2,6 +2,7 @@
 #define SGD_HARDWARE_DRIVERS__WH_F_CRUISER_HPP_
 
 #include <chrono>
+#include <cstdarg>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
@@ -14,8 +15,14 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "tf2/utils.h"
+#include "sgd_util/log_utils.hpp"
+#include "sgd_msgs/msg/odom_improved.hpp"
+
+#include <plog/Log.h>
+#include "plog/Initializers/RollingFileInitializer.h"
 
 #include "wh_fcruiser.hpp"
+#include "sgd_odometry.h"
 
 namespace sgd_hardware_drivers
 {
@@ -39,10 +46,9 @@ protected:
 
   //! \brief Init parameters
   void init_parameters();
-  std::string odom_topic_, odom_sim_topic_;
+  std::string odom_topic_, odom_topic_improved_, odom_sim_topic_;
   std::string battery_state_topic_;
-  std::string vel_twist_topic_;
-  std::string imu_topic_;
+  std::string vel_twist_topic_, imu_topic_, gps_sim_topic_;
   bool is_sim_;
   bool is_relative_;
   double wheel_separation_;
@@ -61,6 +67,7 @@ protected:
   rclcpp::TimerBase::SharedPtr timer_serial_;
   rclcpp::TimerBase::SharedPtr timer_vol_;
   rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
+  rclcpp_lifecycle::LifecyclePublisher<sgd_msgs::msg::OdomImproved>::SharedPtr pub_odom_improved_;
   rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::BatteryState>::SharedPtr pub_battery_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_sim_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel_;
@@ -68,6 +75,7 @@ protected:
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovariance>::SharedPtr sub_gps_;
 
   std::unique_ptr<WH_FCruiser> wh_fcruiser;
+  SGD_Odometry odo_new;
   
   void publish_battery_state();
   void on_imu_received(const sensor_msgs::msg::Imu::SharedPtr msg);
@@ -84,6 +92,8 @@ protected:
     sgd_io::Serial serial;
 
   void read_serial();
+
+  std::string log_msg(double value...);
 };
 
 }   // namespace sgd_hardware_drivers

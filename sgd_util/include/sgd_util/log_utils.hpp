@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#pragma once
 #ifndef SGD_UTIL__LOG_UTILS_HPP_
 #define SGD_UTIL__LOG_UTILS_HPP_
 
@@ -24,13 +25,13 @@
 namespace sgd_util
 {
 
-std::string create_log_dir(std::string sensor_id)
+std::string create_log_file(std::string sensor_id)
 {
     time_t now = time(0);
     tm *ltm = localtime(&now);
 
     char buf[24];
-    std::sprintf(&buf[0], "%4d-%02d-%02d_%02d-%02d-%02d.log", 1900+ltm->tm_year, 1+ltm->tm_mon, ltm->tm_mday,
+    std::sprintf(&buf[0], "%4d-%02d-%02d_%02d-%02d-%02d.csv", 1900+ltm->tm_year, 1+ltm->tm_mon, ltm->tm_mday,
                             ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
     std::string log_file_(buf);
     return sensor_id + "_" + log_file_;

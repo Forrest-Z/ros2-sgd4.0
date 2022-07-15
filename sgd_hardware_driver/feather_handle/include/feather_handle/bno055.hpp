@@ -9,6 +9,9 @@
 #include <plog/Log.h>
 #include "plog/Initializers/RollingFileInitializer.h"
 
+namespace sgd_hardware_drivers
+{
+
 class BNO055
 {
 
@@ -23,12 +26,14 @@ private:
     double acc_[3];
     double gyr_[3];
     double eul_[3];
+    double mag_[3];
     int8_t temp_;
+    uint64_t millis_ = 0;
 
     void parse_calib(uint8_t cal);
     void str_to_vec3(nlohmann::json json, double *vec);
 public:
-    BNO055(const std::string log_dir);
+    BNO055();
     ~BNO055();
 
     /**
@@ -54,26 +59,28 @@ public:
     imu_data get_gyro();
 
     /**
+     * @brief Get the magnet object
+     * 
+     * @return imu_data 
+     */
+    imu_data get_magnet();
+
+    /**
      * @brief Get the euler angles in degrees
      * 
      * @return imu_data 
      */
     imu_data get_euler();
+
+    /**
+     * @brief Millis as received from microcontroller
+     * 
+     * @return long 
+     */
+    uint64_t get_millis();
 };
 
-BNO055::BNO055(std::string log_dir)
-{
-    time_t now = time(0);
-    tm *ltm = localtime(&now);
-
-    char buf[31];
-    std::sprintf(&buf[0], "bno055_%4d-%2d-%2d_%2d-%2d-%2d.log", 1900+ltm->tm_year, 1+ltm->tm_mon, ltm->tm_mday,
-                            ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
-    std::string log_file_(buf);
-    log_file_ = log_dir + log_file_;
-    plog::init(plog::info, log_file_.c_str());
-}
-
+BNO055::BNO055() {}
 BNO055::~BNO055() {}
 
 int
@@ -86,10 +93,12 @@ BNO055::parse_msg(std::string msg)
     if (s_id == "bno055a")
     {
         // message contains acceleration, gyro, heading, etc.
+        if (js.count("time"))   millis_ = js["time"].get<uint64_t>();
         if (js.count("cal"))    parse_calib(js["cal"].get<uint8_t>());
         if (js.count("acc"))    str_to_vec3(js["acc"], acc_);
         if (js.count("gyr"))    str_to_vec3(js["gyr"], gyr_);
         if (js.count("euler"))  str_to_vec3(js["euler"], eul_);
+        if (js.count("mag"))    str_to_vec3(js["mag"], mag_);
         return 1;
     }
     else if (s_id == "bno055b")
@@ -120,6 +129,15 @@ BNO055::get_gyro()
 }
 
 BNO055::imu_data
+BNO055::get_magnet()
+{
+    imu_data d;
+    d.cal = cal_[2];
+    std::copy(std::begin(mag_), std::end(mag_), std::begin(d.data));
+    return d;
+}
+
+BNO055::imu_data
 BNO055::get_euler()
 {
     imu_data d;
@@ -134,6 +152,12 @@ BNO055::get_euler()
     }
 
     return d;
+}
+
+uint64_t
+BNO055::get_millis()
+{
+    return millis_;
 }
 
 void
@@ -153,5 +177,7 @@ BNO055::parse_calib(uint8_t cal)
     cal_[1] = floor((cal % 64)/16); // acc
     cal_[0] = (cal >= 255);         // system
 }
+
+} // namespace sgd_hardware_drivers
 
 #endif

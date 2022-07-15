@@ -23,6 +23,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(sgd_io REQUIRED)
+find_package(sgd_util REQUIRED)
 
 include_directories(include)
 
@@ -34,6 +35,7 @@ set(dependencies
   tf2_geometry_msgs
   geometry_msgs
   sgd_io
+  sgd_util
 )
 
 # add executable

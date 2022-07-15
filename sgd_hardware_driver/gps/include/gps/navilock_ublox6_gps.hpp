@@ -30,6 +30,10 @@
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "sgd_util/geotools.hpp"
 #include "sgd_io/serial.hpp"
+#include "sgd_util/log_utils.hpp"
+
+#include <plog/Log.h>
+#include "plog/Initializers/RollingFileInitializer.h"
 
 #include "include/nmea_parser.hpp"
 #include "include/ubx_parser.hpp"
@@ -60,14 +64,11 @@ protected:
      */
     void init_parameters();
     bool is_sim_;
-    std::string xml_file_;
-    std::string parser_type_;
-    bool is_pub_local_pose_;
-    bool is_publish_tf_;
-
+    std::string xml_file_, parser_type_;
+    bool is_pub_local_pose_, is_publish_tf_;
+    std::string local_pose_topic_, gps_sim_topic_, utc_clock_topic_, gps_topic_;
     bool is_tf_to_base_link_;
     std::string base_link_frame_id_, odom_frame_id_;
-    std::string ros_log_dir_;
 
     /**
      * @brief Initialize publisher

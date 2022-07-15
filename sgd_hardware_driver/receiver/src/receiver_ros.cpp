@@ -1,52 +1,76 @@
-#include "frsky_rx8r/frsky_rx8r.hpp"
+//#include "receiver/receiver_ros.hpp"
+#include "include/receiver/receiver_ros.hpp"
 
 namespace sgd_hardware_drivers
 {
 
-FrSky_RX8R::FrSky_RX8R():
-    LifecycleNode("capacitive_touch")
+Receiver_Ros::Receiver_Ros():
+    LifecycleNode("receiver_ros")
 {
-    RCLCPP_DEBUG(get_logger(), "Creating");
+    declare_parameter("log_dir", rclcpp::ParameterValue(".ros/log/"));
+    declare_parameter("log_severity", rclcpp::ParameterValue("I"));
 
     declare_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
     declare_parameter("max_vel", rclcpp::ParameterValue(0.5));
     declare_parameter("max_rot_vel", rclcpp::ParameterValue(0.5));
+
+    declare_parameter("cmd_vel_master_topic", rclcpp::ParameterValue("cmd_vel/master"));
+    declare_parameter("cmd_vel_frsky_topic", rclcpp::ParameterValue("cmd_vel/frsky"));
+    declare_parameter("light_topic", rclcpp::ParameterValue("lights"));
+
+    // initialize logging
+    std::string log_dir_, log_sev_;
+    get_parameter("log_dir", log_dir_);
+    get_parameter("log_severity", log_sev_);
+    std::string log_file(log_dir_ + "/" + sgd_util::create_log_file("motor"));
+
+    plog::init(plog::severityFromString(log_sev_.c_str()), log_file.c_str());
+    PLOGD << "Created node " << this->get_name();
 }
 
-FrSky_RX8R::~FrSky_RX8R()
+Receiver_Ros::~Receiver_Ros()
 {
     // Destroy
 }
 
 CallbackReturn
-FrSky_RX8R::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
+Receiver_Ros::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Configuring");
+    PLOGD << "Configuring";
 
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
+
+    frsky = std::make_unique<sgd_hardware_drivers::FrSky_RX8R>(max_vel_, max_rot_vel_);
+    
     std::string port;
     get_parameter("port", port);
-    serial.open_port(port, 115200);
+    try
+    {
+        PLOGD << "Open serial port " << port;
+        serial.open_port(port, 115200);
+    }
+    catch(const std::exception& e)
+    {
+        PLOGE << e.what();
+        RCLCPP_ERROR(get_logger(), e.what());
+        return CallbackReturn::FAILURE;
+    }
+    return CallbackReturn::SUCCESS;
+}
+
+CallbackReturn
+Receiver_Ros::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused)))
+{
+    PLOGD << "Activating";
     init_pub_sub();
-
     return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn
-FrSky_RX8R::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused)))
+Receiver_Ros::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Activating");
-    publish_cmd_vel_master_->on_activate();
-    publish_cmd_vel_->on_activate();
-    publish_light_->on_activate();
-    return CallbackReturn::SUCCESS;
-}
-
-CallbackReturn
-FrSky_RX8R::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
-{
-    RCLCPP_DEBUG(get_logger(), "Deactivating");
+    PLOGD << "Deactivating";
     publish_cmd_vel_master_->on_deactivate();
     publish_cmd_vel_->on_deactivate();
     publish_light_->on_deactivate();
@@ -54,9 +78,9 @@ FrSky_RX8R::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((u
 }
 
 CallbackReturn
-FrSky_RX8R::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
+Receiver_Ros::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Cleanup");
+    PLOGD << "Cleanup";
     publish_cmd_vel_master_.reset();
     publish_cmd_vel_.reset();
     publish_light_.reset();
@@ -64,37 +88,68 @@ FrSky_RX8R::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unus
 }
 
 CallbackReturn
-FrSky_RX8R::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
+Receiver_Ros::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Shutdown");
+    PLOGD << "Shutdown";
     return CallbackReturn::SUCCESS;
 }
 
 void
-FrSky_RX8R::init_parameters()
+Receiver_Ros::init_parameters()
 {
+    PLOGD << "Init parameters.";
     get_parameter("port", port_);
     get_parameter("max_vel", max_vel_);
     get_parameter("max_rot_vel", max_rot_vel_);
+
+    get_parameter("cmd_vel_master_topic", cmd_vel_master_topic_);
+    get_parameter("cmd_vel_frsky_topic", cmd_vel_topic_);
+    get_parameter("light_topic", light_topic_);
 }
 
 void
-FrSky_RX8R::init_pub_sub()
+Receiver_Ros::init_pub_sub()
 {
-    timer_ = this->create_wall_timer(10ms, std::bind(&FrSky_RX8R::read_serial, this));
+    timer_ = this->create_wall_timer(10ms, std::bind(&Receiver_Ros::read_serial, this));
 
-    publish_cmd_vel_master_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel_master", default_qos);
-    publish_cmd_vel_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel_frsky", default_qos);
-    publish_light_ = this->create_publisher<sgd_msgs::msg::Light>("lights", default_qos);
+    PLOGD << "Create publisher on topic '" << cmd_vel_master_topic_ << "'";
+    publish_cmd_vel_master_ = this->create_publisher<geometry_msgs::msg::Twist>(cmd_vel_master_topic_, default_qos);
+    PLOGD << "Create publisher on topic '" << cmd_vel_topic_ << "'";
+    publish_cmd_vel_ = this->create_publisher<geometry_msgs::msg::Twist>(cmd_vel_topic_, default_qos);
+    PLOGD << "Create publisher on topic '" << light_topic_ << "'";
+    publish_light_ = this->create_publisher<sgd_msgs::msg::Light>(light_topic_, default_qos);
+
+    publish_cmd_vel_master_->on_activate();
+    publish_cmd_vel_->on_activate();
+    publish_light_->on_activate();
 }
 
 void
-FrSky_RX8R::read_serial()
+Receiver_Ros::read_serial()
 {
     if (serial.read_serial())
     {
         std::string msg = serial.get_msg();
-        //RCLCPP_INFO(get_logger(), "End of message reached: %c", msg.c_str());
+        PLOGV << "Received message " << msg;
+
+        frsky->parse_msg(msg);
+        
+        if (frsky->is_in_master_mode())
+        {
+            // publish cmd_vel
+            geometry_msgs::msg::Twist cmd_vel_;
+            auto vel_rot = frsky->get_vel_rot();
+            cmd_vel_.linear.x = vel_rot.first;
+            cmd_vel_.angular.z = vel_rot.second;
+
+            publish_cmd_vel_master_->publish(cmd_vel_);
+        }
+        else if (true)  // if velocity cmd has changed
+        {
+
+        }
+
+
 
         if (msg.find("RX8R") == std::string::npos)
         {
@@ -129,7 +184,8 @@ FrSky_RX8R::read_serial()
             }
             catch(const std::invalid_argument& e)
             {
-                RCLCPP_WARN(get_logger(), "Could not parse value %s: %s", parsed.c_str(), e.what());
+                RCLCPP_WARN(get_logger(), "Could not parse value %s", parsed.c_str());
+                std::cerr << e.what() << '\n';
             }
         }
         // send first two channels as movement
@@ -139,10 +195,14 @@ FrSky_RX8R::read_serial()
 }
 
 void
-FrSky_RX8R::pub_cmd_vel(int ch1, int ch2, int ch8)
+Receiver_Ros::pub_cmd_vel(int ch1, int ch2, int ch8)
 {
     // ch1 = forward / backward; ch2 = left / right
     geometry_msgs::msg::Twist cmd_vel_;
+
+
+
+
 
     // subtract 992 so each channel ranges from -820 to +819
     ch1 -= 992;
@@ -176,7 +236,7 @@ FrSky_RX8R::pub_cmd_vel(int ch1, int ch2, int ch8)
 }
 
 void
-FrSky_RX8R::pub_light(int ch3, int ch6)
+Receiver_Ros::pub_light(int ch3, int ch6)
 {
     // subtract 992 so each channel ranges from -820 to +819
     ch3 -= 992;
@@ -214,8 +274,7 @@ FrSky_RX8R::pub_light(int ch3, int ch6)
     switch (mode)
     {
     case sgd_msgs::msg::Light::FILL:
-        rgb[light_msg_.strip == 1] = 255;
-        light_msg_.strip = sgd_msgs::msg::Light::BOTH;
+        rgb[0] = 255;
         break;
     
     case sgd_msgs::msg::Light::BLINK:
@@ -225,7 +284,6 @@ FrSky_RX8R::pub_light(int ch3, int ch6)
 
     case sgd_msgs::msg::Light::WAFT:
         rgb[2] = 255;
-        light_msg_.strip = sgd_msgs::msg::Light::BOTH;
         break;
 
     case sgd_msgs::msg::Light::RUN:
@@ -248,7 +306,7 @@ FrSky_RX8R::pub_light(int ch3, int ch6)
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<sgd_hardware_drivers::FrSky_RX8R>();
+    auto node = std::make_shared<sgd_hardware_drivers::Receiver_Ros>();
     rclcpp::spin(node->get_node_base_interface());
     rclcpp::shutdown();
 }

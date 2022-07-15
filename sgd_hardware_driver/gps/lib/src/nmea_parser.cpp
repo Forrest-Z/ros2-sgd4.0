@@ -31,13 +31,12 @@ Nmea_Parser::Nmea_Parser() {
     // std::snprintf(&buf[0], sz+1, out, 1900+ltm->tm_year, 1+ltm->tm_mon, ltm->tm_mday,
     //                         ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
 
-    plog::init(plog::debug, "log/nmea.log");
+    //plog::init(plog::debug, "log/nmea.log");
 }
 
 int
 Nmea_Parser::import_xml(std::string xml_file)
 {
-    PLOGD << "Load xml file " << xml_file;
     tinyxml2::XMLDocument doc;
     doc.LoadFile(xml_file.c_str());
 
@@ -87,7 +86,6 @@ Nmea_Parser::parse_msg(std::string msg)
 {
     if (msg.front() != '$') // || line.back() != '\0')
     {
-        PLOGW << "Badly formatted string: " << msg.front();
         Error err(Error::INVALID_ARG, "Badly formatted message: " + msg);
         errors.push_back(err);
         return 1;
