@@ -58,7 +58,7 @@ namespace sgd_safety
         auto frame_height = depth.get_height() - 1;
 
         
-        float dist, prev_dist = 0, slope;
+        float dist, prev_dist = 0, obstacle_dist = 0, slope;
         int obstacle_detect_local = 0;
         int obstacle_detect_global = 0;
         bool obstacle_detect_line = false;
@@ -67,21 +67,19 @@ namespace sgd_safety
         {
             for(int i = 0; i <= detection_distance; i++)
             {
-                dist = depth.get_distance((int)((frame_width / 2) + detection_width), (int)(frame_height - i));
+                dist = depth.get_distance((int)((frame_width / 2) + j), (int)(frame_height - i));
+
+                // Discard noise
+                if(dist == 0)
+                    break;
 
                 // Checks if the distance measured is expected: if so, resets obstacle counter; otherwise marks it as an obstacle indication on that line (local).
-                slope = (dist - prev_dist); // / ((i = 0) ? 1 : i-(i-1));
+                slope = (dist - prev_dist) / ((i == 0) ? 1 : i-(i-1));
                 
-                if(slope < 0)
-                {
-
+                if(slope < 0)  
                     obstacle_detect_local++;
-                }
                 else
-                {
-                    obstacle_detect_local = 0;
-                    
-                } 
+                    obstacle_detect_local = 0; 
 
                 // If there are certain number of obstacle indications, it adds it to the global count.
                 if(obstacle_detect_local > obstacle_sensitivity_local)
@@ -93,8 +91,8 @@ namespace sgd_safety
                 }
                 prev_dist = dist;   
             }
-            /*
-                // The obstacles must be contiguous, otherwise their indications are discarded.
+            
+            // The obstacles must be contiguous, otherwise their indications are discarded.
             if (obstacle_detect_line == false)
                 obstacle_detect_global == 0;
             else
@@ -102,21 +100,21 @@ namespace sgd_safety
 
 
             // If this count exceeds certain number, it means that the obstacle has been corroborated on multiple lines, so its presence is declared.
-            if(obstacle_detect_global > obstacle_sensitivity_global)
+            if(obstacle_detect_global >= obstacle_sensitivity_global)
             {
-                std::cout << "Obstacle detected" << " at approx." << dist << "m." << std::endl;
+                obstacle_dist = dist;
                 break;
             }
-            */
+            else
+                obstacle_dist = 0;
         }
 
-        // Adjust this values to minimum and maximum
-        if(dist > 1.5)
-            speed = 1.0;
-        else if(dist < 0.80)
+        if(obstacle_dist > depthCamera_max_dist)
+        speed = 1.0;
+        else if(obstacle_dist < depthCamera_min_dist)
             speed = 0.0;
         else
-            speed = ((dist - 0.8) / (1.5 - 0.8)); 
+            speed = (double)((obstacle_dist - depthCamera_min_dist) / (depthCamera_max_dist - depthCamera_min_dist)); 
 
         return speed;
 

@@ -1,7 +1,7 @@
 # SGD4.0-ROS2
 
 <p align="center">
-  <img height="300" src="doc/sgd_logo-white.png" />
+  <img height="300" src="doc/sgd_logo_w_background.png" />
 </p>
 
 
