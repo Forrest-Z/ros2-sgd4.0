@@ -1,6 +1,0 @@
-image: map_slam.pgm
-resolution: 0.100000
-origin: [-73.00000, -64.00000, 0.000000]
-negate: 0
-occupied_thresh: 0.65
-free_thresh: 0.100

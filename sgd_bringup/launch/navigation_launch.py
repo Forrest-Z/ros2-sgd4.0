@@ -28,7 +28,7 @@ def generate_launch_description():
 
     map_yaml_file = LaunchConfiguration('map')
     use_sim_time = LaunchConfiguration('use_sim_time')
-    params_file = LaunchConfiguration('params_file')
+    params = LaunchConfiguration('params')
     default_bt_xml_filename = LaunchConfiguration('default_bt_xml_filename')
     map_subscribe_transient_local = LaunchConfiguration('map_subscribe_transient_local')
 
@@ -42,17 +42,17 @@ def generate_launch_description():
     #              ('/tf_static', 'tf_static')]
 
     # Create our own temporary YAML files that include substitutions
-    param_substitutions = {
-        'use_sim_time': use_sim_time,
-        'default_bt_xml_filename': default_bt_xml_filename,
-        'map_subscribe_transient_local': map_subscribe_transient_local,
-        'yaml_filename': map_yaml_file,
-        'log_dir': '~home/.ros/log/'}
+    # param_substitutions = {
+    #     'use_sim_time': use_sim_time,
+    #     'default_bt_xml_filename': default_bt_xml_filename,
+    #     'map_subscribe_transient_local': map_subscribe_transient_local,
+    #     'yaml_filename': map_yaml_file,
+    #     'log_dir': '~home/.ros/log/'}
 
-    configured_params = RewrittenYaml(
-            source_file=params_file,
-            param_rewrites=param_substitutions,
-            convert_types=True)
+    # configured_params = RewrittenYaml(
+    #         source_file=params_file,
+    #         param_rewrites=param_substitutions,
+    #         convert_types=True)
 
     return LaunchDescription([
         # Set env var to print messages to stdout immediately
@@ -62,10 +62,10 @@ def generate_launch_description():
             'use_sim_time', default_value='true',
             description='Use simulation (Gazebo) clock if true'),
 
-        DeclareLaunchArgument(
-            'params_file',
-            default_value=os.path.join(bringup_dir, 'params', 'simulation_params.yaml'),
-            description='Full path to the ROS2 parameters file to use'),
+        # DeclareLaunchArgument(
+        #     'params',
+        #     default_value=os.path.join(bringup_dir, 'params', 'simulation_params.yaml'),
+        #     description='Full path to the ROS2 parameters file to use'),
 
         DeclareLaunchArgument(
             'default_bt_xml_filename',
@@ -82,49 +82,49 @@ def generate_launch_description():
             executable='subsum_controller',
             name='subsum_controller',
             output='screen',
-            parameters=[configured_params]),
+            parameters=[params]),
 
         Node(
             package='sgd_safety',
             executable='ros2_obstacle_checker',
             name='ros2_obstacle_checker',
             output='screen',
-            parameters=[configured_params]),
+            parameters=[params]),
 
         Node(
             package='nav2_controller',
             executable='controller_server',
             name='controller_server',
             output='screen',
-            parameters=[configured_params]),
+            parameters=[params]),
 
         Node(
             package='nav2_planner',
             executable='planner_server',
             name='planner_server',
             output='screen',
-            parameters=[configured_params]),
+            parameters=[params]),
 
         Node(
             package='nav2_recoveries',
             executable='recoveries_server',
             name='recoveries_server',
             output='screen',
-            parameters=[configured_params]),
+            parameters=[params]),
 
         Node(
             package='nav2_bt_navigator',
             executable='bt_navigator',
             name='bt_navigator',
             output='screen',
-            parameters=[configured_params]),
+            parameters=[params]),
 
         Node(
             package='nav2_waypoint_follower',
             executable='waypoint_follower',
             name='waypoint_follower',
             output='screen',
-            parameters=[configured_params]),
+            parameters=[params]),
 
         Node(
             package='sgd_global_planner',
@@ -132,13 +132,21 @@ def generate_launch_description():
             name='osm_planner',
             output='screen',
             emulate_tty=True,
-            parameters=[configured_params]),
+            parameters=[params]),
 
         Node(
             package='frsky_rx8r',
             executable='frsky_rx8r',
             name='frsky_rx8r',
             output='screen',
-            parameters=[configured_params])
+            parameters=[params]),
+
+        Node(
+            package='sgd_audio',
+            executable='sgd_voice',
+            name='sgd_voice',
+            output='screen',
+            emulate_tty=True,
+            parameters=[params])
 
     ])

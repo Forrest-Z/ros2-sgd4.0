@@ -1,0 +1,8 @@
+{
+    "addresslist": [
+        {"address": "Ecke SE", "nodes": ["398760032"]},
+        {"address": "Ecke SW", "nodes": ["269238708"]},
+        {"address": "Ecke NE", "nodes": ["323853305"]},
+        {"address": "Ecke NW", "nodes": ["47816306"]}
+    ]
+}

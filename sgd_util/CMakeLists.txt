@@ -65,8 +65,13 @@ ament_target_dependencies(wgs_to_local
   geometry_msgs)
 target_link_libraries(wgs_to_local ${library_name})
 
+add_executable(scan_timer src/scan_timer.cpp)
+ament_target_dependencies(scan_timer
+  rclcpp
+  sensor_msgs)
+
 install(
-  TARGETS visualizer wgs_to_local
+  TARGETS visualizer wgs_to_local scan_timer
   DESTINATION lib/${PROJECT_NAME})
 
 install(

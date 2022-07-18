@@ -14,11 +14,9 @@ from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 from nav2_common.launch import RewrittenYaml
 
-
 def generate_launch_description():
     # Get the launch directory
     bringup_dir = get_package_share_directory('sgd_bringup')
-    #sim_dir = get_package_share_directory('sgd_gazebo_sim')
     launch_dir = os.path.join(bringup_dir, 'launch')
 
     # Launch variables
@@ -64,6 +62,7 @@ def generate_launch_description():
     declare_map_yaml_cmd = DeclareLaunchArgument(
         'map',
         default_value=os.path.join(bringup_dir, 'maps', 'lohmuehlenpark.yaml'),
+        #default_value=os.path.join(bringup_dir, 'maps', 'augustinum.yaml'),
         description='Full path to map file to load')
 
     # Change depending on sim = true or sim = false
@@ -96,7 +95,7 @@ def generate_launch_description():
 
     declare_log_sev_cmd = DeclareLaunchArgument(
         'log_severity',
-        default_value='I',
+        default_value='D',
         description='Log severity - E/W/I/D/V - Error/Warn/Info/Debug/Verbose'
     )
 
@@ -182,14 +181,14 @@ def generate_launch_description():
     navigation_cmd = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'navigation_launch.py')),
             launch_arguments={'use_sim_time': sim,
-                              'params_file': configured_params}.items())
+                              'params': configured_params}.items())
 
     hardware_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(launch_dir, 'hardware_launch.py')),
         #condition=IfCondition(PythonExpression(['not ', sim])),
         launch_arguments={'map': map_yaml_file,
-                          'use_sim_time': sim,
-                          'params': params_file}.items())
+                          #'use_sim_time': sim,
+                          'params': configured_params}.items())
     
     start_lifecycle_cmd = Node(
         package='sgd_lifecycle_manager',

@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nodelist version="0.6">
+  <node id="667330885" lat="53.5439471" lon="9.9179274">
+    <nd ref="713497806">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="721138593">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="979559714" lat="53.5438722" lon="9.9176361">
+    <nd ref="130612515">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="217811030">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="657794298" lat="53.5437965" lon="9.9176363">
+    <nd ref="269238708">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="217811030">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="186815554" lat="53.5437582" lon="9.9174990">
+    <nd ref="69510781">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="820448762">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="69510781" lat="53.5437572" lon="9.9174317">
+    <nd ref="186815554">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="219154312">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="83803127" lat="53.5437526" lon="9.9170949">
+    <barrier>gate</barrier>
+    <nd ref="596521136">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="219154312" lat="53.5437563" lon="9.9173643">
+    <nd ref="69510781">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="768296263">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="110458309" lat="53.5439091" lon="9.9180731">
+    <nd ref="549727538">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="666344800">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="12072110" lat="53.5437586" lon="9.9178545">
+    <nd ref="220177869">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="872989930">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="103541898" lat="53.5439475" lon="9.9177816">
+    <nd ref="808692133">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="713497806">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="309988356" lat="53.5437638" lon="9.9180727">
+    <nd ref="562178017">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="398760032">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="398760032" lat="53.5437586" lon="9.9180645">
+    <nd ref="112665348">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="309988356">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="269238708" lat="53.5437586" lon="9.9176364">
+    <nd ref="907356705">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="820448762">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="657794298">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="872989930" lat="53.5437586" lon="9.9179272">
+    <nd ref="112665348">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="12072110">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="721138593" lat="53.5439469" lon="9.9180003">
+    <nd ref="667330885">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="323853305">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="47816306" lat="53.5439479" lon="9.9176423">
+    <nd ref="595485386">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="808692133">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="220177869" lat="53.5437586" lon="9.9177818">
+    <nd ref="907356705">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="12072110">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="402531392" lat="53.5437545" lon="9.9172296">
+    <nd ref="768296263">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="596521136">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="768296263" lat="53.5437554" lon="9.9172970">
+    <nd ref="219154312">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="402531392">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="820448762" lat="53.5437591" lon="9.9175664">
+    <nd ref="186815554">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="269238708">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="549727538" lat="53.5439431" lon="9.9180732">
+    <nd ref="110458309">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="323853305">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="595485386" lat="53.5439442" lon="9.9176359">
+    <nd ref="47816306">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="130612515">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="808692133" lat="53.5439477" lon="9.9177087">
+    <nd ref="103541898">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="47816306">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="907356705" lat="53.5437586" lon="9.9177091">
+    <nd ref="220177869">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="269238708">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="323853305" lat="53.5439467" lon="9.9180659">
+    <nd ref="549727538">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="721138593">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="120254511" lat="53.5438339" lon="9.9180729">
+    <nd ref="562178017">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="666344800">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="112665348" lat="53.5437586" lon="9.9180000">
+    <nd ref="872989930">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="398760032">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="596521136" lat="53.5437535" lon="9.9171623">
+    <nd ref="83803127">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="402531392">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="713497806" lat="53.5439473" lon="9.9178545">
+    <nd ref="103541898">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="667330885">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="130612515" lat="53.5439100" lon="9.9176360">
+    <nd ref="979559714">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="595485386">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="666344800" lat="53.5438715" lon="9.9180730">
+    <nd ref="110458309">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="120254511">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="217811030" lat="53.5438343" lon="9.9176362">
+    <nd ref="979559714">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="657794298">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+  <node id="562178017" lat="53.5437962" lon="9.9180728">
+    <nd ref="120254511">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+    <nd ref="309988356">
+      <highway>footway</highway>
+      <surface>paving_stones</surface>
+    </nd>
+  </node>
+</nodelist>

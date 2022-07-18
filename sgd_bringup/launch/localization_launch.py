@@ -69,8 +69,8 @@ def generate_launch_description():
         executable='static_transform_publisher',
         output='screen',
         arguments=["10.0192452", "53.5532264", "0", "0", "0", "0", "earth", "map"]) # Lohmuehlenpark
-        #arguments=["9.916281", "53.543635", "0", "0", "0", "0", "earth", "map"])   # Test im Augustinum
-
+        #arguments=["9.9163604", "53.5436909", "0", "0", "0", "0", "earth", "map"])   # Test im Augustinum
+        
     start_map_server_cmd = Node(
         package='nav2_map_server',
         executable='map_server',

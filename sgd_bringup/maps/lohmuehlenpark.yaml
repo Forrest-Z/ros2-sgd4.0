@@ -11,3 +11,4 @@ free_thresh: 0.1
 osm_map_file: lohmuehlenpark.nav
 address_file: lohmuehlenpark.json
 users_file: 0_users.xml
+uwb_tags: uwb_lohmuehlenpark.yaml

@@ -5,12 +5,12 @@
     <!--node name="amcl" /-->
 
 <!-- hardware -->
-    <!--node name="feather_handle_ros" / -->
+    <!--node name="feather_handle_ros" />
     <node name="wh_fcruiser" />
     <node name="ublox6_gps" />
-    <!--node name="led_strip" /-->
-    <!--node name="frsky_rx8r" /-->
-    <node name="uwb_node" />
+    <node name="led_strip" />
+    <node name="frsky_rx8r" /-->
+    <!--node name="uwb_node" /-->
 
 <!-- navigation nodes -->
     <node name="subsum_controller" />
@@ -21,5 +21,7 @@
     <node name="waypoint_follower" />
     <node name="osm_planner" />
     <node name="ros2_obstacle_checker" />
+
+    <node name="sgd_voice" />
 
 </launch>

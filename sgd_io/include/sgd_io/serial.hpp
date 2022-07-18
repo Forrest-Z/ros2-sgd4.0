@@ -57,7 +57,7 @@ class Serial
 {
 
 enum RECEIVER_STATE {
-    INITIAL,
+    INITIAL = 0,
     ESTABLISH,
     AUTHENTIFICATE,
     WAIT_HEADER,

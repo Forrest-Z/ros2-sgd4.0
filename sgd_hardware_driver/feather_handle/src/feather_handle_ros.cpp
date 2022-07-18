@@ -24,7 +24,7 @@ Feather_Handle_ROS::Feather_Handle_ROS():
     std::string log_file(log_dir_ + "/" + sgd_util::create_log_file("handle"));
 
     plog::init(plog::severityFromString(log_sev_.c_str()), log_file.c_str());
-    PLOGD << "Message: millis; roll; pitch; yaw; gyro (x3);;; magneto (x3)";
+    PLOGD << "Message: millis; roll; pitch; yaw; gyro (x3);;; magneto (x3);;; accel (x3)";
 }
 
 Feather_Handle_ROS::~Feather_Handle_ROS()
@@ -193,7 +193,8 @@ Feather_Handle_ROS::publish_imu()
     PLOGD << bno055_->get_millis() << ";" 
           << std::to_string(o.data[0]) << ";" << std::to_string(o.data[1]) << ";" << std::to_string(o.data[2]) << ";"
           << std::to_string(g.data[0]) << ";" << std::to_string(g.data[1]) << ";" << std::to_string(g.data[2]) << ";"
-          << std::to_string(m.data[0]) << ";" << std::to_string(m.data[1]) << ";" << std::to_string(m.data[2]);
+          << std::to_string(m.data[0]) << ";" << std::to_string(m.data[1]) << ";" << std::to_string(m.data[2]) << ";"
+          << std::to_string(a.data[0]) << ";" << std::to_string(a.data[1]) << ";" << std::to_string(a.data[2]);
 
     imu_pub_->publish(msg_);
 }

@@ -1,6 +1,11 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <users>
     <user>
+        <angle>
+            <a>2.0</a>
+            <b>2.0</b>
+            <c>0.1</c>
+        </angle>
         <surface>
             <asphalt>0.8</asphalt>
             <paving_stones>1.0</paving_stones>

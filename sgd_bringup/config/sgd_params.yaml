@@ -102,36 +102,55 @@ controller_server:
     # Progress checker parameters
     progress_checker:
       plugin: "sgd_ctrl::SgdProgressChecker"
-      required_movement_radius: 0.5
+      required_movement_radius: 0.1
       movement_time_allowance: 30.0
     # Goal checker parameters
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 2.0
+      xy_goal_tolerance: 1.0
       yaw_goal_tolerance: 0.5
       stateful: True
+    # DWB controller parameters
     FollowPath:
-      plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      desired_linear_vel: 0.2
-      lookahead_dist: 1.0
-      min_lookahead_dist: 0.6
-      max_lookahead_dist: 1.5
-      lookahead_time: 1.5
-      rotate_to_heading_angular_vel: 0.1
-      transform_tolerance: 0.1
-      use_velocity_scaled_lookahead_dist: false
-      min_approach_linear_velocity: 0.1
-      max_allowed_time_to_collision_up_to_carrot: 1.0
-      use_regulated_linear_velocity_scaling: true
-      use_cost_regulated_linear_velocity_scaling: false
-      regulated_linear_scaling_min_radius: 0.9
-      regulated_linear_scaling_min_speed: 0.25
-      use_rotate_to_heading: true
-      allow_reversing: false
-      rotate_to_heading_min_angle: 0.785
-      max_angular_accel: 0.05
-      max_robot_pose_search_dist: 10.0
-      use_interpolation: true
+      plugin: "dwb_core::DWBLocalPlanner"
+      debug_trajectory_details: True
+      min_vel_x: 0.0
+      min_vel_y: 0.0
+      max_vel_x: 2.0
+      max_vel_y: 2.0
+      max_vel_theta: 0.6
+      min_speed_xy: 0.0
+      max_speed_xy: 2.0
+      min_speed_theta: 0.0
+      acc_lim_x: 0.3
+      acc_lim_y: 0.0
+      acc_lim_theta: 0.3
+      decel_lim_x: -0.3
+      decel_lim_y: 0.0
+      decel_lim_theta: -0.3
+      vx_samples: 20
+      vy_samples: 5
+      vtheta_samples: 20
+      sim_time: 1.7
+      linear_granularity: 0.05
+      angular_granularity: 0.025
+      transform_tolerance: 0.4
+      xy_goal_tolerance: 0.5
+      trans_stopped_velocity: 0.25
+      short_circuit_trajectory_evaluation: True
+      stateful: True
+      # "BaseObstacle", "GoalAlign", 
+      critics: ["RotateToGoal", "Oscillation", "PathAlign", "PathDist", "GoalDist"]
+      #BaseObstacle.scale: 0.02
+      #PathAlign.scale: 8.0
+      #GoalAlign.scale: 24.0
+      PathAlign.forward_point_distance: 0.5
+      #GoalAlign.forward_point_distance: 0.1
+      PathDist.scale: 32.0
+      GoalDist.scale: 24.0
+      #RotateToGoal.scale: 32.0
+      #RotateToGoal.slowing_factor: 5.0
+      #RotateToGoal.lookahead_time: -1.0
 
 controller_server_rclcpp_node:
   ros__parameters:
@@ -233,7 +252,7 @@ map_saver:
 
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 10.0
+    expected_planner_frequency: 1.0
     plugins: ["GridBased"]
     use_sim_time: False
     GridBased:
@@ -284,6 +303,8 @@ ros2_obstacle_checker:
 osm_planner:
   ros__parameters:
     use_sim_time: False
+    log_dir: ".ros/log/"
+    log_severity: "I"
     waypoints_topic: "global_plan"
     clicked_point_topic: "clicked_point"
     yaml_filename: "lohmuehlenpark.yaml"
@@ -291,7 +312,7 @@ osm_planner:
 visualizer:
   ros__parameters:
     use_sim_time: False
-    topics: ["uwb/local", "gps_local"]
+    topics: ["uwb/local", "gps/local"]
 
 ### Hardware parameters ###
 sick_scan2:
@@ -308,31 +329,44 @@ ublox6_gps:
   ros__parameters:
     use_sim_time: False
     log_dir: ".ros/log/"
-    log_severity: 4
+    log_severity: "I"
     port: "/dev/serial/by-id/usb-u-blox_AG_-_www.u-blox.com_u-blox_GNSS_receiver-if00"
-    parser_file: "/home/pascal/dev_ws/src/ros2-sgd4.0/sgd_bringup/config/nmea.xml"
+    parser_file: "sgd_bringup/config/nmea.xml"
     parser_type: "nmea"
     publish_local_pose: True
     publish_tf: False
+    local_pose_topic: "gps/local"
+    gps_sim_topic: "gps/sim"
+    utc_topic: "clock/utc"
+    gps_topic: "gps"
+    transform_to_base_link: True
+    base_link_frame_id: "base_link"
+    odom_frame_id: "odom"
 
 frsky_rx8r:
   ros__parameters:
     use_sim_time: False
+    log_dir: ".ros/log/"
+    log_severity: "I"
     port: "/dev/serial/by-id/usb-Arduino__www.arduino.cc__0042_5573530323435111D172-if00"
     max_vel: 1.0
-    max_rot_vel: 0.5
+    max_rot_vel: 1.57
 
 wh_fcruiser:
   ros__parameters:
     use_sim_time: False
+    log_dir: ".ros/log/"
+    log_severity: "I"
     port: "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0"
-    odom_topic: "odom"
+    odom_topic: "odom/hardware"
     odom_sim_topic: "odom"
     battery_state_topic: "battery"
     vel_twist_topic: "sgd_move_base"
-    wheel_separation: 0.71
-    wheel_circumference: 0.68
+    wheel_separation: 0.74
+    wheel_circumference: 0.80
     sim_battery_state: 37.0
+    compass_gain: 0.045
+    gps_orientation_gain: 0.5
     relative: True
 
 uwb_node:
@@ -347,6 +381,8 @@ uwb_node:
 feather_handle_ros:
   ros__parameters:
     use_sim_time: false
+    log_dir: ".ros/log/"
+    log_severity: "I"
     port: "/dev/serial/by-id/usb-Adafruit_Feather_M0_C9F072FA50525151322E3120FF0B1C13-if00"
     imu_topic: "imu"
     imu_temp_topic: "imu/temp"
@@ -355,5 +391,7 @@ feather_handle_ros:
 
 led_strip:
   ros__parameters:
+    log_dir: ".ros/log/"
+    log_severity: "I"
     port: "/dev/serial/by-id/usb-Adafruit_Feather_M0_FAE285E450533830332E3120FF171343-if00"
     
