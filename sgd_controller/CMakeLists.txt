@@ -33,6 +33,7 @@ ament_target_dependencies(subsum_controller
   rclcpp_lifecycle
   geometry_msgs
   sgd_msgs
+  sgd_util
 )
 
 add_executable(master_control_unit src/master_control_unit.cpp)

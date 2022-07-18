@@ -20,6 +20,10 @@
 
 #include "geometry_msgs/msg/twist.hpp"
 #include "sgd_msgs/msg/light.hpp"
+#include "sgd_util/log_utils.hpp"
+
+#include <plog/Log.h>
+#include "plog/Initializers/RollingFileInitializer.h"
 
 namespace sgd_ctrl
 {

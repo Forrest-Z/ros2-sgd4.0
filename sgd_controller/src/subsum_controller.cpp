@@ -10,11 +10,19 @@ Subsum_Controller::Subsum_Controller()
         : rclcpp_lifecycle::LifecycleNode("subsum_controller"),
           in_topics_{"cmd_vel_lidar", "cmd_vel_nav2"}
 {
-    RCLCPP_DEBUG(get_logger(), "Creating");
-
     // Add parameters
+    declare_parameter("log_dir", rclcpp::ParameterValue(".ros/log/"));
+    declare_parameter("log_severity", rclcpp::ParameterValue("I"));
     declare_parameter("move_topics", in_topics_);
     declare_parameter("sgd_move_topic", rclcpp::ParameterValue("sgd_move_base"));
+
+    // initialize logging
+    std::string log_dir_;
+    get_parameter("log_dir", log_dir_);
+    std::string log_sev_;
+    get_parameter("log_severity", log_sev_);
+    plog::init(plog::severityFromString(log_sev_.c_str()), (log_dir_ + "/" + sgd_util::create_log_file("subsum")).c_str());
+    PLOGD << "Message: layer, cmd_vel.linear.x, cmd_vel.angular.z";
 }
 
 Subsum_Controller::~Subsum_Controller() {}
@@ -22,9 +30,7 @@ Subsum_Controller::~Subsum_Controller() {}
 CallbackReturn
 Subsum_Controller::on_configure(const rclcpp_lifecycle::State & state  __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Configure");
-
-    // init
+    //init
     //init_parameters();
     get_parameter("move_topics", in_topics_);
     get_parameter("sgd_move_topic", out_topic_);
@@ -49,7 +55,6 @@ Subsum_Controller::on_configure(const rclcpp_lifecycle::State & state  __attribu
 CallbackReturn
 Subsum_Controller::on_activate(const rclcpp_lifecycle::State & state  __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Activate");
     pub_cmd_vel->on_activate();
     pub_light_->on_activate();
     return CallbackReturn::SUCCESS;
@@ -58,7 +63,6 @@ Subsum_Controller::on_activate(const rclcpp_lifecycle::State & state  __attribut
 CallbackReturn
 Subsum_Controller::on_deactivate(const rclcpp_lifecycle::State & state  __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Deactivate");
     pub_cmd_vel->on_deactivate();
     pub_light_->on_deactivate();
     return CallbackReturn::SUCCESS;
@@ -67,21 +71,21 @@ Subsum_Controller::on_deactivate(const rclcpp_lifecycle::State & state  __attrib
 CallbackReturn
 Subsum_Controller::on_cleanup(const rclcpp_lifecycle::State & state  __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Cleanup");
     return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn
 Subsum_Controller::on_shutdown(const rclcpp_lifecycle::State & state  __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Shutdown");
     return CallbackReturn::SUCCESS;
 }
 
 void
 Subsum_Controller::init_pub_sub()
 {
+    RCLCPP_DEBUG(get_logger(), "Create publisher on topic 'sgd_move_base'");
     pub_cmd_vel = this->create_publisher<geometry_msgs::msg::Twist>("sgd_move_base", default_qos);
+    RCLCPP_DEBUG(get_logger(), "Create publisher on topic 'lights'");
     pub_light_ = this->create_publisher<sgd_msgs::msg::Light>("lights", default_qos);
 
     for (uint8_t i = 0; i < in_topics_.size(); i++)
@@ -89,7 +93,7 @@ Subsum_Controller::init_pub_sub()
         std::function<void(std::shared_ptr<geometry_msgs::msg::Twist>)> fnc = std::bind(
             &Subsum_Controller::on_cmd_vel_received, this, std::placeholders::_1, (int)i);
 
-        RCLCPP_INFO(get_logger(), "Create subscription for topic %s on layer %i", in_topics_.at(i).c_str(), i);
+        RCLCPP_INFO(get_logger(), "Create subscription for topic '%s' on layer %i", in_topics_.at(i), i);
         subscriber.push_back(this->create_subscription<geometry_msgs::msg::Twist>(in_topics_.at(i), default_qos,
                             fnc));
     }
@@ -125,6 +129,7 @@ Subsum_Controller::on_cmd_vel_received(const geometry_msgs::msg::Twist::SharedPt
             pub_lights(layer);
         }
         active_layer = layer;
+        PLOGD << active_layer << ";" << msg->linear.x << ", z: " << msg->angular.z;
         pub_cmd_vel->publish(*msg);
     }
 }
