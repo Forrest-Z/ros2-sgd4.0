@@ -290,7 +290,7 @@ robot_state_publisher:
 subsum_controller:
   ros__parameters:
     use_sim_time: False
-    move_topics: ["cmd_vel_master", "cmd_vel_lidar", "cmd_vel_frsky", "cmd_vel"]
+    move_topics: ["cmd_vel_master", "cmd_vel_lidar", "cmd_vel_frsky", "depthCamera_cmd_vel", "cmd_vel"]
     sgd_move_topic: "sgd_move_base"
     
 ros2_obstacle_checker:
