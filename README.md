@@ -1,4 +1,4 @@
-![Ubuntu version](https://img.shields.io/badge/ubuntu-20.04-orange)
+![Ubuntu version](https://img.shields.io/badge/Ubuntu-20.04-orange)
 ![ROS version](https://img.shields.io/badge/ROS2-Foxy-brightgreen)
 
 # SGD4.0-ROS2
