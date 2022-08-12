@@ -17,7 +17,6 @@ private:
     const int detection_distance = 130;             // How far (in pixels) will the objects be detected
     const int detection_width = 360;                // This value should be large enough to guarantee the robot can pass through. It must also be an even number.
     const float depthCamera_max_dist = 1.5;
-    const float depthCamera_max_dist = 1.5;
     const float depthCamera_min_dist = 0.8;
     rs2::pipeline p;    // Create a Pipeline
     rs2::frameset frames;

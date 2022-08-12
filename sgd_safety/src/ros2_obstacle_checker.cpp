@@ -121,7 +121,7 @@ namespace sgd_safety
             cmd_vel.linear.x = 0.0;
             pub_cmd_vel->publish(cmd_vel);
         }
-        else if ((now().seconds() - cmd_vel_time) < 1 && speed < 1.0)
+        else if ((now().seconds() - cmd_vel_time) < 1 && speed < 1.0)   // If the time elapsed is smaller than 1 second and the speed is smaller than 1 (no obstacles)
         {
             pub_cmd_vel->publish(cmd_vel);
         }

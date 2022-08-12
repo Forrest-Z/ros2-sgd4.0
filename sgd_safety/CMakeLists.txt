@@ -15,7 +15,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
 find_package(realsense2 REQUIRED)
-##target_link_libraries(${PROJECT_NAME} ${realsense2_LIBRARY})
+
 
 include(FetchContent)
 FetchContent_Declare(
@@ -36,8 +36,20 @@ ament_target_dependencies(${executable_name}
   sensor_msgs
 )
 
+set(depth_executable ros2_depthCamera_obstacle_checker)
+add_executable(${depth_executable} src/ros2_depthCamera_obstacle_checker.cpp src/depthCamera_obstacle_checker.cpp)
+ament_target_dependencies(${depth_executable}
+  rclcpp
+  rclcpp_lifecycle
+  geometry_msgs
+  sensor_msgs
+  realsense2
+)
+
+target_link_libraries(${depth_executable} ${realsense2_LIBRARY})
+
 install(
-  TARGETS ${executable_name}
+  TARGETS ${executable_name} ${depth_executable}
   DESTINATION lib/${PROJECT_NAME})
   
 install(

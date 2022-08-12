@@ -8,7 +8,7 @@ class VoiceMessages
 {
     private:    
         std::string messages[7] = {"achtung", "buergersteige", "links", "rechts", "start", "stop", "ziel_erreicht"};
-        std::string bashfile = "./play_message.sh ";
+        std::string bashfile = "~/dev_ws/src/ros2-sgd4.0/sgd_audio/src/play_message.sh ";
 
     public:
         VoiceMessages();

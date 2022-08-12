@@ -13,6 +13,10 @@ namespace sgd_safety
 
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
+/**
+ * @brief Uses Lidar measurements to determine the speed of the robot according to the obstacles of the environment.
+     * It also determines if there is enough space for the robot to continue or if it should stop to avoid collision. 
+ */
 class Ros2_Obstacle_Checker : public rclcpp_lifecycle::LifecycleNode
 {
 
@@ -46,13 +50,7 @@ protected:
 
     void on_cmd_vel_contr_received(const geometry_msgs::msg::Twist::SharedPtr msg);
 
-    /**
-     * Uses Lidar measurements to determine the speed of the robot according to the obstacles of the environment.
-     * It also determines if there is enough space for the robot to continue or if it should stop to avoid collision.
-     * <p>
-     * @param LaserScan    Lidar sensor measurements
-     * @param return       none
-     */
+   
     void on_scan_received(const sensor_msgs::msg::LaserScan::SharedPtr msg);
 public:
     Ros2_Obstacle_Checker();

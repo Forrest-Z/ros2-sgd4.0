@@ -43,7 +43,7 @@ protected:
 public:
     Ros2_DepthCamera_Obstacle_Checker(void);
     ~Ros2_DepthCamera_Obstacle_Checker(void);
-    Ros2_DepthCamera_Publish_Speed(void);
+    void Ros2_DepthCamera_Publish_Speed(void);
 };
 
 } 

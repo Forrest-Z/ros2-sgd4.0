@@ -92,6 +92,13 @@ def generate_launch_description():
             parameters=[params]),
 
         Node(
+            package='sgd_safety',
+            executable='ros2_depthCamera_obstacle_checker',
+            name='ros2_depthCamera_obstacle_checker',
+            output='screen',
+            parameters=[params]),
+
+        Node(
             package='nav2_controller',
             executable='controller_server',
             name='controller_server',
