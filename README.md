@@ -116,9 +116,9 @@ set the following
 
 ## Build the kernel
 
-Build kernel, this may take some time (~30 min)
+Build kernel, this may take some time (~3h)
 ```
-LANG=C fakeroot debian/rules binary
+LANG=C sudo fakeroot make -j `nproc` deb-pkg
 ```
 
 After the build is finished check the debian packages
@@ -135,13 +135,22 @@ Then we install all kernel debian packages
 sudo dpkg -i ../*.deb
 ```
 
-Now the real time kernel should be installed. Reboot the system and check the new kernel version
+Now the real time kernel should be installed. Reboot the system and check the new kernel version.
 
 ```
 sudo reboot
 uname -a
 Linux ros2host 5.4.78-rt44 #1 SMP PREEMPT_RT Fri Nov 6 10:37:59 CET 2020 x86_64 xx
 ```
+
+If the loading of the kernel terminates with the follwing error message
+```
+Loading Linux 5.15.69-rt49...
+error: /boot/vmlinux-5.15.69-rt49 has invalid signature.
+Loading initial ramdisk...
+error: you need to load the kernel first.
+```
+check if Secure Boot is turned off.
 
 ## Possible errors when building
 
