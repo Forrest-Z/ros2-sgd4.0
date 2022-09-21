@@ -209,37 +209,19 @@ Installation wie [hier](https://index.ros.org/doc/ros2/Installation/Foxy/Linux-D
 Um ROS bei jedem neuen Terminalfenster automatisch zu sourcen, kann an das Ende der .bashrc folgender Codeblock eingefügt werden.
 
 ```sh
-if [ -f /opt/ros/foxy/local_setup.bash ]; then
-  . /opt/ros/foxy/local_setup.bash
-fi
+. ~/ros2_foxy/install/local_setup.bash
+. /opt/ros/foxy/local_setup.bash  # for ros dependencies
 ```
 
 ## Installation Navigation 2
 
-Es gibt zwei Möglichkeiten Navigation 2 zu installieren. Entweder in einem separaten Workspace oder im dev_ws (wird im nächsten Kapitel wieder verwendet).
-
 Installation wie [hier](https://navigation.ros.org/build_instructions/index.html#build-nav2-for-released-distribution)
 beschrieben.
-
-Oder mit folgenden Commands:
-
-```
-mkdir -p ~/nav2_ws/src
-cd ~/nav2_ws/src
-git clone https://github.com/ros-planning/navigation2.git --branch foxy-devel
-cd ~/nav2_ws
-rosdep install -y -r -q --from-paths src --ignore-src --rosdistro foxy
-colcon build --symlink-install
-
-source ~/nav2_ws/install/local_setup.bash
-```
 
 Um Navigation 2 bei jedem Terminalstart zu sourcen, den folgenden Codeblock ans Ende der .bashrc einfügen.
 
 ```sh
-if [ -f ~/nav2_ws/install/local_setup.bash ]; then
-  source ~/nav2_ws/install/local_setup.bash
-fi
+. ~/nav2_ws/install/local_setup.bash
 ```
 
 ## Installation sick_scan2
