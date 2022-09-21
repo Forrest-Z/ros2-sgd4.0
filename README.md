@@ -41,7 +41,7 @@ gestartet werden. Die beiden Parameter *sim* und *slam* sind optional. Standardm
 Install required software
 ```
 sudo apt-get build-dep linux linux-image-$(uname -r)
-sudo apt-get install libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf llvm
+sudo apt-get install libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf llvm zstd
 ```
 
 Create a new directory
@@ -118,7 +118,7 @@ set the following
 
 Build kernel, this may take some time (~30 min)
 ```
-make -j `nproc` deb-pkg
+LANG=C fakeroot debian/rules binary
 ```
 
 After the build is finished check the debian packages
