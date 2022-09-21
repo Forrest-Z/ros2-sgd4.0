@@ -14,6 +14,7 @@ Im Rahmen des Forschungsvorhabens "Blindenhund 4.0" wird an der HAW Hamburg in i
 # Contents
 
 - [Startup](README.md#ros2-startup)
+- [preempt_rt Patch}(README.md#preempt_rt-patch)
 - [Installation](README.md#ros2-installation)
 - [Testing](README.md#testing-im-shared-guide-dog-projekt)
 - [Debugging](README.md#debugging)
@@ -27,6 +28,130 @@ ros2 launch sgd_bringup sgd_startup.launch.py sim:=[True|False] slam:=[True|Fals
 ```
 
 gestartet werden. Die beiden Parameter *sim* und *slam* sind optional. Standardmäßig ist `sim:=False` und `slam:=False`.
+
+# preempt_rt Patch
+
+## useful links
+- [Ubuntu Kernel/Build](https://wiki.ubuntu.com/Kernel/BuildYourOwnKernel)
+- [HOWTO setup Linux with PREEMPT_RT properly](https://wiki.linuxfoundation.org/realtime/documentation/howto/applications/preemptrt_setup)
+- [Building a real-time Linux kernel](https://docs.ros.org/en/foxy/Tutorials/Miscellaneous/Building-Realtime-rt_preempt-kernel-for-ROS-2.html)
+
+## Installation
+
+Install required software
+```
+sudo apt-get build-dep linux linux-image-$(uname -r)
+sudo apt-get install libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf llvm
+```
+
+Create a new directory
+```
+mkdir ~/kernel
+cd ~/kernel
+```
+
+then download the linux kernel (v5.15.69) and preempt rt patch for the downloaded version. 
+
+```
+wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.15.69.tar.xz
+wget https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/5.15/patch-5.15.65-rt49.patch.xz
+```
+Caution: Do not download the file patches-5.15-...!
+
+After the downloading is completed unpack linux kernel
+```
+xz -cd linux-5.15.69.tar.xz | tar xvf -
+```
+
+and patch the kernel.
+```
+cd linux-5.19.10/
+xzcat ../patch-5.15.65-rt49.patch.xz | patch -p1
+```
+
+## Configuration
+
+Copy the config of the ubuntu install
+```
+cp /boot/config-5.15.0-48-generic .config
+```
+
+Open Software & Updates. in the Ubuntu Software menu tick the ‘Source code’ box
+
+Enable all Ubuntu configurations and preempt_rt in the kernel
+```
+yes '' | make oldconfig
+make menuconfig
+```
+
+set the following
+```
+# Enable CONFIG_PREEMPT_RT
+ -> General Setup
+  -> Preemption Model (Fully Preemptible Kernel (Real-Time))
+   (X) Fully Preemptible Kernel (Real-Time)
+
+# Enable CONFIG_HIGH_RES_TIMERS
+ -> General setup
+  -> Timers subsystem
+   [*] High Resolution Timer Support
+
+# Enable CONFIG_NO_HZ_FULL
+ -> General setup
+  -> Timers subsystem
+   -> Timer tick handling (Full dynticks system (tickless))
+    (X) Full dynticks system (tickless)
+
+# Set CONFIG_HZ_1000 (note: this is no longer in the General Setup menu, go back twice)
+ -> Processor type and features
+  -> Timer frequency (1000 HZ)
+   (X) 1000 HZ
+
+# Set CPU_FREQ_DEFAULT_GOV_PERFORMANCE [=y]
+ ->  Power management and ACPI options
+  -> CPU Frequency scaling
+   -> Default CPUFreq governor (<choice> [=y])
+     (X) performance
+```
+
+Change in .config: 
+```
+CONFIG_SYSTEM_TRUSTED_KEYS = ""
+```
+
+Execute the command
+```
+scripts/config --disable SYSTEM_REVOCATION_KEYS
+```
+
+## Build the kernel
+
+Build kernel, this may take some time (~30 min)
+```
+make -j `nproc` deb-pkg
+```
+
+After the build is finished check the debian packages
+
+```
+ls ../*deb
+../linux-headers-5.4.78-rt41_5.4.78-rt44-1_amd64.deb  ../linux-image-5.4.78-rt44-dbg_5.4.78-rt44-1_amd64.deb
+../linux-image-5.4.78-rt41_5.4.78-rt44-1_amd64.deb    ../linux-libc-dev_5.4.78-rt44-1_amd64.deb
+```
+
+Then we install all kernel debian packages
+
+```
+sudo dpkg -i ../*.deb
+```
+
+Now the real time kernel should be installed. Reboot the system and check the new kernel version
+
+```
+sudo reboot
+uname -a
+Linux ros2host 5.4.78-rt44 #1 SMP PREEMPT_RT Fri Nov 6 10:37:59 CET 2020 x86_64 xx
+```
 
 # ROS2 Installation
 
