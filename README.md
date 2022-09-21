@@ -14,7 +14,7 @@ Im Rahmen des Forschungsvorhabens "Blindenhund 4.0" wird an der HAW Hamburg in i
 # Contents
 
 - [Startup](README.md#ros2-startup)
-- [preempt_rt Patch}(README.md#preempt_rt-patch)
+- [preempt_rt Patch](README.md#preempt_rt-patch)
 - [Installation](README.md#ros2-installation)
 - [Testing](README.md#testing-im-shared-guide-dog-projekt)
 - [Debugging](README.md#debugging)
@@ -114,16 +114,6 @@ set the following
      (X) performance
 ```
 
-Change in .config: 
-```
-CONFIG_SYSTEM_TRUSTED_KEYS = ""
-```
-
-Execute the command
-```
-scripts/config --disable SYSTEM_REVOCATION_KEYS
-```
-
 ## Build the kernel
 
 Build kernel, this may take some time (~30 min)
@@ -151,6 +141,30 @@ Now the real time kernel should be installed. Reboot the system and check the ne
 sudo reboot
 uname -a
 Linux ros2host 5.4.78-rt44 #1 SMP PREEMPT_RT Fri Nov 6 10:37:59 CET 2020 x86_64 xx
+```
+
+## Possible errors when building
+
+```
+make[2]: *** [debian/rules:7: build-arch] Error 2
+dpkg-buildpackage: error: debian/rules binary subprocess returned exit status 2
+make[1]: *** [scripts/Makefile.package:77: deb-pkg] Error 2
+make: *** [Makefile:1533: deb-pkg] Error 2
+```
+
+Change in file .config ([gitlab.com](https://gitlab.com/CalcProgrammer1/OpenRGB/-/issues/950)):
+```
+CONFIG_SYSTEM_TRUSTED_KEYS = ""
+```
+
+```
+make[1]: *** No rule to make target 'debian/canonical-revoked-certs.pem' , needed by certs/x509_revocation_list'. STOP.
+make: ***[Makefile:1851:certs] Error 2
+```
+
+Execute the command ([askubuntu.com](https://askubuntu.com/questions/1362455/i-am-installing-kernel-in-my-ubuntu-but-getting-an-error))
+```
+scripts/config --disable SYSTEM_REVOCATION_KEYS
 ```
 
 # ROS2 Installation
