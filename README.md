@@ -18,6 +18,7 @@ Im Rahmen des Forschungsvorhabens "Blindenhund 4.0" wird an der HAW Hamburg in i
 - [Installation](README.md#ros2-installation)
 - [Testing](README.md#testing-im-shared-guide-dog-projekt)
 - [Debugging](README.md#debugging)
+- [Git commands](README.md#useful-git-commands)
 
 # ROS2 Startup
 
@@ -27,7 +28,7 @@ Zum Starten von ROS2 für den Shared Guide Dog 4.0 wird ein Launch-Script verwen
 ros2 launch sgd_bringup sgd_startup.launch.py sim:=[True|False] slam:=[True|False] log_severity:=["E"|"W"|"I"|"D"|"V"]
 ```
 
-gestartet werden. Die beiden Parameter *sim* und *slam* sind optional. Standardmäßig ist `sim:=False` und `slam:=False`.
+gestartet werden. Die beiden Parameter *sim* und *slam* sind optional. Standardmäßig ist `sim:=False` und `slam:=False`. Die log_severity ist auf `I` eingestellt.
 
 # preempt_rt Patch
 
@@ -112,6 +113,15 @@ set the following
   -> CPU Frequency scaling
    -> Default CPUFreq governor (<choice> [=y])
      (X) performance
+```
+
+Execute the following commands
+```
+chmod a+x debian/rules
+chmod a+x debian/scripts/*
+chmod a+x debian/scripts/misc/*
+LANG=C fakeroot debian/rules clean
+LANG=C fakeroot debian/rules editconfigs
 ```
 
 ## Build the kernel
@@ -201,6 +211,7 @@ Gazebo 11 | [Gazebo](http://gazebosim.org/tutorials?tut=ros2_installing&cat=conn
 - [GoogleTest](https://github.com/google/googletest)
 - [json](https://github.com/nlohmann/json)
 - [Plog](https://github.com/SergiusTheBest/plog)
+- [ROS Wrapper for Intel RealSense](https://github.com/IntelRealSense/realsense-ros)
 
 ## Installation ROS2 Foxy
 
@@ -253,9 +264,10 @@ Nach den beiden Anpassungen muss das Projekt neu gebaut werden. Zuletzt wird in 
 
 ## Installation Robot Localization Package
 
-Bevor das Robot Localization Package heruntergeladen und installiert werden kann, muss GeographicLib [heruntergeladen](https://geographiclib.sourceforge.io/html/index.html) und [installiert](https://geographiclib.sourceforge.io/html/install.html) werden.
+Bevor das Robot Localization Package heruntergeladen und installiert werden kann, muss [GeographicLib](https://geographiclib.sourceforge.io/html/index.html) heruntergeladen und [installiert](https://geographiclib.sourceforge.io/html/install.html) werden.
 
-Anschließend wird ein neuer Workspace `robot_localization_ws` im *home* Ordner erstellt. In diesen Order werden das robot_localization package und alle dependencies geklont.
+
+In diesen Order werden das robot_localization package und alle dependencies geklont.
 
 Paket | Link
 ------|-----
@@ -264,13 +276,31 @@ Geographic Info | [geographic_info](https://github.com/ros-geographic-info/geogr
 Diagnostics | [Diagnostics](https://github.com/ros/diagnostics/tree/foxy)
 GeographicLib | [GeographicLib](https://geographiclib.sourceforge.io/html/index.html)
 
+Installation von GeographicLib:
+
+```bash
+mkdir -p ~/localization_ws/src
+cd ~/localization_ws/src
+git clone https://github.com/geographiclib/geographiclib.git --branch release
+touch COLCON_IGNORE     # tells colcon to ignore this folder
+mkdir BUILD
+cd BUILD
+cmake ..
+make
+make test
+sudo make install
 ```
-mkdir -p ~/robot_localization_ws/src
-cd ~/robot_localization_ws/src
+
+Anschließend werden die weiteren Dependencies in das src Verzeichnis geklont.
+
+```
+cd ~/localization_ws/src
 git clone --branch ros2 https://github.com/ros-geographic-info/geographic_info.git
 git clone --branch foxy https://github.com/ros/diagnostics.git
 cd ..
 colcon build --symlink-install
+
+source ~/localization_ws/install/local_setup.bash
 
 cd src
 git clone --branch foxy-devel https://github.com/cra-ros-pkg/robot_localization.git
@@ -289,16 +319,55 @@ cd ~/robot_localization_ws
 colcon build --symlink-install --packages-select robot_localization
 ```
 
-
 Zum Schluss noch das Einfügen in die .bashrc.
 
 ```sh
-if [ -f ~/robot_localization_ws/install/setup.bash ]; then
-  source ~/robot_localization_ws/install/setup.bash
-fi
+. ~/robot_localization_ws/install/setup.bash
 ```
 
 ## Installation ROS2 for Blindenhund
+
+### Installation der 3rd party dependencies
+
+GoogleTest ist bereits in der ROS2 Installation enthalten. Nlohmann/json und SergiusTheBest/plog werden über Cmakes FetchContent Funktion eingebunden.
+
+#### Intel RealSense Wrapper for ROS2
+
+Installation Intel® RealSense™ SDK 2.0 [Original-Anleitung](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md#installing-the-packages)
+```
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE || sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE
+sudo add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo $(lsb_release -cs) main" -u
+
+sudo apt-get install librealsense2-dkms
+sudo apt-get install librealsense2-utils
+```
+Optional können die Developer und Debug Packages installiert werden. 
+```
+sudo apt-get install librealsense2-dev
+sudo apt-get install librealsense2-dbg
+```
+
+Anschließend wird der ROS RealSense Wrapper installiert:
+```
+mkdir -p ~/3rd_party_ws/src
+cd ~/3rd_party_ws/src/
+
+git clone --depth 1 --branch `git ls-remote --tags https://github.com/IntelRealSense/realsense-ros.git | grep -Po "(?<=tags/)3.\d+\.\d+" | sort -V | tail -1` https://github.com/IntelRealSense/realsense-ros.git
+cd ~/3rd_party_ws
+
+sudo apt-get install python3-rosdep -y
+rosdep update
+rosdep install -i --from-path src --rosdistro $_ros_dist --skip-keys=librealsense2 -y    # may print an error, but build should succeed
+
+colcon build
+```
+
+To source on each new terminal add
+```
+. ~/3rd_party_ws/install/local_setup.bash
+```
+
+### Installation ros2-sgd4.0
 
 Für die Entwicklung des Blindenhunds wird ein neuer Workspace angelegt.
 
@@ -307,18 +376,25 @@ mkdir -p ~/dev_ws/src
 cd ~/dev_ws/src
 ```
 
-Anschließend können die Dateien von GitHub geklont und gebaut werden. Beim Bauen muss unbedingt darauf geachtet werden, dass nur aus dem `~/dev_ws` Verzeichnis gebaut wird.
+Anschließend können die Dateien von GitHub geklont und gebaut werden. Eine Anleitung wie ein ssh key zum Github Account hinzugefügt werden kann, gibt es [hier]([https://www.w3docs.com/snippets/git/how-to-generate-ssh-key-for-git.html](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)). Beim Bauen muss unbedingt darauf geachtet werden, dass nur aus dem `~/dev_ws` Verzeichnis gebaut wird.
 
+If you are using ssh key for authorization type:
 ```
-cd ~/dev_ws/src
+git clone git@github.com:PStahr-HAW/ros2-sgd4.0.git
+```
+otherwise type:
+```
 git clone https://github.com/PStahr-HAW/ros2-sgd4.0.git
+```
+
+Install all dependencies and build.
+```
+cd ~/dev_ws
 rosdep install -y -r -q --from-paths src --ignore-src --rosdistro foxy
 
-cd ~/dev_ws
 colcon build --symlink-install
-source ~/dev_ws/install/local_setup.bash
+. ~/dev_ws/install/local_setup.bash
 ```
-
 
 Um USB Ports ohne root Rechte nutzen zu können, müssen die folgenden Befehle ausgeführt werden.
 ```
@@ -329,9 +405,7 @@ sudo adduser $USER dialout
 Um ROS2 für den Blindenhund bei jedem Terminalstart zu sourcen, den folgenden Codeblock ans Ende der .bashrc einfügen.
 
 ```sh
-if [ -f ~/dev_ws/install/local_setup.bash ]; then
-  source ~/dev_ws/install/local_setup.bash
-fi
+. ~/dev_ws/install/local_setup.bash
 ```
 
 ## Installation Gazebo 11
