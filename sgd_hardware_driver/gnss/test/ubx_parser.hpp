@@ -12,11 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef GPS__NMEA_PARSER_HPP_
-#define GPS__NMEA_PARSER_HPP_
-
-#include <ctime>
-#include <chrono>
+#ifndef SGD_HARDWARE_DRIVERS__UBX_PARSER_HPP_
+#define SGD_HARDWARE_DRIVERS__UBX_PARSER_HPP_
 
 #include <fstream>
 #include <iostream>
@@ -30,24 +27,30 @@
 
 #include <unordered_map>
 
-#include <variant>
-
-#include "nmea_param.hpp"
 #include "tinyxml2.h"
-#include <plog/Log.h>
-#include "plog/Initializers/RollingFileInitializer.h"
 
-#include "IGPS_Message.hpp"
+#include "Inmea_Message.hpp"
 
 namespace sgd_hardware_drivers
 {
 
-class Nmea_Parser : public IGPS_Message
+class Ubx_Parser : public INMEA_Message
 {
 
+typedef enum {
+    NAV = 0x01,
+    RXM = 0x02,
+    INF = 0x04,
+    ACK = 0x05,
+    CFG = 0x06,
+    MON = 0x0A,
+    AID = 0x0B,
+    TIM = 0x0D
+} NUM_FORMAT;
+
 public:
-    Nmea_Parser();
-    ~Nmea_Parser() = default;
+    Ubx_Parser();
+    ~Ubx_Parser() = default;
 
     int import_xml(std::string xml_file) override;
 
@@ -56,12 +59,10 @@ public:
     bool msg_complete() override;
 
 protected:
-    int num_params; // number of nmea params to parse before a message is complete
-    std::unordered_map<std::string, std::vector<NMEA_PARAM>> sentence_ids_;
-
+    //std::unordered_map<std::string, std::vector<NMEA_PARAM>> sentence_ids_;
     std::vector<std::string> split(const std::string& s, char delimiter);
 };
 
-}       // namespace sgd_sensors
+}       // namespace sgd_hardware
 
 #endif

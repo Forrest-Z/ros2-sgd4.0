@@ -12,13 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "gps/navilock_ublox6_gps.hpp"
+#include "gnss/gnss_node.hpp"
 
 namespace sgd_hardware_drivers
 {
 
-Navilock_UBlox6_GPS::Navilock_UBlox6_GPS():
-    LifecycleNode("navilock_ublox6_gps")
+std::mutex rtcmMutex;
+std::string rtcm;
+std::mutex ggaMutex;
+std::string gga;
+
+Gnss_Node::Gnss_Node():
+    LifecycleNode("gnss_node")
 {
     declare_parameter("log_dir", rclcpp::ParameterValue(".ros/log/"));
     declare_parameter("log_severity", rclcpp::ParameterValue("I"));
@@ -38,6 +43,14 @@ Navilock_UBlox6_GPS::Navilock_UBlox6_GPS():
     declare_parameter("base_link_frame_id", rclcpp::ParameterValue("base_link"));
     declare_parameter("odom_frame_id", rclcpp::ParameterValue("odom"));
 
+    // ntrip options
+    declare_parameter("ntrip_server", rclcpp::ParameterValue(""));    // if server is empty do not use ntrip client
+    declare_parameter("ntrip_port", rclcpp::ParameterValue(""));
+    declare_parameter("ntrip_mountpoint", rclcpp::ParameterValue(""));
+    declare_parameter("ntrip_user", rclcpp::ParameterValue(""));
+    declare_parameter("ntrip_password", rclcpp::ParameterValue(""));
+    declare_parameter("ntrip_send_nmea", rclcpp::ParameterValue(true));
+
     // initialize logging
     std::string log_dir_, log_sev_;
     get_parameter("log_dir", log_dir_);
@@ -48,10 +61,10 @@ Navilock_UBlox6_GPS::Navilock_UBlox6_GPS():
     PLOGD << "Message: utc; lat; lon; x; y";
 }
 
-Navilock_UBlox6_GPS::~Navilock_UBlox6_GPS() {}
+Gnss_Node::~Gnss_Node() {}
 
 CallbackReturn
-Navilock_UBlox6_GPS::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
+Gnss_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
@@ -83,17 +96,17 @@ Navilock_UBlox6_GPS::on_configure(const rclcpp_lifecycle::State & state __attrib
         RCLCPP_INFO(get_logger(), "Initialize parser for nmea data");
         parser_ = std::make_unique<Nmea_Parser>();
     }
-    else
-    {
-        RCLCPP_INFO(get_logger(), "Initialize parser for ubx data");
-        parser_ = std::make_unique<Ubx_Parser>();
-    }
+    // else
+    // {
+    //     RCLCPP_INFO(get_logger(), "Initialize parser for ubx data");
+    //     parser_ = std::make_unique<Ubx_Parser>();
+    // }
     
     return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn
-Navilock_UBlox6_GPS::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused))) 
+Gnss_Node::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused))) 
 {
     init_pub_sub();
 
@@ -109,11 +122,15 @@ Navilock_UBlox6_GPS::on_activate(const rclcpp_lifecycle::State & state __attribu
         return CallbackReturn::FAILURE;
     }
 
+    // initialize ntrip client and start in new thread
+    Ntrip_Client client = Ntrip_Client(ntrip_options_);
+    client.start_client();
+
     return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn
-Navilock_UBlox6_GPS::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
+Gnss_Node::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     pub_navsatfix_->on_deactivate();
     if (is_pub_local_pose_)
@@ -125,7 +142,7 @@ Navilock_UBlox6_GPS::on_deactivate(const rclcpp_lifecycle::State & state __attri
 }
 
 CallbackReturn
-Navilock_UBlox6_GPS::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
+Gnss_Node::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     pub_navsatfix_.reset();
     if (is_pub_local_pose_) pub_local_pose_.reset();
@@ -133,13 +150,13 @@ Navilock_UBlox6_GPS::on_cleanup(const rclcpp_lifecycle::State & state __attribut
 }
 
 CallbackReturn
-Navilock_UBlox6_GPS::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
+Gnss_Node::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     return CallbackReturn::SUCCESS;
 }
 
 void
-Navilock_UBlox6_GPS::init_parameters()
+Gnss_Node::init_parameters()
 {
     get_parameter("use_sim_time", is_sim_);
     get_parameter("parser_file", xml_file_);
@@ -149,59 +166,84 @@ Navilock_UBlox6_GPS::init_parameters()
 
     // topics
     get_parameter("local_pose_topic", local_pose_topic_);
-    get_parameter("gps_sim_topic", gps_sim_topic_);
+    get_parameter("gps_sim_topic", gnss_sim_topic_);
     get_parameter("utc_topic", utc_clock_topic_);
-    get_parameter("gps_topic", gps_topic_);
+    get_parameter("gps_topic", gnss_topic_);
     
     get_parameter("transform_to_base_link", is_tf_to_base_link_);
     get_parameter("base_link_frame_id", base_link_frame_id_);
     get_parameter("odom_frame_id", odom_frame_id_);
+
+    // ntrip client parameter
+    get_parameter("ntrip_server", ntrip_options_.server);
+    std::string port_;
+    get_parameter("ntrip_port", port_);
+    ntrip_options_.port = port_.c_str();
+    get_parameter("ntrip_mountpoint", ntrip_options_.mountpnt);
+    get_parameter("ntrip_user", ntrip_options_.user);
+    get_parameter("ntrip_password", ntrip_options_.password);
+    get_parameter("ntrip_send_nmea", ntrip_options_.nmea);
 }
 
 void
-Navilock_UBlox6_GPS::init_pub_sub()
+Gnss_Node::init_pub_sub()
 {
     if (!is_sim_)
     {
-        timer_ = this->create_wall_timer(10ms, std::bind(&Navilock_UBlox6_GPS::read_serial, this));
-        PLOGD << "Create publisher on topic " << utc_clock_topic_;
+        timer_ = this->create_wall_timer(10ms, std::bind(&Gnss_Node::read_serial, this));
+        RCLCPP_DEBUG(get_logger(), "Create publisher on topic %s", utc_clock_topic_.c_str());
         pub_utc_time_ = this->create_publisher<builtin_interfaces::msg::Time>(utc_clock_topic_, default_qos);
         pub_utc_time_->on_activate();
     }
     else
     {
-        PLOGD << "Create subscription for topic " << gps_sim_topic_;
-        sub_gps_sim = this->create_subscription<sensor_msgs::msg::NavSatFix>(gps_sim_topic_, default_qos,
-                        std::bind(&Navilock_UBlox6_GPS::on_gps_sim_received, this, std::placeholders::_1));
+        RCLCPP_DEBUG(get_logger(), "Create subscription for topic %s", gnss_sim_topic_.c_str());
+        sub_gps_sim = this->create_subscription<sensor_msgs::msg::NavSatFix>(gnss_sim_topic_, default_qos,
+                        std::bind(&Gnss_Node::on_gps_sim_received, this, std::placeholders::_1));
     }
 
     if (is_publish_tf_)
     {
-        timer_tf_ = this->create_wall_timer(100ms, std::bind(&Navilock_UBlox6_GPS::publish_tf, this));
+        // TODO bind to received positions
+        timer_tf_ = this->create_wall_timer(100ms, std::bind(&Gnss_Node::publish_tf, this));
     }
     
-    PLOGD << "Create publisher on topic " << gps_topic_;
-    pub_navsatfix_ = this->create_publisher<sensor_msgs::msg::NavSatFix>(gps_topic_, default_qos);
+    RCLCPP_DEBUG(get_logger(), "Create publisher on topic %s", gnss_topic_.c_str());
+    pub_navsatfix_ = this->create_publisher<sensor_msgs::msg::NavSatFix>(gnss_topic_, default_qos);
     pub_navsatfix_->on_activate();
 
     if (is_pub_local_pose_)
     {
         // create publisher for pose in local coordinates
-        PLOGD << "Create publisher on topic " << local_pose_topic_;
+        RCLCPP_DEBUG(get_logger(), "Create publisher on topic %s", local_pose_topic_.c_str());
         pub_local_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(local_pose_topic_, default_qos);
         pub_local_pose_->on_activate();
     }
 }
 
 void
-Navilock_UBlox6_GPS::read_serial()
+Gnss_Node::read_serial()
 {
+    /*
+        TODOs:
+        - save gga message -> Done
+        - send gga message to ntrip server (every 10s)
+        - check if new rtcm message is available -> send to receiver
+    */
     if (serial.read_serial())
     {
         std::string msg = "$" + serial.get_msg();
+        if (msg.find("GGA") < 4)    // if message starts with $GNGGA or $GPGGA
+        {
+            // save to gga
+            ggaMutex.lock();
+            gga = msg;
+            ggaMutex.unlock();
+        }
+
         parser_->parse_msg(msg);
         
-        // wait for all nmea messages
+        // wait for all nmea messages -> TODO: make time based
         if (parser_->msg_complete())
         {
             // publish utc time
@@ -245,10 +287,18 @@ Navilock_UBlox6_GPS::read_serial()
             PLOGD << debug_msg;
         }
     }
+
+    rtcmMutex.lock();
+    if (!rtcm.empty())
+    {
+        RCLCPP_INFO(get_logger(), "Received rtcm message: %s", rtcm);
+        rtcm.clear();
+    }
+    rtcmMutex.unlock();
 }
 
 void
-Navilock_UBlox6_GPS::on_gps_sim_received(sensor_msgs::msg::NavSatFix::SharedPtr msg)
+Gnss_Node::on_gps_sim_received(sensor_msgs::msg::NavSatFix::SharedPtr msg)
 {
     // if (is_tf_to_base_link_)
     // {
@@ -280,7 +330,7 @@ Navilock_UBlox6_GPS::on_gps_sim_received(sensor_msgs::msg::NavSatFix::SharedPtr 
 }
 
 void
-Navilock_UBlox6_GPS::publish_tf()
+Gnss_Node::publish_tf()
 {
     auto pose = to_local(last_msg_);
     geometry_msgs::msg::TransformStamped t;
@@ -308,7 +358,7 @@ Navilock_UBlox6_GPS::publish_tf()
 }
 
 void
-Navilock_UBlox6_GPS::init_transforms()
+Gnss_Node::init_transforms()
 {
     transform_tolerance_ = tf2::durationFromSec(1.0);
     // transformation from earth -> map in WGS84 coordinates
@@ -332,7 +382,7 @@ Navilock_UBlox6_GPS::init_transforms()
 }
 
 geometry_msgs::msg::TransformStamped
-Navilock_UBlox6_GPS::get_transform(std::string target_frame, std::string source_frame)
+Gnss_Node::get_transform(std::string target_frame, std::string source_frame)
 {
     // Wait for transform to be available
     std::string err;
@@ -360,7 +410,7 @@ Navilock_UBlox6_GPS::get_transform(std::string target_frame, std::string source_
 }
 
 geometry_msgs::msg::PoseWithCovarianceStamped
-Navilock_UBlox6_GPS::to_local(sensor_msgs::msg::NavSatFix msg)
+Gnss_Node::to_local(sensor_msgs::msg::NavSatFix msg)
 {
     // create pose stamped msg
     geometry_msgs::msg::PoseWithCovarianceStamped pose;
@@ -393,7 +443,7 @@ Navilock_UBlox6_GPS::to_local(sensor_msgs::msg::NavSatFix msg)
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<sgd_hardware_drivers::Navilock_UBlox6_GPS>();
+    auto node = std::make_shared<sgd_hardware_drivers::Gnss_Node>();
     rclcpp::spin(node->get_node_base_interface());
     rclcpp::shutdown();
 }

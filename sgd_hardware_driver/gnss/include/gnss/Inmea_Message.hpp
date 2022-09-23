@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef GPS__IGPS_MESSAGE_HPP_
-#define GPS__IGPS_MESSAGE_HPP_
+#ifndef SGD_HARDWARE_DRIVERS__INMEA_MESSAGE_HPP_
+#define SGD_HARDWARE_DRIVERS__INMEA_MESSAGE_HPP_
 
 #pragma once
 
@@ -21,6 +21,7 @@
 #include <variant>
 #include <unordered_map>
 #include <vector>
+#include <variant>
 
 class Error
 {
@@ -61,11 +62,11 @@ private:
     std::string msg_;
 };
 
-class IGPS_Message
+class INMEA_Message
 {
 
 public:
-    virtual ~IGPS_Message() = default;
+    virtual ~INMEA_Message() = default;
 
     //! \brief Import xml file
     //! \return Error code
@@ -185,4 +186,4 @@ protected:
     }
 };
 
-#endif
+#endif  // SGD_HARDWARE_DRIVERS__INMEA_MESSAGE_HPP_

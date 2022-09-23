@@ -8,6 +8,12 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+include(FetchContent)
+FetchContent_Declare(
+  plog URL https://github.com/SergiusTheBest/plog/archive/refs/tags/1.1.8.tar.gz
+)
+FetchContent_MakeAvailable(plog)
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -28,6 +34,7 @@ include_directories(include)
 
 # add executable
 add_executable(subsum_controller src/subsum_controller.cpp)
+target_link_libraries(subsum_controller plog::plog)
 ament_target_dependencies(subsum_controller
   rclcpp
   rclcpp_lifecycle

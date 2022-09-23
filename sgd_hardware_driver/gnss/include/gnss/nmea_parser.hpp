@@ -12,13 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef GPS__NMEA_PARAM_HPP_
-#define GPS__NMEA_PARAM_HPP_
+#ifndef SGD_HARDWARE_DRIVERS__NMEA_PARSER_HPP_
+#define SGD_HARDWARE_DRIVERS__NMEA_PARSER_HPP_
 
+#include <ctime>
 #include <chrono>
+
+#include <fstream>
+#include <iostream>
+
 #include <regex>
 
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -26,7 +30,12 @@
 
 #include <unordered_map>
 
-#include <variant>
+#include "tinyxml2.h"
+
+#include "Inmea_Message.hpp"
+
+namespace sgd_hardware_drivers
+{
 
 class NMEA_PARAM
 {
@@ -129,5 +138,27 @@ private:
     std::string type_;
     std::regex regex_;
 };
+
+class Nmea_Parser : public INMEA_Message
+{
+
+public:
+    Nmea_Parser();
+    ~Nmea_Parser() = default;
+
+    int import_xml(std::string xml_file) override;
+
+    int parse_msg(std::string msg) override;
+
+    bool msg_complete() override;
+
+protected:
+    int num_params; // number of nmea params to parse before a message is complete
+    std::unordered_map<std::string, std::vector<NMEA_PARAM>> sentence_ids_;
+
+    std::vector<std::string> split(const std::string& s, char delimiter);
+};
+
+}       // namespace sgd_hardware_drivers
 
 #endif

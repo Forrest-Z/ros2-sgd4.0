@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>gps</name>
+  <name>gnss</name>
   <version>0.0.1</version>
-  <description>GPS sensor package</description>
+  <description>GNSS sensor package</description>
   <maintainer email="pascal.stahr@haw-hamburg.de">Pascal Stahr</maintainer>
   <license>Apache License 2.0</license>
 

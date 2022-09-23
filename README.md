@@ -367,6 +367,36 @@ To source on each new terminal add
 . ~/3rd_party_ws/install/local_setup.bash
 ```
 
+#### TEB Local Planner
+
+The [teb_local_planner](https://github.com/rst-tu-dortmund/teb_local_planner/tree/foxy-devel) package implements a plugin to the base_local_planner of the 2D navigation stack. The underlying method called Timed Elastic Band locally optimizes the robot's trajectory with respect to trajectory execution time, separation from obstacles and compliance with kinodynamic constraints at runtime.
+
+Refer to [ROS Wiki](http://wiki.ros.org/teb_local_planner) for more information and tutorials.
+
+Before installation of teb_local_planner requirements have to be installed.
+
+Package | Git Repository
+--------|---------------
+costmap_converter | [costmap_converter](https://github.com/rst-tu-dortmund/costmap_converter.git)
+
+Install and build all requirements
+```
+mkdir -p ~/3rd_party_ws/src
+cd ~/3rd_party_ws/src
+
+git clone https://github.com/rst-tu-dortmund/costmap_converter -b ros2 # dependency which is not yet in the main repository
+git clone https://github.com/rst-tu-dortmund/teb_local_planner.git --branch foxy-devel
+
+rosdep install -y -r -q --from-paths src --ignore-src --rosdistro foxy
+cd ~/3rd_party_ws
+colcon build --symlink-install
+```
+
+To source on each new terminal add
+```
+. ~/3rd_party_ws/install/local_setup.bash
+```
+
 ### Installation ros2-sgd4.0
 
 Für die Entwicklung des Blindenhunds wird ein neuer Workspace angelegt.
@@ -427,6 +457,22 @@ gazebo --verbose ~/dev_ws/src/ros2-sgd4.0/sgd_bringup/worlds/lohmuehlenpark.mode
 ```
 
 ![Gazebo example](/doc/gazebo_example.png)
+
+## .bashrc
+
+Check if all of the following lines are in the *.bashrc* or just copy the following block.
+
+```
+. /opt/ros/foxy/local_setup.bash
+. ~/ros2_foxy/install/local_setup.bash
+. ~/nav2_ws/install/local_setup.bash
+. ~/sick_scan_ws/install/local_setup.bash
+. ~/localization_ws/install/local_setup.bash
+. ~/3rd_party_ws/install/local_setup.bash
+. ~/dev_ws/install/local_setup.bash
+
+export GAZEBO_MODEL_PATH=~/dev_ws/src/ros2-sgd4.0/sgd_gazebo_sim/models:$GAZEBO_MODEL_PATH
+```
 
 
 # Testing im Shared Guide Dog Projekt

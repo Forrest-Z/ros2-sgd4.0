@@ -1,4 +1,4 @@
-// Copyright 2021 HAW Hamburg
+// Copyright 2022 HAW Hamburg
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef GPS__NAVILOCK_UBLOX6_GPS_HPP_
-#define GPS__NAVILOCK_UBLOX6_GPS_HPP_
+#ifndef SGD_HARDWARE_DRIVERS__GNSS_NODE_HPP_
+#define SGD_HARDWARE_DRIVERS__GNSS_NODE_HPP_
 
-#include <list>
-#include <string>
-#include <memory>
+#include <chrono>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
@@ -26,8 +24,10 @@
 #include "tf2_ros/create_timer_ros.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "tf2/utils.h"
+
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
+
 #include "sgd_util/geotools.hpp"
 #include "sgd_io/serial.hpp"
 #include "sgd_util/log_utils.hpp"
@@ -35,8 +35,9 @@
 #include <plog/Log.h>
 #include "plog/Initializers/RollingFileInitializer.h"
 
-#include "include/nmea_parser.hpp"
-#include "include/ubx_parser.hpp"
+#include "nmea_parser.hpp"
+//#include "ubx_parser.hpp"
+#include "ntrip_client.hpp"
 
 namespace sgd_hardware_drivers
 {
@@ -44,12 +45,12 @@ namespace sgd_hardware_drivers
 using namespace std::chrono_literals;
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
-class Navilock_UBlox6_GPS : public rclcpp_lifecycle::LifecycleNode
+class Gnss_Node : public rclcpp_lifecycle::LifecycleNode
 {
 
 public: 
-    Navilock_UBlox6_GPS();
-    ~Navilock_UBlox6_GPS();
+    Gnss_Node();
+    ~Gnss_Node();
 
 protected:
     // Implement the lifecycle interface
@@ -58,7 +59,7 @@ protected:
     CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
     CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
     CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
-    
+
     /**
      * @brief Init parameters
      */
@@ -66,9 +67,13 @@ protected:
     bool is_sim_;
     std::string xml_file_, parser_type_;
     bool is_pub_local_pose_, is_publish_tf_;
-    std::string local_pose_topic_, gps_sim_topic_, utc_clock_topic_, gps_topic_;
+    // topics
+    std::string local_pose_topic_, gnss_sim_topic_, utc_clock_topic_, gnss_topic_;
+    // transforms
     bool is_tf_to_base_link_;
     std::string base_link_frame_id_, odom_frame_id_;
+    // ntrip options
+    ntrip_opts ntrip_options_;
 
     /**
      * @brief Initialize publisher
@@ -127,12 +132,12 @@ protected:
      */
     geometry_msgs::msg::TransformStamped get_transform(const std::string target_frame, const std::string source_frame);
 
-    std::unique_ptr<IGPS_Message> parser_;
+    std::unique_ptr<INMEA_Message> parser_;
 
     // logging
-    std::ofstream log_file;
+    // std::ofstream log_file;
 };
 
-}       // namespace sgd_hardware
+} // namespace sgd_hardware_drivers
 
-#endif  // GPS__NAVILOCK_UBLOX6_GPS_HPP_"
+#endif

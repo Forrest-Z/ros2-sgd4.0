@@ -17,7 +17,10 @@ FetchContent_Declare(
   json
   URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz
 )
-FetchContent_MakeAvailable(googletest json)
+FetchContent_Declare(
+  plog URL https://github.com/SergiusTheBest/plog/archive/refs/tags/1.1.8.tar.gz
+)
+FetchContent_MakeAvailable(googletest json plog)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -39,7 +42,7 @@ set(executable_name uwb_node)
 add_executable(${executable_name} src/uwb_node.cpp src/sgd_uwb_pf.cpp)
 
 add_subdirectory(lib)
-target_link_libraries(${executable_name} multilateration_core sgd_io::sgd_io_core nlohmann_json::nlohmann_json)
+target_link_libraries(${executable_name} multilateration_core sgd_io::sgd_io_core nlohmann_json::nlohmann_json plog::plog)
 
 ament_target_dependencies(${executable_name}
     rclcpp

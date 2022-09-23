@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ubx_parser.hpp"
+#include "gnss/ubx_parser.hpp"
 #include <memory>
 
 namespace sgd_hardware_drivers

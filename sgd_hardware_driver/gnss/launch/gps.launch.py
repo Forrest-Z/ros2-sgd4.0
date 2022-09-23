@@ -84,16 +84,21 @@ def generate_launch_description():
         #        "read_write": "ro"}]),
 
         Node(
-            package="gps",
-            executable="navilock_ublox6_gps",
+            package="gnss",
+            executable="gnss_node",
             name="gps_sensor",
             output="screen",
             emulate_tty=True,
             parameters=[
-                {"port": gps_port,
-                 "xml_file": '/home/ipp/dev_ws/src/ros2-sgd4.0/sgd_hardware_driver/gps/params/nmea_0183.xml',
-                 "parser_type": 'nmea'}]),
-
+                {"port": '/dev/serial/by-id/usb-u-blox_AG_-_www.u-blox.com_u-blox_GNSS_receiver-if00',
+                 "xml_file": '/home/ipp/dev_ws/src/ros2-sgd4.0/sgd_bringup/config/nmea.xml',
+                 "parser_type": 'nmea',
+                 "ntrip_server": 'rtk2go.com',
+                 "ntrip_port": '2101',
+                 "ntrip_mountpoint": '',
+                 "ntrip_user": 'pascal.stahr@haw-hamburg.de',
+                 "ntrip_password": '.',
+                 "ntrip_send_nmea": False}]),
 
         Node(
             package='nav2_lifecycle_manager',
@@ -103,5 +108,4 @@ def generate_launch_description():
             parameters=[{'use_sim_time': use_sim_time},
                         {'autostart': autostart},
                         {'node_names': lifecycle_nodes}]),
-
     ])

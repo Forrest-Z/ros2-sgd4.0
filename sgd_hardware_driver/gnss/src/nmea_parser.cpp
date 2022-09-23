@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nmea_parser.hpp"
+#include "gnss/nmea_parser.hpp"
 #include <memory>
 
 namespace sgd_hardware_drivers

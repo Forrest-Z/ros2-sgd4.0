@@ -13,7 +13,10 @@ FetchContent_Declare(
   json
   URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz
 )
-FetchContent_MakeAvailable(json)
+FetchContent_Declare(
+  plog URL https://github.com/SergiusTheBest/plog/archive/refs/tags/1.1.8.tar.gz
+)
+FetchContent_MakeAvailable(json plog)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -34,7 +37,7 @@ include_directories(include)
 set(exe_name motorcontroller)
 
 add_executable(${exe_name} src/motorcontroller_ros.cpp src/sgd_odometry.cpp src/wh_fcruiser.cpp)
-target_link_libraries(${exe_name} nlohmann_json::nlohmann_json sgd_io::sgd_io_core)
+target_link_libraries(${exe_name} nlohmann_json::nlohmann_json sgd_io::sgd_io_core plog::plog)
 ament_target_dependencies(${exe_name}
   rclcpp
   rclcpp_lifecycle

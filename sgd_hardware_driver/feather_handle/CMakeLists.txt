@@ -10,10 +10,12 @@ endif()
 
 include(FetchContent)
 FetchContent_Declare(
-  json
-  URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz
+  json URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz
 )
-FetchContent_MakeAvailable(json)
+FetchContent_Declare(
+  plog URL https://github.com/SergiusTheBest/plog/archive/refs/tags/1.1.8.tar.gz
+)
+FetchContent_MakeAvailable(json plog)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -28,7 +30,7 @@ find_package(sgd_util REQUIRED)
 include_directories(include)
 
 set(executable_name feather_handle_ros)
-set(dependencies
+set(dependencies	
   rclcpp
   rclcpp_lifecycle
   sensor_msgs
@@ -40,7 +42,7 @@ set(dependencies
 
 # add executable
 add_executable(${executable_name} src/feather_handle_ros.cpp include/feather_handle/bno055.hpp include/feather_handle/vl53l1x.hpp)
-target_link_libraries(${executable_name} nlohmann_json::nlohmann_json sgd_io::sgd_io_core)
+target_link_libraries(${executable_name} nlohmann_json::nlohmann_json sgd_io::sgd_io_core plog::plog)
 ament_target_dependencies(${executable_name} ${dependencies})
 
 install(
