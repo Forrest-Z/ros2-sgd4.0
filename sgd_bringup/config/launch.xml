@@ -7,7 +7,7 @@
 <!-- hardware nodes -->
     <!--node name="led_strip" /-->
     <node name="frsky_rx8r" />
-    <node name="wh_fcruiser" />
+    <node name="wh_fcruiser" sim="no" />
 
 <!-- navigation nodes -->
     <node name="subsum_controller" />

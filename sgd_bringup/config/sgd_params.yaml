@@ -325,7 +325,7 @@ sick_scan2:
     min_ang : -2.35619449
     max_ang : 2.35619449
 
-ublox6_gps:
+gnss_node:
   ros__parameters:
     use_sim_time: False
     log_dir: ".ros/log/"
@@ -342,6 +342,12 @@ ublox6_gps:
     transform_to_base_link: True
     base_link_frame_id: "base_link"
     odom_frame_id: "odom"
+    ntrip_server: "rtk2go.com"
+    ntrip_port: "2101"
+    ntrip_mountpoint: ""
+    ntrip_user: "pascal.stahr@haw-hamburg.de"
+    ntrip_password: "."
+    ntrip_send_nmea: False
 
 frsky_rx8r:
   ros__parameters:
@@ -394,4 +400,8 @@ led_strip:
     log_dir: ".ros/log/"
     log_severity: "I"
     port: "/dev/serial/by-id/usb-Adafruit_Feather_M0_FAE285E450533830332E3120FF171343-if00"
-    
+
+sgd_audio:
+  ros__parameters:
+    input_topic: "lights"
+    voice_msgs_dir: "/"

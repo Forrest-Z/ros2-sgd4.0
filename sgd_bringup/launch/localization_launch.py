@@ -79,9 +79,9 @@ def generate_launch_description():
         parameters=[params])
 
     start_gps_cmd = Node(
-        package="gps",
-        executable="navilock_ublox6_gps",
-        name="ublox6_gps",
+        package="gnss",
+        executable="gnss_node",
+        name="gnss_node",
         output="screen",
         emulate_tty=True,
         parameters=[params])

@@ -23,6 +23,4 @@
     <node name="ros2_obstacle_checker" />
     <node name="ros2_depthCamera_obstacle_checker" />
 
-    <node name="sgd_voice" />
-
 </launch>

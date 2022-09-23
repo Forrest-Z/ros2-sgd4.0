@@ -122,7 +122,8 @@ def generate_launch_description():
         'map_subscribe_transient_local': 'true',
         'yaml_filename': map_yaml_file,
         'tag_defs': os.path.join(bringup_dir, 'config', 'uwb_tag_defs.yaml'),
-        'parser_file': os.path.join(bringup_dir, 'config', 'nmea.xml')}
+        'parser_file': os.path.join(bringup_dir, 'config', 'nmea.xml'),
+        'voice_msgs_dir': os.path.join(bringup_dir, 'voice_msgs')}
 
     configured_params = RewrittenYaml(
             source_file=params_file,
@@ -183,6 +184,11 @@ def generate_launch_description():
             launch_arguments={'use_sim_time': sim,
                               'params': configured_params}.items())
 
+    interaction_cmd = IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(launch_dir, 'interaction_launch.py')),
+            launch_arguments={'use_sim_time': sim,
+                              'params': configured_params}.items())
+
     hardware_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(launch_dir, 'hardware_launch.py')),
         #condition=IfCondition(PythonExpression(['not ', sim])),
@@ -227,6 +233,7 @@ def generate_launch_description():
     ld.add_action(start_gazebo_client_cmd)
     ld.add_action(localization_cmd)
     ld.add_action(navigation_cmd)
+    ld.add_action(interaction_cmd)
     ld.add_action(hardware_cmd)
 
     ld.add_action(start_lifecycle_cmd)
