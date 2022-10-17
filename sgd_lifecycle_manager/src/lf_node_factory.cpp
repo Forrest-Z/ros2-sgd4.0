@@ -70,7 +70,7 @@ LF_Node_Factory::cmp_node_state(std::string node_name, uint8_t state) {
 }
 
 lifecycle_node *
-LF_Node_Factory::has_node() {
+LF_Node_Factory::next_node() {
     if (it_ < nodelist_.size())
     {
         return &nodelist_.at(it_++);
@@ -87,6 +87,16 @@ LF_Node_Factory::read_xml_file(tinyxml2::XMLElement * node, lifecycle_node *n) {
     while (nd != NULL)
     {
         // TODO add node dependencies
+
+        // check start attribute
+        std::string start = nd->Attribute("start") != NULL ? nd->Attribute("start") : "";
+
+        if ((is_sim_ && start == "real") || (!is_sim_ && start == "sim"))
+        {
+            // skip this node
+            nd = nd->NextSiblingElement();
+            continue;
+        }
 
         // create lifecycle node
         nodelist_.push_back(lifecycle_node(nd->Attribute("name")));

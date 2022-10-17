@@ -37,9 +37,7 @@ public:
         state = 1;  // set state to unconfigured
     }
 
-    ~lifecycle_node()
-    {
-    }
+    ~lifecycle_node() {}
 
     uint8_t state;
 
@@ -52,8 +50,8 @@ class LF_Node_Factory
 {
 
 public:
-    LF_Node_Factory(std::string launch_xml_file) 
-        : launch_file_(launch_xml_file) {}
+    LF_Node_Factory(std::string launch_xml_file, bool is_sim = false)
+        : launch_file_(launch_xml_file), is_sim_(is_sim) {}
     ~LF_Node_Factory() {}
 
     //! \brief Import xml file containing the nodes to launch
@@ -61,7 +59,7 @@ public:
     void import_launch_file();
 
     //! \brief returns a pointer to the next node from the nodelist or a nullptr if the end is reached
-    lifecycle_node * has_node();
+    lifecycle_node * next_node();
 
     //! \brief Returns the lowest state in the nodelist
     uint8_t get_lowest_state();
@@ -73,6 +71,7 @@ public:
 
 protected:
     // parameters
+    bool is_sim_;
     const std::string launch_file_;
     std::vector<lifecycle_node> nodelist_;  // contains all nodes
     uint it_;

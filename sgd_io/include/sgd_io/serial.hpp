@@ -74,18 +74,18 @@ private:
     char stframe_;      // stop frame
     char esc_char_;     // escape character
 
-    std::string read_buf_;
-    std::string serial_msg_;
+    std::string read_buf_;      // read buffer
+    std::string serial_msg_;    // message from serial port
 
-    int serial_port_;
-    std::string logfile_;
+    int serial_port_;       // serial port file descriptor
+    //std::string logfile_;   // log file
     
-    long time_at_start_;        // start time in millis
-    std::fstream file_;
+    //long time_at_start_;        // start time in millis
+    //std::fstream file_;         
 
-    std::unordered_map<config_t, char> config;
+    //std::unordered_map<config_t, char> config;
 
-    RECEIVER_STATE rec_state_;
+    RECEIVER_STATE rec_state_;  // receiver state
     
 public:
     Serial();
@@ -117,11 +117,20 @@ public:
     bool read_serial();
 
     /**
-     * @brief Write string to serial.
+     * @brief Write string to serial. Before writing \r\n is appended to string.
      * 
      * @return the number of bytes written
      */
     int write_serial(std::string);
+
+    /**
+     * @brief Write char array as is to serial.
+     * @param msg_ array to write
+     * @param size number of bytes to write
+     * 
+     * @return number of bytes written or -1
+     */
+    int write_serial(const char* msg_, int size);
 
     std::string get_msg();
 };

@@ -23,13 +23,14 @@ Lifecycle_Manager::Lifecycle_Manager():
     Node("lifecycle_manager")
 {
     launch_file = declare_parameter<std::string>("launch_file", "/config/launch.xml");
+    get_parameter("use_sim_time", is_sim_);
 
-    LF_Node_Factory lf(launch_file);
+    LF_Node_Factory lf(launch_file, is_sim_);
     lf.import_launch_file();
 
     // change node state to configure
     lifecycle_node * nd;
-    while ((nd = lf.has_node()) != nullptr)
+    while ((nd = lf.next_node()) != nullptr)
     {
         // create client, change state
         service_clients_.insert({
@@ -49,7 +50,7 @@ Lifecycle_Manager::Lifecycle_Manager():
     {
         retries++;
         lifecycle_node * nd;
-        while ((nd = lf.has_node()) != nullptr)
+        while ((nd = lf.next_node()) != nullptr)
         {
             if (nd->state == Transition::TRANSITION_ACTIVATE)
             {

@@ -342,12 +342,11 @@ gnss_node:
     transform_to_base_link: True
     base_link_frame_id: "base_link"
     odom_frame_id: "odom"
-    ntrip_server: "rtk2go.com"
+    ntrip_server: "sapos.geonord.de"
     ntrip_port: "2101"
-    ntrip_mountpoint: ""
-    ntrip_user: "pascal.stahr@haw-hamburg.de"
-    ntrip_password: "."
-    ntrip_send_nmea: False
+    ntrip_mountpoint: "VRS_3_4G_HH"
+    ntrip_auth: "SEFXSGFtMTpoSHNwMDgzOA=="
+    ntrip_send_nmea: True
 
 frsky_rx8r:
   ros__parameters:

@@ -104,6 +104,8 @@ protected:
     
     sgd_io::Serial serial;
     void read_serial();
+    double hdop;
+    int status;
 
     rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr sub_gps_sim;
     void on_gps_sim_received(sensor_msgs::msg::NavSatFix::SharedPtr msg);
@@ -133,6 +135,7 @@ protected:
     geometry_msgs::msg::TransformStamped get_transform(const std::string target_frame, const std::string source_frame);
 
     std::unique_ptr<INMEA_Message> parser_;
+    std::unique_ptr<Ntrip_Client> client;
 
     // logging
     // std::ofstream log_file;

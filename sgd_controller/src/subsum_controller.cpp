@@ -93,7 +93,7 @@ Subsum_Controller::init_pub_sub()
         std::function<void(std::shared_ptr<geometry_msgs::msg::Twist>)> fnc = std::bind(
             &Subsum_Controller::on_cmd_vel_received, this, std::placeholders::_1, (int)i);
 
-        RCLCPP_INFO(get_logger(), "Create subscription for topic '%s' on layer %i", in_topics_.at(i), i);
+        RCLCPP_INFO(get_logger(), "Create subscription for topic '%s' on layer %i", in_topics_.at(i).c_str(), i);
         subscriber.push_back(this->create_subscription<geometry_msgs::msg::Twist>(in_topics_.at(i), default_qos,
                             fnc));
     }

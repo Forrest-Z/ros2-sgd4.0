@@ -18,7 +18,7 @@ namespace sgd_util
 {
 
 Visualizer::Visualizer() : rclcpp::Node("visualizer"),
-                            in_topics_{"uwb/local", "gps_local"}
+                            in_topics_{"uwb/local", "gps/local"}
 {
     RCLCPP_DEBUG(get_logger(), "Creating");
     // Add parameters - a maximum of 6 topics is allowed
@@ -132,7 +132,7 @@ Visualizer::init_pub_sub()
 }
 
 void
-Visualizer::on_pose_received(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg, int sensor)
+Visualizer::on_pose_received(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg, uint8_t sensor)
 {
     if (!is_map_published_)
     {

@@ -115,23 +115,15 @@ Serial::set_raw(bool raw)
 bool
 Serial::set_start_frame(char start_frame)
 {
-    // if (rec_state_ < RECEIVER_STATE::WAIT_HEADER)
-    // {
     sframe_ = start_frame;
     return true;
-    // }
-    // return false;
 }
 
 bool
 Serial::set_stop_frame(char stop_frame)
 {
-    // if (rec_state_ < RECEIVER_STATE::WAIT_HEADER)
-    // {
     stframe_ = stop_frame;
     return true;
-    // }
-    // return false;
 }
 
 bool
@@ -231,6 +223,12 @@ Serial::write_serial(const std::string msg_)
     c[i++] = '\r';
     c[i++] = '\n';
     return write(serial_port_, c , i);
+}
+
+int
+Serial::write_serial(const char* msg_, int size)
+{
+    return write(serial_port_, msg_ , size);
 }
 
 std::string

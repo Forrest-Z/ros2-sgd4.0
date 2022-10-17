@@ -64,13 +64,7 @@ def generate_launch_description():
         default_value=os.path.join(bringup_dir, 'maps', 'lohmuehlenpark.yaml'),
         #default_value=os.path.join(bringup_dir, 'maps', 'augustinum.yaml'),
         description='Full path to map file to load')
-
-    # Change depending on sim = true or sim = false
-    if (sim):
-        lfc_launch = os.path.join(bringup_dir, 'config', 'launch_sim.xml')
-    else:
-        lfc_launch = os.path.join(bringup_dir, 'config', 'launch.xml')
-
+        
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
         default_value=os.path.join(bringup_dir, 'config', 'sgd_params.yaml'),
@@ -202,7 +196,8 @@ def generate_launch_description():
         name='lifecycle_manager',
         output='screen',
         emulate_tty=True,
-        parameters=[{"launch_file": lfc_launch}])
+        parameters=[{"launch_file": os.path.join(bringup_dir, 'config', 'launch.xml')},
+                    {"use_sim_time": sim}])
 
     start_mcu_cmd = Node(
         package='sgd_controller',

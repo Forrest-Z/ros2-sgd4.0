@@ -1,3 +1,17 @@
+// Copyright 2022 HAW Hamburg
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include <ctype.h>
 #include <getopt.h>
 #include <stdio.h>
@@ -15,6 +29,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <poll.h>
 
 #include <iostream>
 #include <mutex>
@@ -27,20 +42,19 @@ namespace sgd_hardware_drivers
 {
 
 extern std::mutex rtcmMutex;
-extern std::string rtcm;
+extern char rtcm[1000];
+extern int numbytes;
 extern std::mutex ggaMutex;
 extern std::string gga;
 
 struct ntrip_opts
 {
-    std::string server;
-    const char *port;
-    std::string mountpnt;
-    std::string user;
-    std::string password;
+    std::string server;         // server address
+    const char *port;           // port number
+    std::string mountpnt;       // mountpoint
+    std::string auth;           // authentification string
 
-    //const char *nmea;
-    bool nmea = false;
+    bool nmea = false;          // send gga to server
 };
 
 class Ntrip_Client
@@ -49,36 +63,16 @@ class Ntrip_Client
 private:
     const std::string crlf = "\r\n";
 
-    ntrip_opts options_;
-    std::thread t;
-    uint8_t err_;
-
-    int sockfd = 0;
-    char nmeabuffer[200] = "$GPGGA,"; /* our start string */
-    size_t nmeabufpos = 0;
-    size_t nmeastarpos = 0;
+    ntrip_opts options_;    // ntrip client options
+    std::thread::native_handle_type thread_handle;  // thread handle to end thread
     
-    // variables for sending nmea message
-    std::time_t send_nmea = 0;
-    //std::string gga_msg_ = "";
+    int sockfd = 0;     // socket file descriptor
+    uint8_t err_;       // error marker
 
-    const char encodingTable [64] = {
-        'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
-        'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
-        'g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v',
-        'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/'
-    };
-
-    /**
-     * @brief Encode username and password.
-     * 
-     * @return std::string encoded string
-     */
-    std::string encode_str();
+    std::time_t send_nmea = 0;  // timestamp from last sent nmea message
 
     /**
      * @brief Try to get data from ntrip caster
-     * @return Error code
      */
     void update();
 
@@ -86,8 +80,9 @@ public:
     Ntrip_Client(ntrip_opts options);
     ~Ntrip_Client();
 
-    void get_sourcetable();
-
+    /**
+     * @brief Start ntrip client
+     */
     void start_client();
 };
 

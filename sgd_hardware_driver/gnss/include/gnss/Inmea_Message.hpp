@@ -94,7 +94,7 @@ public:
         return data_double_.find("longitude") != data_double_.end() ? data_double_.at("longitude") : 0;
     }
 
-    //! \brief Returns true if gps signal is fixed.
+    //! \brief Returns fix status
     int fix() {
         return data_int_.find("fix") != data_int_.end() ? data_int_.at("fix") : 0;
     }

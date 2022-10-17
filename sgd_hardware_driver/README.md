@@ -12,7 +12,7 @@ Der Capacitive Touch Sensor ist an den Handgriffen des Shared Guide Dog befestig
 
 | Topic | Message Type |
 | ----- | ------------ |
-| \cap_touch | sgd_msgs/Touch |
+| /cap_touch | sgd_msgs/Touch |
 
 ## FrSky RX8R
 
@@ -23,21 +23,26 @@ Der FrSky RX8R Empfänger ermöglicht die Steuerung des Shared Guide Dog mit ein
 
 | Topic | Message Type |
 | ----- | ------------ |
-| \cmd_vel_master | geometry_msgs/Twist |
-| \cmd_vel_frsky  | geometry_msgs/Twist |
-| \lights | sgd_msgs/Light |
+| /cmd_vel_master | geometry_msgs/Twist |
+| /cmd_vel_frsky  | geometry_msgs/Twist |
+| /lights | sgd_msgs/Light |
 
 ## GPS
 
-Sensormodell: `Navilock NL-602U u-blox 6`
-[Produktwebsite](https://www.navilock.de/produkte/S_61840/merkmale.html)
+Sensor: `SparkFun GPS-RTK-SMA Breakout - ZED-F9P`
+[Produktwebsite](https://www.sparkfun.com/products/16481)
 
-Der GPS Sensor liefert die Position anhand des GPS Signals. Die Position wird im lokalen und im globalen WGS84 Koordinatensystem ausgegeben.
+Die Position wird im lokalen und im globalen WGS84 Koordinatensystem ausgegeben. Zusätzlich wird die UTC Zeit bereitgestellt.
+
+Der Receiver kann RTCM Korrekturdaten verarbeiten. Um den Ntrip Client zu aktivieren, müssen in den Parametern ein Ntrip Server, Port, Mountpoint und die Authentifizierung angegeben werden.
+
+Für die Nutzung von SAPOS und anderen Ntrip Servern ist eine Authentifizierung notwendig. Der Nutzername und Passwort können mit dem Hilfsprogramm ntrip_auth in den benötigten Authentifizierungsstring umgewandelt werden. Eine direkte Eingabe von Nutzername und Passwort ist nicht vorgesehen, um Missbrauch vorzubeugen.
 
 | Topic | Message Type |
 | ----- | ------------ |
-| \gps  | sensor_msgs/NavSatFix |
-| \gps_local | geometry_msgs/PoseWithCovarianceStamped |
+| /gps  | sensor_msgs/NavSatFix |
+| /gps/local | geometry_msgs/PoseWithCovarianceStamped |
+| /clock/utc | builtin_interfaces/msg/Time |
 
 ## IMU
 
@@ -48,7 +53,7 @@ Die IMU liefert eine absolute Ausrichtung des Shared Guide Dog und die Beschleun
 
 | Topic | Message Type |
 | ----- | ------------ |
-| \imu  | sensor_msgs/Imu |
+| /imu  | sensor_msgs/Imu |
 
 ## Laser 1D
 
@@ -63,7 +68,7 @@ Der 1D Lasersensor ist zwischen den Handgriffen befestigt und überwacht die Dis
 
 | Topic | Message Type |
 | ----- | ------------ |
-| \cmd_vel_contr  | geometry_msgs/Twist |
+| /cmd_vel_contr  | geometry_msgs/Twist |
 
 ## LED Strips
 
@@ -90,8 +95,8 @@ Das UWB-System liefert, ähnlich eines GNSS Systems, die Position eines Tags in 
 
 | Topic | Message Type |
 | ----- | ------------ |
-| \uwb  | sensor_msgs/NavSatFix |
-| \uwb_local | geometry_msgs/PoseWithCovarianceStamped |
+| /uwb  | sensor_msgs/NavSatFix |
+| /uwb_local | geometry_msgs/PoseWithCovarianceStamped |
 
 ## Motortreiber
 

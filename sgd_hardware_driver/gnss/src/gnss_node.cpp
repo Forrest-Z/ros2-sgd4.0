@@ -1,4 +1,4 @@
-// Copyright 2021 HAW Hamburg
+// Copyright 2022 HAW Hamburg
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,28 +17,33 @@
 namespace sgd_hardware_drivers
 {
 
-std::mutex rtcmMutex;
-std::string rtcm;
-std::mutex ggaMutex;
-std::string gga;
+std::mutex rtcmMutex;   // mutex for rtcm string
+char rtcm[1000];        // rtcm data
+int numbytes;           // number of rtcm bytes read
+std::mutex ggaMutex;    // mutex for gga data
+std::string gga;        // GNGGA/GPGGA nmea string to send to ntrip server
 
 Gnss_Node::Gnss_Node():
     LifecycleNode("gnss_node")
 {
+    // logging parameters
     declare_parameter("log_dir", rclcpp::ParameterValue(".ros/log/"));
     declare_parameter("log_severity", rclcpp::ParameterValue("I"));
 
+    // receiver port and parser settings
     declare_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
     declare_parameter("parser_file", rclcpp::ParameterValue("/home/ipp/dev_ws/src/ros2-sgd4.0/sgd_hardware_driver/gps/params/nmea_0183.xml"));
     declare_parameter("parser_type", rclcpp::ParameterValue("nmea"));
+
+    // ros2 publisher
     declare_parameter("publish_local_pose", rclcpp::ParameterValue(true));
     declare_parameter("publish_tf", rclcpp::ParameterValue(true));
-
     declare_parameter("local_pose_topic", rclcpp::ParameterValue("gps/local"));
-    declare_parameter("gps_sim_topic", rclcpp::ParameterValue("gps/sim"));
+    declare_parameter("gps_sim_topic", rclcpp::ParameterValue("gps/sim"));  // subscriber topic for simulation
     declare_parameter("utc_topic", rclcpp::ParameterValue("clock/utc"));
     declare_parameter("gps_topic", rclcpp::ParameterValue("gps"));
 
+    // transforms
     declare_parameter("transform_to_base_link", rclcpp::ParameterValue(true));
     declare_parameter("base_link_frame_id", rclcpp::ParameterValue("base_link"));
     declare_parameter("odom_frame_id", rclcpp::ParameterValue("odom"));
@@ -47,8 +52,7 @@ Gnss_Node::Gnss_Node():
     declare_parameter("ntrip_server", rclcpp::ParameterValue(""));    // if server is empty do not use ntrip client
     declare_parameter("ntrip_port", rclcpp::ParameterValue(""));
     declare_parameter("ntrip_mountpoint", rclcpp::ParameterValue(""));
-    declare_parameter("ntrip_user", rclcpp::ParameterValue(""));
-    declare_parameter("ntrip_password", rclcpp::ParameterValue(""));
+    declare_parameter("ntrip_auth", rclcpp::ParameterValue(""));
     declare_parameter("ntrip_send_nmea", rclcpp::ParameterValue(true));
 
     // initialize logging
@@ -74,11 +78,13 @@ Gnss_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unu
     }
 
     if (is_sim_) return CallbackReturn::SUCCESS;
+
+    // initialize receiver serial port
     std::string port;
     get_parameter("port", port);
-    
     try
     {
+        // set start / stop frames and open port
         serial.set_start_frame('$');
         serial.set_stop_frame('\n');
         serial.open_port(port, 115200);
@@ -90,18 +96,12 @@ Gnss_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unu
         return CallbackReturn::FAILURE;
     }
     
-    // Initialize parser
+    // Initialize nmea parser
     if (parser_type_ == "nmea")
     {
         RCLCPP_INFO(get_logger(), "Initialize parser for nmea data");
         parser_ = std::make_unique<Nmea_Parser>();
     }
-    // else
-    // {
-    //     RCLCPP_INFO(get_logger(), "Initialize parser for ubx data");
-    //     parser_ = std::make_unique<Ubx_Parser>();
-    // }
-    
     return CallbackReturn::SUCCESS;
 }
 
@@ -112,7 +112,7 @@ Gnss_Node::on_activate(const rclcpp_lifecycle::State & state __attribute__((unus
 
     if (is_sim_) return CallbackReturn::SUCCESS;
 
-    // initialize parser if is_sim_ == false
+    // import xml file with nmea specification
     RCLCPP_DEBUG(get_logger(), "Import parser file %s", xml_file_.c_str());
     parser_->import_xml(xml_file_);
 
@@ -122,9 +122,37 @@ Gnss_Node::on_activate(const rclcpp_lifecycle::State & state __attribute__((unus
         return CallbackReturn::FAILURE;
     }
 
+    // init hdop and fix status (debugging -> remove later)
+    hdop = 100.0;
+    status = 0;
+
+    // wait for gnss fix
+    int i = 0;
+    while (parser_->fix() < 1 && i < 600 && rclcpp::ok())
+    {
+        if (serial.read_serial())   // read serial port
+        {
+            std::string msg = "$" + serial.get_msg() + "\n";
+            parser_->parse_msg(msg);        // parse message to get fix status
+        }
+        if (i % 10 == 0)
+        {
+            // print out a warning every second
+            RCLCPP_WARN(get_logger(), "Waiting for GNSS fix...");
+        }
+        rclcpp::sleep_for(100ms);
+        i++;
+    }
+    if (i >= 600 || ntrip_options_.server.empty())
+    {
+        RCLCPP_WARN(get_logger(), "Could not get fix within 60 seconds. Start gnss without ntrip client.");
+        return CallbackReturn::SUCCESS;
+    }
+    
+    RCLCPP_DEBUG(get_logger(), "Start ntrip client");
     // initialize ntrip client and start in new thread
-    Ntrip_Client client = Ntrip_Client(ntrip_options_);
-    client.start_client();
+    client = std::make_unique<Ntrip_Client>(ntrip_options_);
+    client->start_client();
 
     return CallbackReturn::SUCCESS;
 }
@@ -146,6 +174,8 @@ Gnss_Node::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unuse
 {
     pub_navsatfix_.reset();
     if (is_pub_local_pose_) pub_local_pose_.reset();
+
+    client.release();   // stop ntrip client
     return CallbackReturn::SUCCESS;
 }
 
@@ -180,8 +210,7 @@ Gnss_Node::init_parameters()
     get_parameter("ntrip_port", port_);
     ntrip_options_.port = port_.c_str();
     get_parameter("ntrip_mountpoint", ntrip_options_.mountpnt);
-    get_parameter("ntrip_user", ntrip_options_.user);
-    get_parameter("ntrip_password", ntrip_options_.password);
+    get_parameter("ntrip_auth", ntrip_options_.auth);
     get_parameter("ntrip_send_nmea", ntrip_options_.nmea);
 }
 
@@ -224,24 +253,18 @@ Gnss_Node::init_pub_sub()
 void
 Gnss_Node::read_serial()
 {
-    /*
-        TODOs:
-        - save gga message -> Done
-        - send gga message to ntrip server (every 10s)
-        - check if new rtcm message is available -> send to receiver
-    */
     if (serial.read_serial())
     {
-        std::string msg = "$" + serial.get_msg();
-        if (msg.find("GGA") < 4)    // if message starts with $GNGGA or $GPGGA
+        std::string msg = "$" + serial.get_msg() + "\n";
+        parser_->parse_msg(msg);
+
+        if (msg.find("GGA") < 5 && parser_->fix() > 0)    // if message starts with $GNGGA or $GPGGA
         {
             // save to gga
             ggaMutex.lock();
             gga = msg;
             ggaMutex.unlock();
         }
-
-        parser_->parse_msg(msg);
         
         // wait for all nmea messages -> TODO: make time based
         if (parser_->msg_complete())
@@ -261,10 +284,16 @@ Gnss_Node::read_serial()
             nsf.header.frame_id = "earth";
 
             auto val = parser_->get_data("hdop");
-            double hdop = -1;
             if (val.second == 1)
             {
-                hdop = std::get<double>(val.first);
+                double hdop_ = std::get<double>(val.first);
+
+                if (hdop != hdop_ || status != parser_->fix())
+                {
+                    std::cout << "hdop: " << hdop << ", fix: " << parser_->fix() << "\n";
+                    hdop = hdop_;
+                    status = parser_->fix();
+                }
             }
 
             nsf.status.status = (parser_->fix() > 1 ? sensor_msgs::msg::NavSatStatus::STATUS_FIX
@@ -289,10 +318,11 @@ Gnss_Node::read_serial()
     }
 
     rtcmMutex.lock();
-    if (!rtcm.empty())
+    if (numbytes > 0)
     {
-        RCLCPP_INFO(get_logger(), "Received rtcm message: %s", rtcm);
-        rtcm.clear();
+        // send to receiver
+        serial.write_serial(rtcm, numbytes);
+        numbytes = 0;
     }
     rtcmMutex.unlock();
 }
@@ -300,11 +330,6 @@ Gnss_Node::read_serial()
 void
 Gnss_Node::on_gps_sim_received(sensor_msgs::msg::NavSatFix::SharedPtr msg)
 {
-    // if (is_tf_to_base_link_)
-    // {
-    //     // transform received position from gps_frame to base_link_frame
-    //     // TODO
-    // }
     pub_navsatfix_->publish(*msg);
     if (pub_local_pose_)
     {

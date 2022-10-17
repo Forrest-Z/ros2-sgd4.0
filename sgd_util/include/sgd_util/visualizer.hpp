@@ -56,7 +56,7 @@ protected:
   bool is_map_published_;
   void pub_map_markers();
 
-  void on_pose_received(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg, int sensor);
+  void on_pose_received(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg, uint8_t sensor);
   visualization_msgs::msg::Marker createMarker();
 
   std::string time_to_string();

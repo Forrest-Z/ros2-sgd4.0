@@ -5,9 +5,12 @@
     <!--node name="amcl" /-->
 
 <!-- hardware nodes -->
-    <!--node name="led_strip" /-->
-    <node name="frsky_rx8r" />
-    <node name="wh_fcruiser" sim="no" />
+    <node name="feather_handle_ros" start="real" />
+    <node name="gnss_node" start="both" />
+    <node name="uwb_node" start="real" />
+    <node name="led_strip" start="real" />
+    <node name="frsky_rx8r" start="real" />
+    <node name="wh_fcruiser" start="real" />
 
 <!-- navigation nodes -->
     <node name="subsum_controller" />
@@ -17,8 +20,7 @@
     <node name="bt_navigator" />
     <node name="waypoint_follower" />
     <node name="osm_planner" />
-    <!--node name="uwb_node" /-->
-    <!--node name="initial_pose_estimator" -->
-    <!--node name="lidar_obstacle_checker" /-->
+    <node name="ros2_obstacle_checker" />
+    <!--node name="ros2_depthCamera_obstacle_checker" sim="no" /-->
 
 </launch>

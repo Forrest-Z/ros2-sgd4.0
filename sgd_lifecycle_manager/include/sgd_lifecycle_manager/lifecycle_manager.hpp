@@ -42,6 +42,7 @@ public:
 protected:
     // parameters
     std::string launch_file;
+    bool is_sim_;
 
     // map to store service clients
     std::unordered_map<std::string, rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr> service_clients_;

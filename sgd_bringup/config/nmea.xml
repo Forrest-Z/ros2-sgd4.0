@@ -28,12 +28,12 @@
 
 	<!-- GPGGA,105353.000,5340.9773,N,00943.7816,E,1,08,0.9,15.2,M,45.1,M,,0000*64 -->
 	<sentenceId name="GNGGA" parse="true">
-		<param name="time" type="time">(\d{2})(\d{2})(\d{2}\.\d{2})</param>
-		<param name="latitude" type="latlon">(\d{2})(\d{2}\.\d{7})</param>
+		<param name="time" type="time">(\d{2})(\d{2})(\d{2}\.\d+)</param>
+		<param name="latitude" type="latlon">(\d{2})(\d{2}\.\d+)</param>
 		<param name="dir_NS" type="string">[NS]</param>
-		<param name="longitude" type="latlon">(\d{3})(\d{2}\.\d{7})</param>
+		<param name="longitude" type="latlon">(\d{3})(\d{2}\.\d+)</param>
 		<param name="dir_EW" type="string">[EW]</param>
-		<param name="status" type="int">[012]</param> <!-- status indicator -->
+		<param name="fix" type="int">\d</param> <!-- status indicator -->
 		<param type="int">(\d+)</param>    	<!-- number of sats -->
 		<param name="hdop" type="double">(\d+\.\d+)</param>     <!-- HDOP -->
 		<param type="double">(\d+\.\d+)</param>    	<!-- antenna height -->
@@ -41,7 +41,7 @@
 		<param type="double">(\d+\.\d+)</param>    	<!-- geoidal separation -->
 		<param type="char">\w</param> 		<!-- geoidal separation unit -->
 		<param type="double">(\d+\.\d+)</param> 	<!-- age of diff. data -->
-		<param type="int">(\d{4})</param> 		<!-- station ID -->
+		<param type="int">(\d+)</param> 		<!-- station ID -->
 		<param type="checksum">([0-9A-F]+\*[0-9A-F]{2})</param>
 	</sentenceId>
 
@@ -57,7 +57,7 @@
 	</sentenceId>
 
 	<!-- GPGSA,A,3,15,19,24,17,25,06,12,32,,,,,1.6,0.9,1.3*31 -->
-	<sentenceId name="GNGSA" parse="true">
+	<sentenceId name="GNGSA" parse="false">
 		<param type="char">[MA]</param> 		<!-- aquisition mode -->
 		<param name="fix" type="int">[123]</param>
 		<param type="int">(\d{2})</param> 		<!-- sat prn used -->
