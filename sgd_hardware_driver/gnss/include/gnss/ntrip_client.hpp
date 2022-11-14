@@ -50,7 +50,7 @@ extern std::string gga;
 struct ntrip_opts
 {
     std::string server;         // server address
-    const char *port;           // port number
+    std::string port;           // port number
     std::string mountpnt;       // mountpoint
     std::string auth;           // authentification string
 

@@ -8,9 +8,9 @@
     <node name="feather_handle_ros" start="real" />
     <node name="gnss_node" start="both" />
     <node name="uwb_node" start="real" />
-    <node name="led_strip" start="real" />
-    <node name="frsky_rx8r" start="real" />
-    <node name="wh_fcruiser" start="real" />
+    <!--node name="led_strip" start="both" /-->
+    <!--node name="frsky_rx8r" start="real" /-->
+    <node name="wh_fcruiser" start="both" />
 
 <!-- navigation nodes -->
     <node name="subsum_controller" />
@@ -21,6 +21,6 @@
     <node name="waypoint_follower" />
     <node name="osm_planner" />
     <node name="ros2_obstacle_checker" />
-    <!--node name="ros2_depthCamera_obstacle_checker" sim="no" /-->
+    <!--node name="ros2_depthCamera_obstacle_checker" start="real" /-->
 
 </launch>

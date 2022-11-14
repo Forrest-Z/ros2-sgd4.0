@@ -37,7 +37,7 @@ UWB_Node::UWB_Node():
     std::string log_sev_;
     get_parameter("log_severity", log_sev_);
     plog::init(plog::severityFromString(log_sev_.c_str()), (log_dir_ + "/" + sgd_util::create_log_file("uwb")).c_str());
-    PLOGD << "Message: tag_id, dist_m | x;y";
+    PLOGD << "tag_id; dist_m";
 }
 
 UWB_Node::~UWB_Node()
@@ -140,7 +140,7 @@ UWB_Node::init_pub_sub()
         pub_wgs84_pose_ = this->create_publisher<sensor_msgs::msg::NavSatFix>("uwb/global", default_qos);
     }
 
-    timer_ = this->create_wall_timer(10ms, std::bind(&UWB_Node::read_serial, this));
+    timer_ = this->create_wall_timer(5ms, std::bind(&UWB_Node::read_serial, this));
     timer_marker_ = this->create_wall_timer(30s, std::bind(&UWB_Node::publish_marker, this));
 }
 
@@ -173,7 +173,8 @@ UWB_Node::init_yaml()
 
                     uwb_pf.registerBeacon(xy.first, xy.second, tag_id);
                     
-                    PLOGI << "Insert tag with id " << tag_id << ";" << xy.first << ";" << xy.second;
+                    RCLCPP_INFO(get_logger(), "Insert tag with id %d at position %.3f, %.3f",
+                                tag_id, xy.first, xy.second);
                     num_tags++;
                 }
             }
@@ -210,7 +211,7 @@ UWB_Node::read_serial()
     //     }
     // }
 
-    if (serial.read_serial())
+    while (serial.read_serial())
     {
         // json string parsing
         std::string msg = "{" + serial.get_msg();
@@ -222,7 +223,7 @@ UWB_Node::read_serial()
         }
         catch(const std::exception& e)
         {
-            PLOGW << "JSON error: " << e.what();
+            RCLCPP_WARN(get_logger(), "JSON error: %s", e.what());
             return;
         }
         
@@ -231,14 +232,14 @@ UWB_Node::read_serial()
         // example msg: {'anch': 16661, 'dist': '0A262C4277A9E33F', 'type': 'rng', 'src': 21505}
         if (js.count("anch") && js.count("dist"))
         {
-            PLOGD << msg;
+            // PLOGD << msg;
             // message is from anchor
             tag_id = js["anch"].get<SGD_UWB_BEACON_ID_TYPE>();
-            dist = sgd_util::toDouble(js["dist"].get<std::string>(), true);
+            dist = js["dist"].get<int>();
 
-            uwb_pf.updateUwbMeasurement(dist, tag_id);
-            PLOGD << "Publish marker " << dist << ";" << tag_id;
-            publish_dist_marker(tag_id, dist);
+            //uwb_pf.updateUwbMeasurement(dist/1000.0, tag_id);
+            PLOGD << tag_id << ";" << dist;
+            //publish_dist_marker(tag_id, dist);
         }
         t_last_meas = now().nanoseconds() / 1.0E6;
     }
@@ -333,17 +334,22 @@ UWB_Node::publish_dist_marker(int tag_id, double dist)
     marker.color.b = 0.0;
 
     // add points
-    auto xy = optimizer->tags.at(tag_id);
-    int num_pnts = 50;
-    for (int i = 0; i <= num_pnts; i++)
+    if (optimizer->tags.count(tag_id))
     {
-        geometry_msgs::msg::Point pnt;
-        pnt.x = xy.first + sin(2*M_PI / num_pnts*i) * dist;
-        pnt.y = xy.second + cos(2*M_PI / num_pnts*i) * dist;
-        marker.points.push_back(pnt);
+        auto xy = optimizer->tags.at(tag_id);
+        int num_pnts = 50;
+        for (int i = 0; i <= num_pnts; i++)
+        {
+            geometry_msgs::msg::Point pnt;
+            pnt.x = xy.first + sin(2*M_PI / num_pnts*i) * dist;
+            pnt.y = xy.second + cos(2*M_PI / num_pnts*i) * dist;
+            marker.points.push_back(pnt);
+        }
+
+        pub_dist_marker_->publish(marker);
     }
 
-    pub_dist_marker_->publish(marker);
+    
 }
 
 void

@@ -379,7 +379,7 @@ uwb_node:
     use_sim_time: False
     log_dir: ".ros/log/"
     log_severity: "I"
-    port: "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10KFTNY-if00-port0"
+    port: "/dev/serial/by-id/usb-Raspberry_Pi_Pico_E6615CC1D391502F-if00"
     tag_defs: "uwb_tag_defs.yaml"
     publish_wgs84_pose: False
 

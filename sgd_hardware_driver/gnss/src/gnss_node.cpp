@@ -62,7 +62,7 @@ Gnss_Node::Gnss_Node():
     std::string log_file(log_dir_ + "/" + sgd_util::create_log_file("gps"));
 
     plog::init(plog::severityFromString(log_sev_.c_str()), log_file.c_str());
-    PLOGD << "Message: utc; lat; lon; x; y";
+    PLOGD << "Message: utc; lat; lon; x; y; hdop; fix";
 }
 
 Gnss_Node::~Gnss_Node() {}
@@ -80,7 +80,7 @@ Gnss_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unu
     if (is_sim_) return CallbackReturn::SUCCESS;
 
     // initialize receiver serial port
-    std::string port;
+    std::string port;       // port name e.g. /dev/serial/by-id/...
     get_parameter("port", port);
     try
     {
@@ -143,13 +143,13 @@ Gnss_Node::on_activate(const rclcpp_lifecycle::State & state __attribute__((unus
         rclcpp::sleep_for(100ms);
         i++;
     }
-    if (i >= 600 || ntrip_options_.server.empty())
-    {
-        RCLCPP_WARN(get_logger(), "Could not get fix within 60 seconds. Start gnss without ntrip client.");
-        return CallbackReturn::SUCCESS;
-    }
+    // if (i >= 600 || ntrip_options_.server.empty())
+    // {
+    //     RCLCPP_WARN(get_logger(), "Could not get fix within 60 seconds. Start gnss without ntrip client.");
+    //     return CallbackReturn::SUCCESS;
+    // }
     
-    RCLCPP_DEBUG(get_logger(), "Start ntrip client");
+    RCLCPP_INFO(get_logger(), "Start ntrip client");
     // initialize ntrip client and start in new thread
     client = std::make_unique<Ntrip_Client>(ntrip_options_);
     client->start_client();
@@ -206,9 +206,7 @@ Gnss_Node::init_parameters()
 
     // ntrip client parameter
     get_parameter("ntrip_server", ntrip_options_.server);
-    std::string port_;
-    get_parameter("ntrip_port", port_);
-    ntrip_options_.port = port_.c_str();
+    get_parameter("ntrip_port", ntrip_options_.port);
     get_parameter("ntrip_mountpoint", ntrip_options_.mountpnt);
     get_parameter("ntrip_auth", ntrip_options_.auth);
     get_parameter("ntrip_send_nmea", ntrip_options_.nmea);
@@ -253,7 +251,7 @@ Gnss_Node::init_pub_sub()
 void
 Gnss_Node::read_serial()
 {
-    if (serial.read_serial())
+    while (serial.read_serial())
     {
         std::string msg = "$" + serial.get_msg() + "\n";
         parser_->parse_msg(msg);
@@ -275,6 +273,7 @@ Gnss_Node::read_serial()
             utc.nanosec = (parser_->gps_time() - floor(parser_->gps_time())) * 1E9;
             pub_utc_time_->publish(utc);
             std::string debug_msg = std::to_string(parser_->gps_time()) + ";";
+            debug_msg += std::to_string(now().nanoseconds()/1E6) + ";";
 
             // Create NavSatFix message and publish data
             sensor_msgs::msg::NavSatFix nsf;
@@ -309,11 +308,12 @@ Gnss_Node::read_serial()
                 debug_msg += std::to_string(local.pose.pose.position.x) + ";" + std::to_string(local.pose.pose.position.y);
                 pub_local_pose_->publish(local);
             }
+            PLOGD << debug_msg << ";" << std::get<double>(val.first) << ";" << parser_->fix();
 
             // Clear old message
             parser_->clear();
             last_msg_ = nsf;
-            PLOGD << debug_msg;
+            
         }
     }
 

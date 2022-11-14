@@ -40,7 +40,8 @@ Ntrip_Client::start_client()
 
 void Ntrip_Client::update()
 {
-    while (true)
+    uint8_t retries = 0;
+    while (retries < 5)
     {
         err_ = 0;
 
@@ -55,15 +56,14 @@ void Ntrip_Client::update()
 
         // set port and server address
         memset(&their_addr, 0, sizeof(struct sockaddr_in));
-        if ((i = strtol(options_.port, &b, 10)) && (!b || !*b))
+        if ((i = strtol(options_.port.c_str(), &b, 10)) && (!b || !*b))
         {
             their_addr.sin_port = htons(i); // host to network byte order for unsigned short int (linux function)
         }
-        else if (!(se = getservbyname(options_.port, 0)))
+        else if (!(se = getservbyname(options_.port.c_str(), 0)))
         {
-            fprintf(stderr, "Can't resolve port %s.", options_.port);
+            std::cout << "Can't resolve port '" << options_.port << "'.\n";
             err_ |= 0x01;
-            return;
         }
         else
         {
@@ -73,7 +73,7 @@ void Ntrip_Client::update()
         // set server address and socket
         if (!(he = gethostbyname(options_.server.c_str())))
         {
-            fprintf(stderr, "Server name lookup failed for '%s'.\n", options_.server.c_str());
+            std::cout << "Server name lookup failed for '" << options_.server << "'.\n";
             err_ |= 0x02;
         }
         else if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -86,7 +86,11 @@ void Ntrip_Client::update()
             their_addr.sin_family = AF_INET;
             their_addr.sin_addr = *((struct in_addr *)he->h_addr);
         }
-        if (err_ != 0)  return;
+        if (err_ != 0)
+        {
+            retries++;
+            continue;
+        }
 
         // build http request
         std::string request("GET /");
@@ -99,6 +103,7 @@ void Ntrip_Client::update()
         request += (!options_.mountpnt.empty()) ? ("Authorization: Basic " + options_.auth + crlf) : "";
         request += crlf;
 
+        std::cout << "Send request to server: " << request << "\n";
         // set time for gga send in the past so that we can send immediately
         last_gga_send = std::time(nullptr) - 10;
 
@@ -106,9 +111,8 @@ void Ntrip_Client::update()
         if (connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1)
         {
             // connect failed
-            printf("Error connecting to server\n");
+            std::cout << "Error connecting to server\n";
             err_ |= 0x02;
-            return;
         }
 
         // send request
@@ -117,10 +121,12 @@ void Ntrip_Client::update()
             // send failed
             printf("Error while sending request\n");
             err_ |= 0x02;
-            return;
         }
         else if (!options_.mountpnt.empty() && options_.mountpnt.front() != '%')
         {
+            // reset number of retries
+            retries = 0;
+
             int k = 0;
             int chunkymode = 0;
             int starttime = time(0);
@@ -143,7 +149,7 @@ void Ntrip_Client::update()
                     // read successful
                     if (!k)
                     {
-                        fprintf(stderr, "!%i\n", k);
+                        std::cout << "!%i\n";
 
                         buf[numbytes_] = 0; /* latest end mark for strstr */
                         if (numbytes_ > 17 &&
@@ -151,7 +157,7 @@ void Ntrip_Client::update()
                             (!strncmp(buf, "HTTP/1.1 200 OK\r\n", 17) ||
                                 !strncmp(buf, "HTTP/1.0 200 OK\r\n", 17)))
                         {
-                            fprintf(stderr, "ICY 200 OK\n");
+                            std::cout << "ICY 200 OK\n";
                             const char *datacheck = "Content-Type: gnss/data\r\n";
                             const char *chunkycheck = "Transfer-Encoding: chunked\r\n";
                             int l = strlen(datacheck) - 1;
@@ -163,7 +169,7 @@ void Ntrip_Client::update()
                             }
                             if (i == numbytes_ - l)
                             {
-                                fprintf(stderr, "No 'Content-Type: gnss/data' found\n");
+                                std::cout << "No 'Content-Type: gnss/data' found\n";
                                 err_ |= 0x02;
                             }
                             l = strlen(chunkycheck) - 1;
@@ -178,12 +184,12 @@ void Ntrip_Client::update()
                         }
                         else if (!strstr(buf, "ICY 200 OK"))
                         {
-                            fprintf(stderr, "Could not get the requested data: ");
+                            std::cout << "Could not get the requested data: ";
                             for (k = 0; k < numbytes_ /*&& buf[k] != '\n' && buf[k] != '\r'*/; ++k)
                             {
-                                fprintf(stderr, "%c", isprint(buf[k]) ? buf[k] : '.');
+                                std::cout << isprint(buf[k]) ? buf[k] : '.';
                             }
-                            fprintf(stderr, "\n");
+                            std::cout << std::endl;
                             err_ |= 0x02;
                         }
 
@@ -193,7 +199,7 @@ void Ntrip_Client::update()
 
                     if (chunkymode)
                     {
-                        fprintf(stderr, "chunkymode = %i\n", chunkymode);
+                        std::cout << "chunkymode = " << chunkymode << "\n";
                         int cstop = 0;
                         int pos = 0;
                         while (!err_ && !cstop && pos < numbytes_)
@@ -243,7 +249,7 @@ void Ntrip_Client::update()
                         }
                         if (cstop)
                         {
-                            fprintf(stderr, "Error in chunky transfer encoding\n");
+                            std::cout << "Error in chunky transfer encoding\n";
                             err_ |= 0x02;
                         }
                     }
@@ -251,6 +257,7 @@ void Ntrip_Client::update()
                     {
                         // save rtcm message
                         totalbytes += numbytes_;
+                        std::cout << "Save RTCM message\n";
                         rtcmMutex.lock();
                         std::memcpy(rtcm, buf, numbytes_);
                         numbytes = numbytes_;
@@ -269,13 +276,13 @@ void Ntrip_Client::update()
                         if (send(sockfd, gga.c_str(), (size_t)gga.size(), 0) < 0)
                         {
                             // send failed
-                            printf("Error while sending gga data");
+                            std::cout << "Error while sending gga data";
                         }
                         last_gga_send = now;
                     } 
                     else
                     {
-                        fprintf(stderr, "No gga data to send...\n");
+                        std::cout << "No gga data to send...\n";
                     }                
                     ggaMutex.unlock();
                 }
@@ -300,8 +307,9 @@ void Ntrip_Client::update()
 
         // there was an error, so close file descriptor
         close(sockfd);
+        retries++;
     }
-    fprintf(stderr, "Terminate NTRIP updater\n");
+    std::cout << "Terminate NTRIP updater\n";
 }
 
 } // namespace sgd_hardware_drivers
