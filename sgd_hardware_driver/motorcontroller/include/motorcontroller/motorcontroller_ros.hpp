@@ -17,6 +17,7 @@
 #include "tf2/utils.h"
 #include "sgd_util/log_utils.hpp"
 #include "sgd_msgs/msg/odom_improved.hpp"
+#include "std_msgs/msg/u_int32.hpp"
 
 #include <plog/Log.h>
 #include "plog/Initializers/RollingFileInitializer.h"
@@ -69,6 +70,7 @@ protected:
   rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
   rclcpp_lifecycle::LifecyclePublisher<sgd_msgs::msg::OdomImproved>::SharedPtr pub_odom_improved_;
   rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::BatteryState>::SharedPtr pub_battery_;
+  rclcpp::Subscription<std_msgs::msg::UInt32>::SharedPtr sub_motor_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_sim_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;
@@ -82,6 +84,7 @@ protected:
   void on_gps_received(const geometry_msgs::msg::PoseWithCovariance::SharedPtr msg);
   void on_cmd_vel_received(const geometry_msgs::msg::Twist::SharedPtr msg);
   void on_odom_sim_received(const nav_msgs::msg::Odometry::SharedPtr msg);
+  void on_motor_received(const std_msgs::msg::UInt32::SharedPtr msg);
   double cmd_vel_seconds_;
   geometry_msgs::msg::Twist last_cmd_vel_;
   void publish_motor_cmd();

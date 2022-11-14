@@ -24,7 +24,7 @@ Feather_Handle_ROS::Feather_Handle_ROS():
     std::string log_file(log_dir_ + "/" + sgd_util::create_log_file("handle"));
 
     plog::init(plog::severityFromString(log_sev_.c_str()), log_file.c_str());
-    PLOGD << "Message: millis; roll; pitch; yaw; gyro (x3);;; magneto (x3);;; accel (x3)";
+    PLOGD << "millis; roll; pitch; yaw; gyro (x3);;; magneto (x3);;; accel (x3)";
 }
 
 Feather_Handle_ROS::~Feather_Handle_ROS()

@@ -42,7 +42,7 @@ Motorcontroller::Motorcontroller() : rclcpp_lifecycle::LifecycleNode("motorcontr
     std::string log_file(log_dir_ + "/" + sgd_util::create_log_file("motor"));
 
     plog::init(plog::severityFromString(log_sev_.c_str()), log_file.c_str());
-    PLOGD << "Message: rclcpp_time; millis; lin_vel; ang_vel; x; y; phi (rad); dx; dy; dphi; batt_volt";
+    PLOGD << "rclcpp_time; meas_L; meas_R; lin_vel; ang_vel";
 }
 
 Motorcontroller::~Motorcontroller() {}
@@ -52,26 +52,6 @@ Motorcontroller::on_configure(const rclcpp_lifecycle::State & state __attribute_
 {
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
-
-    //if (is_sim_) return CallbackReturn::SUCCESS;
-
-    // Open serial port
-    std::string port;
-    get_parameter("port", port);
-
-    try
-    {
-        RCLCPP_INFO(get_logger(), "Open serial port %s", port.c_str());
-        serial.set_start_frame('{');
-        serial.set_stop_frame('}');
-        serial.open_port(port, 115200);
-    }
-    catch(const sgd_io::io_exception& e)
-    {
-        RCLCPP_ERROR(get_logger(), e.what());
-        return CallbackReturn::FAILURE;
-    }
-
     return CallbackReturn::SUCCESS;
 }
 
@@ -155,6 +135,11 @@ Motorcontroller::init_pub_sub()
     }
     else
     {
+        // receive motor data via micro ROS
+        RCLCPP_DEBUG(get_logger(), "Subscribe to 'pico_publisher'");
+        sub_motor_ = this->create_subscription<std_msgs::msg::UInt32>("pico_publisher", default_qos,
+            std::bind(&Motorcontroller::on_motor_received, this, std::placeholders::_1));
+
         // Receive velocity command from local controller
         RCLCPP_DEBUG(get_logger(), "Subscribe to '%s'", vel_twist_topic_.c_str());
         sub_cmd_vel_ = this->create_subscription<geometry_msgs::msg::Twist>(vel_twist_topic_, default_qos,
@@ -164,10 +149,9 @@ Motorcontroller::init_pub_sub()
             std::bind(&Motorcontroller::on_gps_received, this, std::placeholders::_1));
         
         timer_ = this->create_wall_timer(100ms, std::bind(&Motorcontroller::publish_motor_cmd, this));
-        timer_serial_ = this->create_wall_timer(10ms, std::bind(&Motorcontroller::read_serial, this));
     }
 
-    timer_vol_ = this->create_wall_timer(10000ms, std::bind(&Motorcontroller::publish_battery_state, this));
+    // timer_vol_ = this->create_wall_timer(10000ms, std::bind(&Motorcontroller::publish_battery_state, this));
 
     // Publish battery state
     RCLCPP_DEBUG(get_logger(), "Create publisher on '%s'", battery_state_topic_.c_str());
@@ -178,70 +162,6 @@ Motorcontroller::init_pub_sub()
     RCLCPP_DEBUG(get_logger(), "Subscribe to 'imu' topic");
     sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>("imu", default_qos,
                 std::bind(&Motorcontroller::on_imu_received, this, std::placeholders::_1));
-}
-
-void
-Motorcontroller::read_serial()
-{
-    if (serial.read_serial())
-    {
-        std::string msg = "{" + serial.get_msg() + "}";
-
-        try
-        {
-            wh_fcruiser->parse_msg(msg);
-        }
-        catch(const nlohmann::json::exception& e)
-        {
-            PLOGW << "JSON parser error: " << e.what() << '\n';
-            return;
-        }
-
-        odo_new.update(wh_fcruiser->get_linear_vel(), wh_fcruiser->get_angular_vel());
-
-        // Publish odom message
-        nav_msgs::msg::Odometry odom;
-        odom.header.stamp = now();
-        odom.header.frame_id = "odom";
-        odom.child_frame_id = "base_link";
-        // Twist relative to child_frame_id
-        odom.twist.twist.angular.x = 0.0;
-        odom.twist.twist.angular.y = 0.0;
-        // odom.twist.twist.angular.z = wh_fcruiser->get_angular_vel();
-        odom.twist.twist.angular.z = odo_new.dphi;
-        odom.twist.twist.linear.x = wh_fcruiser->get_linear_vel();
-        odom.twist.twist.linear.y = 0.0;
-        odom.twist.twist.linear.z = 0.0;
-
-        odom.pose.pose.position.x = odo_new.x;
-        odom.pose.pose.position.y = odo_new.y;
-        odom.pose.pose.position.z = 0.142176;
-
-        // Covariance -> 6x6 matrix
-        for (uint8_t i = 0; i < 36; i+=7)
-        {
-            // set diagonal to variance
-            odom.pose.covariance[i] = 0.3;
-        }
-
-        tf2::Quaternion q;
-        //q.setRPY(0, 0, wh_fcruiser->get_orientation());
-        q.setRPY(0, 0, odo_new.phi);
-        odom.pose.pose.orientation = tf2::toMsg(q);
-
-        PLOGD << std::to_string(now().nanoseconds()/1E6) << ";" << std::to_string(wh_fcruiser->millis()) << ";" 
-              << wh_fcruiser->get_linear_vel() << ";" << wh_fcruiser->get_angular_vel() << ";"
-              << odo_new.x << ";" << odo_new.y << ";" << odo_new.phi << ";" << odo_new.dx << ";"
-              << odo_new.dy << ";" << odo_new.dphi << ";" << wh_fcruiser->get_batt_voltage();
-        pub_odom_->publish(odom);
-
-        sgd_msgs::msg::OdomImproved odom_impr;
-        odom_impr.dx = odo_new.dx;
-        odom_impr.dy = odo_new.dy;
-        pub_odom_improved_->publish(odom_impr);
-
-        return;
-    }
 }
 
 void
@@ -306,6 +226,46 @@ Motorcontroller::on_odom_sim_received(const nav_msgs::msg::Odometry::SharedPtr m
 }
 
 void
+Motorcontroller::on_motor_received(const std_msgs::msg::UInt32::SharedPtr msg)
+{
+    wh_fcruiser->parse_msg(msg->data);
+    PLOGD << std::to_string(now().nanoseconds()/1E6) << ";" 
+        << wh_fcruiser->meas_L << ";" << wh_fcruiser->meas_R << ";"
+        << wh_fcruiser->get_linear_vel() << ";" << wh_fcruiser->get_angular_vel();
+
+    // Publish odom message
+    nav_msgs::msg::Odometry odom;
+    odom.header.stamp = now();
+    odom.header.frame_id = "odom";
+    odom.child_frame_id = "base_link";
+    // Twist relative to child_frame_id
+    odom.twist.twist.angular.x = 0.0;
+    odom.twist.twist.angular.y = 0.0;
+    // odom.twist.twist.angular.z = wh_fcruiser->get_angular_vel();
+    odom.twist.twist.angular.z = odo_new.dphi;
+    odom.twist.twist.linear.x = wh_fcruiser->get_linear_vel();
+    odom.twist.twist.linear.y = 0.0;
+    odom.twist.twist.linear.z = 0.0;
+
+    odom.pose.pose.position.x = odo_new.x;
+    odom.pose.pose.position.y = odo_new.y;
+    odom.pose.pose.position.z = 0.142176;
+
+    // Covariance -> 6x6 matrix
+    for (uint8_t i = 0; i < 36; i+=7)
+    {
+        // set diagonal to variance
+        odom.pose.covariance[i] = 0.3;
+    }
+
+    tf2::Quaternion q;
+    //q.setRPY(0, 0, wh_fcruiser->get_orientation());
+    q.setRPY(0, 0, 0);
+    odom.pose.pose.orientation = tf2::toMsg(q);
+    pub_odom_->publish(odom);
+}
+
+void
 Motorcontroller::publish_motor_cmd()
 {
     std::string msg;
@@ -318,8 +278,6 @@ Motorcontroller::publish_motor_cmd()
     {
         msg = wh_fcruiser->cmd_vel(last_cmd_vel_.linear.x, last_cmd_vel_.angular.z);
     }
-    
-    serial.write_serial(msg);
 }
 
 }

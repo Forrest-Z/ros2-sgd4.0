@@ -31,6 +31,12 @@ ros2 launch sgd_bringup sgd_startup.launch.py sim:=[True|False] slam:=[True|Fals
 
 gestartet werden. Die beiden Parameter *sim* und *slam* sind optional. Standardmäßig ist `sim:=False` und `slam:=False`. Die log_severity ist auf `I` eingestellt.
 
+Bei der Verwendung von Mikrocontrollern mit microROS muss der Micro-ROS Agent gestartet werden
+
+```
+micro-ros-agent serial --dev /dev/serial/by-id/[serial-id] baudrate=115200
+```
+
 # preempt_rt Patch
 
 ## useful links

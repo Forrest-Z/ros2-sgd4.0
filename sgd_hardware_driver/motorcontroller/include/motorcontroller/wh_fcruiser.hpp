@@ -2,6 +2,7 @@
 #define SGD_HARDWARE__WH_FCRUISER_HPP_
 
 #include <nlohmann/json.hpp>
+#include <iostream>
 
 namespace sgd_hardware_drivers
 {
@@ -23,6 +24,8 @@ private:
     double wheel_sep_;      // wheel separation
 
 public:
+    int16_t meas_L = 0, meas_R = 0;
+
     /**
      * @brief Construct a new wh fcruiser object
      * 
@@ -42,7 +45,7 @@ public:
      * 
      * @param msg 
      */
-    void parse_msg(std::string msg);
+    void parse_msg(uint32_t msg);
 
     /**
      * @brief Get the position relative to the start position
