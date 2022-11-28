@@ -22,6 +22,7 @@
 
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav2_msgs/action/navigate_to_pose.hpp"
+#include "nav_msgs/msg/path.hpp"
 #include "sgd_msgs/msg/route_info.hpp"
 #include "sgd_msgs/msg/light.hpp"
 
@@ -35,6 +36,8 @@ namespace sgd_ctrl
  */
 class Master_Control_Unit : public rclcpp::Node
 {
+
+using Nav2Pose_GoalHandle = rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>;
 
 protected:
     //! \brief Init parameters
@@ -56,9 +59,15 @@ protected:
     // action
     std::chrono::milliseconds server_timeout_;
     rclcpp::Node::SharedPtr client_node_;
+    geometry_msgs::msg::Point goalpose_;
+    int next_wp_;   // number of next waypoint in global plan
     rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SharedPtr nav_to_pose_action_client_;
     nav2_msgs::action::NavigateToPose::Goal nav_to_pose_goal_;
-    rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::SharedPtr nav_to_pose_goal_handle_;
+    Nav2Pose_GoalHandle::SharedPtr nav_to_pose_goal_handle_;
+
+    nav_msgs::msg::Path global_plan;
+    rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_global_plan;
+    void on_global_plan_received(const nav_msgs::msg::Path::SharedPtr path);
 
     /**
      * @brief Handle received goal pose
@@ -66,6 +75,12 @@ protected:
      * @param msg 
      */
     void on_goalpose_received(const geometry_msgs::msg::Point::SharedPtr msg);
+    void send_goal_action(const geometry_msgs::msg::Point pnt);
+
+    void goal_response_callback(std::shared_future<Nav2Pose_GoalHandle::SharedPtr> future);
+    void feedback_callback(Nav2Pose_GoalHandle::SharedPtr,
+            const std::shared_ptr<const nav2_msgs::action::NavigateToPose_Feedback> feedback);
+    void result_callback(const Nav2Pose_GoalHandle::WrappedResult & result);
 
     /**
      * @brief Handle received route info
@@ -74,6 +89,18 @@ protected:
      */
     void on_route_info_received(const sgd_msgs::msg::RouteInfo::SharedPtr msg_);
 
+    /**
+     * @brief 
+     * 
+     * @param pos1 
+     * @param pos2 
+     * @return double 
+     */
+    inline double distance(const geometry_msgs::msg::Point pos1, const geometry_msgs::msg::Point pos2)
+    {
+        return std::hypot(pos1.x - pos2.x, pos1.y - pos2.y);
+    }
+    
 public:
     Master_Control_Unit();
     ~Master_Control_Unit();

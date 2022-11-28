@@ -76,6 +76,7 @@ def generate_launch_description():
         executable='map_server',
         name='map_server',
         output='screen',
+        emulate_tty=True,
         parameters=[params])
 
     start_gps_cmd = Node(
@@ -91,6 +92,7 @@ def generate_launch_description():
         executable='amcl',
         name='amcl',
         output='screen',
+        emulate_tty=True,
         parameters=[params])
 
     start_odom_ekf_cmd = Node(
@@ -98,6 +100,7 @@ def generate_launch_description():
         executable='ekf_node',
         name='ekf_filter_node_odom',
         output='screen',
+        emulate_tty=True,
         parameters=[{os.path.join(bringup_dir, 'config', 'dual_ekf.yaml')},
                         {'use_sim_time': use_sim_time}])
 
@@ -106,6 +109,7 @@ def generate_launch_description():
         executable='ekf_node',
         name='ekf_filter_node_map',
         output='screen',
+        emulate_tty=True,
         parameters=[{os.path.join(bringup_dir, 'config', 'dual_ekf.yaml')},
                     {'use_sim_time': use_sim_time}])
 

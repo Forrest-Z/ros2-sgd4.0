@@ -23,7 +23,7 @@ namespace sgd_ctrl
         node_->declare_parameter(name_ + ".interpolation_resolution",
                                  rclcpp::ParameterValue(0.1));
         node_->declare_parameter(name_ + ".radius", rclcpp::ParameterValue(2.0));
-        node_->declare_parameter(name_ + ".global_plan_topic", rclcpp::ParameterValue("global_plan"));
+        node_->declare_parameter(name_ + ".global_plan_topic", rclcpp::ParameterValue("global_plan_sgd"));
         node_->declare_parameter(name_ + ".route_info_topic", rclcpp::ParameterValue("route_info"));
         node_->declare_parameter(name_ + ".route_update_frequ", rclcpp::ParameterValue(1.0));
 
@@ -57,6 +57,7 @@ namespace sgd_ctrl
                                 std::bind(&LocalPlanner::on_global_plan_received, this, std::placeholders::_1));
 
         pub_route_info->on_activate();
+
         route_analyzer = std::make_unique<RouteAnalyzer>();
 
         RCLCPP_INFO(node_->get_logger(), "Activated plugin %s of type SGD Local Planner",
@@ -74,8 +75,6 @@ namespace sgd_ctrl
     LocalPlanner::createPlan(const geometry_msgs::msg::PoseStamped &start,
                             const geometry_msgs::msg::PoseStamped &goal)
     {
-        //RCLCPP_INFO(node_->get_logger(), "Received goal pose %.2f %.2f", goal.pose.position.x, goal.pose.position.y);
-
         // Checking if the goal and start state is in the global frame
         if (start.header.frame_id != global_frame_)
         {
@@ -98,29 +97,29 @@ namespace sgd_ctrl
         std::vector<geometry_msgs::msg::Pose> goal_poses;
         // add start to poses
         goal_poses.push_back(start.pose);
-        if (global_plan.poses.size() > 0 && distance(goal, global_plan.poses.back()) < 0.5)
-        {
-            // Wenn global plan available, dann immer die nächsten 2 Punkte mit einbeziehen
-            // get next waypoints
-            for (std::size_t i = 0; i < global_plan.poses.size(); i++)
-            {
-                // add next two waypoints if available
-                if (next_wp_+i >= global_plan.poses.size())      break;
-                goal_poses.push_back(global_plan.poses.at(next_wp_ + i).pose);
-            }
+        // if (global_plan.poses.size() > 0 && distance(goal, global_plan.poses.back()) < 0.5)
+        // {
+        //     // Wenn global plan available, dann immer die nächsten 2 Punkte mit einbeziehen
+        //     // get next waypoints
+        //     for (std::size_t i = 0; i < global_plan.poses.size(); i++)
+        //     {
+        //         // add next two waypoints if available
+        //         if (next_wp_+i >= global_plan.poses.size())      break;
+        //         goal_poses.push_back(global_plan.poses.at(next_wp_ + i).pose);
+        //     }
 
-            if (distance(global_plan.poses.at(next_wp_), start) < 1.0)
-            {
-                RCLCPP_INFO(node_->get_logger(), "Reached waypoint %d", next_wp_);
-                // distance to next waypoint is smaller than a threshold, so count up next_wp_
-                next_wp_ = (next_wp_ >= global_plan.poses.size()-1) ? next_wp_ : next_wp_+1;
-                route_analyzer->next_wp();
-            }
-        }
-        else
-        {
-            goal_poses.push_back(goal.pose);
-        }
+        //     if (distance(global_plan.poses.at(next_wp_), start) < 1.0)
+        //     {
+        //         RCLCPP_INFO(node_->get_logger(), "Reached waypoint %d", next_wp_);
+        //         // distance to next waypoint is smaller than a threshold, so count up next_wp_
+        //         next_wp_ = (next_wp_ >= global_plan.poses.size()-1) ? next_wp_ : next_wp_+1;
+        //         route_analyzer->next_wp();
+        //     }
+        // }
+        // else
+        // {
+        goal_poses.push_back(goal.pose);
+        // }
 
         global_path.poses.clear();
         global_path.header.stamp = node_->now();
@@ -172,7 +171,7 @@ namespace sgd_ctrl
 
             pose.header.stamp = node_->now();
             pose.header.frame_id = global_frame_;
-            global_path.poses.push_back(pose); 
+            global_path.poses.push_back(pose);
         }
 
         // if current time - last pub time > publisher frequency
@@ -189,7 +188,6 @@ namespace sgd_ctrl
             info_.angle = next_maeuver.angle;
             pub_route_info->publish(info_);
         }
-
         return global_path;
     }
 

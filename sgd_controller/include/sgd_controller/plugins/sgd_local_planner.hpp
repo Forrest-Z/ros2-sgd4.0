@@ -65,6 +65,7 @@ namespace sgd_ctrl
         double radius_;
         std::string global_plan_topic_;
         nav_msgs::msg::Path global_path;
+        std::string goalpose_sgd_topic_;
 
         // Path smoothing
         std::unique_ptr<PathSmoothing> path_smoothing;
@@ -76,6 +77,9 @@ namespace sgd_ctrl
         rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
         rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_global_plan;
         void on_global_plan_received(const nav_msgs::msg::Path::SharedPtr path);
+
+        rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr sub_goalpose_sgd;
+        void on_goalpose_sgd_received(const geometry_msgs::msg::PoseStamped::SharedPtr goalpose);
 
         rclcpp::Duration route_update_timeout_{1, 0};
         rclcpp::Time last_route_update_;
