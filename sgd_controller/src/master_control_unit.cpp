@@ -7,7 +7,7 @@ using std::placeholders::_1;
 using namespace std::chrono_literals;
 
 Master_Control_Unit::Master_Control_Unit()
-        : rclcpp::Node("master_control_unit")
+    : rclcpp::Node("master_control_unit")
 {
     RCLCPP_DEBUG(get_logger(), "Creating");
 
@@ -31,14 +31,20 @@ Master_Control_Unit::Master_Control_Unit()
     auto options = rclcpp::NodeOptions().arguments(
         {"--ros-args --remap __node:=navigation_dialog_action_client"});
     client_node_ = std::make_shared<rclcpp::Node>("_navpose", options);
-    nav_to_pose_action_client_ = 
+    nav_to_pose_action_client_ =
         rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(
-        this,
-        "navigate_to_pose");
+            this,
+            "navigate_to_pose");
     nav_to_pose_goal_ = nav2_msgs::action::NavigateToPose::Goal();
 
     init_pub_sub();
     init_maneuvers();
+
+    // Workaround for teb planner
+    // get global plan from / global_plan_sgd
+    // get goal pose from /goalpose and start route computation (/goalpose -> /goalpose_sgd)
+    // publish next goal
+    // subscriber to /plan
 }
 
 Master_Control_Unit::~Master_Control_Unit() {}
@@ -46,14 +52,16 @@ Master_Control_Unit::~Master_Control_Unit() {}
 void
 Master_Control_Unit::init_pub_sub()
 {
-    //pub_cmd_vel = this->create_publisher<geometry_msgs::msg::Twist>("sgd_move_base", default_qos);
     sub_goal_pose_ = this->create_subscription<geometry_msgs::msg::Point>(goal_pose_topic_, default_qos,
-                        std::bind(&Master_Control_Unit::on_goalpose_received, this, std::placeholders::_1));
-    
-    sub_route_info_ = this->create_subscription<sgd_msgs::msg::RouteInfo>(route_info_topic_, default_qos,
-                        std::bind(&Master_Control_Unit::on_route_info_received, this, std::placeholders::_1));
+                std::bind(&Master_Control_Unit::on_goalpose_received, this, std::placeholders::_1));
 
-    //pub_light_ = this->create_publisher<sgd_msgs::msg::Light>(light_topic_, default_qos);
+    sub_route_info_ = this->create_subscription<sgd_msgs::msg::RouteInfo>(route_info_topic_, default_qos,
+                std::bind(&Master_Control_Unit::on_route_info_received, this, std::placeholders::_1));
+
+    sub_global_plan = this->create_subscription<nav_msgs::msg::Path>("global_plan_sgd", default_qos,
+                std::bind(&Master_Control_Unit::on_global_plan_received, this, std::placeholders::_1));
+
+    // pub_light_ = this->create_publisher<sgd_msgs::msg::Light>(light_topic_, default_qos);
 }
 
 void
@@ -75,7 +83,25 @@ void
 Master_Control_Unit::on_goalpose_received(const geometry_msgs::msg::Point::SharedPtr msg)
 {
     RCLCPP_INFO(get_logger(), "Goalpose received.");
-    auto is_action_server_ready = 
+    
+    goalpose_ = *msg;   // set goalpose of global plan
+    next_wp_ = 0;
+
+    // send first point from global plan to action server
+    if (global_plan.poses.size() > 0)
+    {
+        send_goal_action(global_plan.poses.at(next_wp_).pose.position);
+    }
+    else
+    {
+        send_goal_action(goalpose_);
+    }
+}
+
+void
+Master_Control_Unit::send_goal_action(const geometry_msgs::msg::Point pnt)
+{
+    auto is_action_server_ready =
         nav_to_pose_action_client_->wait_for_action_server(std::chrono::seconds(5));
     if (!is_action_server_ready)
     {
@@ -84,25 +110,73 @@ Master_Control_Unit::on_goalpose_received(const geometry_msgs::msg::Point::Share
     }
 
     // fill action data
-    nav_to_pose_goal_.pose.pose.position = *msg;
+    nav_to_pose_goal_.pose.pose.position = pnt;
     nav_to_pose_goal_.pose.header.frame_id = "map";
 
+    // define callbacks and send goal to action server
     auto send_goal_options = rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions();
-    send_goal_options.result_callback = [](auto) {};
+    send_goal_options.goal_response_callback =
+        std::bind(&Master_Control_Unit::goal_response_callback, this, std::placeholders::_1);
+    send_goal_options.feedback_callback =
+        std::bind(&Master_Control_Unit::feedback_callback, this, std::placeholders::_1, std::placeholders::_2);
+    send_goal_options.result_callback =
+        std::bind(&Master_Control_Unit::result_callback, this, std::placeholders::_1);
+    nav_to_pose_action_client_->async_send_goal(nav_to_pose_goal_, send_goal_options);
+}
 
-    auto future_goal_handle = nav_to_pose_action_client_->async_send_goal(nav_to_pose_goal_, send_goal_options);
-    if (rclcpp::spin_until_future_complete(client_node_, future_goal_handle, server_timeout_) != rclcpp::FutureReturnCode::SUCCESS)
+void
+Master_Control_Unit::goal_response_callback(std::shared_future<Nav2Pose_GoalHandle::SharedPtr> future)
+{
+    auto goal_handle = future.get();
+    if (!goal_handle)
     {
-        RCLCPP_ERROR(this->get_logger(), "Send goal call failed.");
-        return;
+        RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
+    }
+    else
+    {
+        RCLCPP_INFO(this->get_logger(), "Goal accepted by server, waiting for result");
+    }
+}
+
+void
+Master_Control_Unit::feedback_callback(Nav2Pose_GoalHandle::SharedPtr,
+                                        const std::shared_ptr<const nav2_msgs::action::NavigateToPose_Feedback> feedback)
+{
+    
+}
+
+void
+Master_Control_Unit::result_callback(const Nav2Pose_GoalHandle::WrappedResult &result)
+{
+    if (next_wp_+1 < global_plan.poses.size())
+    {
+        RCLCPP_INFO(this->get_logger(), "Send new goal to action server");
+        send_goal_action(global_plan.poses.at(++next_wp_).pose.position);
     }
 
-    nav_to_pose_goal_handle_ = future_goal_handle.get();
-    if (!nav_to_pose_goal_handle_)
+    switch (result.code)
     {
-        RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server.");
+    case rclcpp_action::ResultCode::SUCCEEDED:
+        RCLCPP_INFO(this->get_logger(), "Goal was successful");
+        break;
+    case rclcpp_action::ResultCode::ABORTED:
+        RCLCPP_ERROR(this->get_logger(), "Goal was aborted");
+        return;
+    case rclcpp_action::ResultCode::CANCELED:
+        RCLCPP_ERROR(this->get_logger(), "Goal was canceled");
+        return;
+    default:
+        RCLCPP_ERROR(this->get_logger(), "Unknown result code");
         return;
     }
+}
+
+void
+Master_Control_Unit::on_global_plan_received(const nav_msgs::msg::Path::SharedPtr path)
+{
+    global_plan = *path;
+
+    RCLCPP_INFO(this->get_logger(), "MCU received global plan with %d waypoints", global_plan.poses.size());
 }
 
 void
@@ -116,10 +190,9 @@ Master_Control_Unit::on_route_info_received(const sgd_msgs::msg::RouteInfo::Shar
     RCLCPP_INFO(get_logger(), "Next maneuver: %s (angle: %.2f) in %i m", it->second.c_str(), msg_->angle, msg_->distance);
 
     // TODO control lights
-
 }
 
-}   // namespace sgd_ctrl
+} // namespace sgd_ctrl
 
 int main(int argc, char const *argv[])
 {

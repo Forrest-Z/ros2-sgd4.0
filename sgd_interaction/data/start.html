@@ -9,9 +9,9 @@
 
 <script type="text/javascript">
 
-  // var ros = new ROSLIB.Ros({
-  //   url : 'ws://localhost:9090'
-  // });
+  var ros = new ROSLIB.Ros({
+    url : 'ws://localhost:9090'
+  });
 
   function handleGoal() {
     // get destination from input element
@@ -48,8 +48,8 @@
     <input class="adrlist" list="destinations" name="dest" id="dest" required>
     <datalist id="destinations">
       <option value="Berliner Tor 21" >
-      <option value="U-Bahn Lohmühlenstraße" >
-      <option value="Stiftstraße 69">
+      <option value="U-Bahn Lohmï¿½hlenstraï¿½e" >
+      <option value="Stiftstraï¿½e 69">
     </datalist>
   </div>
   <div id="route_preview" class="input_fields">

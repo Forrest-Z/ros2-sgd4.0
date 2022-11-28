@@ -206,6 +206,12 @@ def generate_launch_description():
         output='screen',
         emulate_tty=True)
 
+    # start websocket
+    start_rosbridge_websocket_cmd = ExecuteProcess(
+        condition=IfCondition(sim),
+        cmd=['ros2', 'launch', 'rosbridge_server', 'rosbridge_websocket_launch.xml'],
+        cwd=[launch_dir], output={'both': 'log'})
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -233,6 +239,8 @@ def generate_launch_description():
 
     ld.add_action(start_lifecycle_cmd)
     ld.add_action(start_mcu_cmd)
+
+    ld.add_action(start_rosbridge_websocket_cmd)
 
     ld.add_action(start_rviz_cmd)
     ## add event handler

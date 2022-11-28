@@ -82,6 +82,7 @@ def generate_launch_description():
             executable='subsum_controller',
             name='subsum_controller',
             output='screen',
+            emulate_tty=True,
             parameters=[params]),
 
         Node(
@@ -89,6 +90,7 @@ def generate_launch_description():
             executable='ros2_obstacle_checker',
             name='ros2_obstacle_checker',
             output='screen',
+            emulate_tty=True,
             parameters=[params]),
 
         Node(
@@ -96,6 +98,7 @@ def generate_launch_description():
             executable='ros2_depthCamera_obstacle_checker',
             name='ros2_depthCamera_obstacle_checker',
             output='screen',
+            emulate_tty=True,
             parameters=[params]),
 
         Node(
@@ -103,6 +106,7 @@ def generate_launch_description():
             executable='controller_server',
             name='controller_server',
             output='screen',
+            emulate_tty=True,
             parameters=[params]),
 
         Node(
@@ -110,6 +114,7 @@ def generate_launch_description():
             executable='planner_server',
             name='planner_server',
             output='screen',
+            emulate_tty=True,
             parameters=[params]),
 
         Node(
@@ -117,6 +122,7 @@ def generate_launch_description():
             executable='recoveries_server',
             name='recoveries_server',
             output='screen',
+            emulate_tty=True,
             parameters=[params]),
 
         Node(
@@ -124,6 +130,7 @@ def generate_launch_description():
             executable='bt_navigator',
             name='bt_navigator',
             output='screen',
+            emulate_tty=True,
             parameters=[params]),
 
         Node(
@@ -131,6 +138,7 @@ def generate_launch_description():
             executable='waypoint_follower',
             name='waypoint_follower',
             output='screen',
+            emulate_tty=True,
             parameters=[params]),
 
         Node(
