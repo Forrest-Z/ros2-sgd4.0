@@ -579,6 +579,17 @@ Usage: `git checkout [branch]`
 
 Checkout another branch from current repository.
 
+**git branch**
+Usage: `git branch`
+
+List all available branches.
+
+**git switch**
+Usage: `git switch [branch]`
+Usage II: `git switch -c [non-existing branch]`
+
+Switch to branch or create new branch and switch to branch.
+
 **git add**
 Usage: `git add [file]`
 
