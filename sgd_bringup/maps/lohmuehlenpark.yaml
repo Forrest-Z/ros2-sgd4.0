@@ -1,4 +1,4 @@
-image: lohmuehlenpark.png
+image: lohmuehlenpark.svg
 # The resolution depends on the resolution of the image
 # resolution = 379.000 m / image_width in px
 resolution: 0.1

@@ -385,7 +385,7 @@ Gnss_Node::publish_tf()
 void
 Gnss_Node::init_transforms()
 {
-    transform_tolerance_ = tf2::durationFromSec(1.0);
+    //transform_tolerance_ = tf2::durationFromSec(1.0);
     // transformation from earth -> map in WGS84 coordinates
     // according to REP-105 the x-axis points east (lon) and the y-axis north (lat)
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(get_clock());
