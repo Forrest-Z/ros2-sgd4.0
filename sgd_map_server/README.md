@@ -3,6 +3,20 @@
 The `Map Server` provides maps to the rest of the Navigation2 system using both topic and
 service interfaces.
 
+## Concept for SGD 4.0
+
+SVG is loaded by IO module of map server. Map server publishes OccupancyMap message.
+
+### Occupancy Map message
+
+OccupancyMap
+- std_msgs/header
+- nav_msgs/MapMetaData
+- static_obstacles[]: 
+
+
+
+
 ## Changes from ROS1 Navigation Map Server
 
 While the nav2 map server provides the same general function as the nav1 map server, the new

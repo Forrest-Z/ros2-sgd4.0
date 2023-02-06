@@ -24,6 +24,8 @@ set(msg_files
   "msg/RouteInfo.msg"
   "msg/SensorDiagnostics.msg"
   "msg/OdomImproved.msg"
+  "msg/VecObstacle.msg"
+  "msg/VecObstacleArray.msg"
 )
 
 set(srv_files

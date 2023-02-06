@@ -154,5 +154,13 @@ def generate_launch_description():
             executable='frsky_rx8r',
             name='frsky_rx8r',
             output='screen',
+            parameters=[params]),
+
+        Node(
+            package='sgd_local_costmap',
+            executable='obstacle_detector',
+            name='obstacle_detector',
+            output='screen',
+            emulate_tty=True,
             parameters=[params])
     ])

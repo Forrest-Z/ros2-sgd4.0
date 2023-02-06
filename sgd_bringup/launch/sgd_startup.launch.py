@@ -244,6 +244,6 @@ def generate_launch_description():
 
     ld.add_action(start_rviz_cmd)
     ## add event handler
-    ld.add_action(exit_event_handler)
+    # ld.add_action(exit_event_handler)
 
     return ld
