@@ -52,6 +52,10 @@ protected:
     CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
     CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
 
+    /**
+     * @brief Initialize parameters for this node
+     * 
+     */
     void init_parameters();
     std::string port_;
     std::string scan_topic;

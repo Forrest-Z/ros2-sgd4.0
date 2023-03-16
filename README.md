@@ -39,6 +39,8 @@ micro-ros-agent serial --dev /dev/serial/by-id/[serial-id] baudrate=115200
 
 # preempt_rt Patch
 
+**Achtung:** Die Installation des preempt_rt Patches ist optional!
+
 ## useful links
 - [Ubuntu Kernel/Build](https://wiki.ubuntu.com/Kernel/BuildYourOwnKernel)
 - [HOWTO setup Linux with PREEMPT_RT properly](https://wiki.linuxfoundation.org/realtime/documentation/howto/applications/preemptrt_setup)
@@ -322,14 +324,14 @@ find_package(GeographicLib REQUIRED COMPONENTS)
 Anschließend speichern der Datei und bauen des Packages.
 
 ```
-cd ~/robot_localization_ws
+cd ~/localization_ws
 colcon build --symlink-install --packages-select robot_localization
 ```
 
 Zum Schluss noch das Einfügen in die .bashrc.
 
 ```sh
-. ~/robot_localization_ws/install/setup.bash
+. ~/localization_ws/install/setup.bash
 ```
 
 ## Installation ROS2 for Blindenhund
@@ -394,14 +396,22 @@ cd ~/3rd_party_ws/src
 git clone https://github.com/rst-tu-dortmund/costmap_converter -b ros2 # dependency which is not yet in the main repository
 git clone https://github.com/rst-tu-dortmund/teb_local_planner.git --branch foxy-devel
 
-rosdep install -y -r -q --from-paths src --ignore-src --rosdistro foxy
 cd ~/3rd_party_ws
+rosdep install -y -r -q --from-paths src --ignore-src --rosdistro foxy
 colcon build --symlink-install
 ```
 
 To source on each new terminal add
 ```
 . ~/3rd_party_ws/install/local_setup.bash
+```
+
+### Installation RosbridgeSuite
+
+See ROS wiki [here](https://wiki.ros.org/rosbridge_suite)
+
+```
+sudo apt-get install ros-foxy-rosbridge-server
 ```
 
 ### Installation ros2-sgd4.0

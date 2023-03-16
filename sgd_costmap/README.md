@@ -2,6 +2,11 @@
 
 Die Umgebungsrepräsentation für den Shared Guide Dog ist über zwei Costmaps.
 
+## Map Server
+
+- Lädt und speichert map von Dateisystem
+
+
 ## Global Costmap
 
 - Langzeitspeicher für Hindernisse

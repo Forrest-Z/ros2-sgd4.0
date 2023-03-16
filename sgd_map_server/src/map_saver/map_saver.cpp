@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "nav2_map_server/map_saver.hpp"
+#include "sgd_map_server/map_saver.hpp"
 
 #include <string>
 #include <memory>
@@ -38,10 +38,10 @@
 
 using namespace std::placeholders;
 
-namespace nav2_map_server
+namespace sgd_map_server
 {
 MapSaver::MapSaver()
-: nav2_util::LifecycleNode("map_saver", "", true)
+: rclcpp_lifecycle::LifecycleNode("map_saver")
 {
   RCLCPP_INFO(get_logger(), "Creating");
 
@@ -59,7 +59,7 @@ MapSaver::~MapSaver()
   RCLCPP_INFO(get_logger(), "Destroying");
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 MapSaver::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Configuring");
@@ -72,35 +72,35 @@ MapSaver::on_configure(const rclcpp_lifecycle::State & /*state*/)
     service_prefix + save_map_service_name_,
     std::bind(&MapSaver::saveMapCallback, this, _1, _2, _3));
 
-  return nav2_util::CallbackReturn::SUCCESS;
+  return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 MapSaver::on_activate(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Activating");
-  return nav2_util::CallbackReturn::SUCCESS;
+  return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 MapSaver::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Deactivating");
-  return nav2_util::CallbackReturn::SUCCESS;
+  return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 MapSaver::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Cleaning up");
-  return nav2_util::CallbackReturn::SUCCESS;
+  return CallbackReturn::SUCCESS;
 }
 
-nav2_util::CallbackReturn
+CallbackReturn
 MapSaver::on_shutdown(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Shutting down");
-  return nav2_util::CallbackReturn::SUCCESS;
+  return CallbackReturn::SUCCESS;
 }
 
 void MapSaver::saveMapCallback(
@@ -182,7 +182,8 @@ bool MapSaver::saveMapTopicToFile(
       map_qos.reliable();
       map_qos.keep_last(1);
     }
-    auto map_sub = rclcpp_node_->create_subscription<nav_msgs::msg::OccupancyGrid>(
+
+    auto map_sub = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
       map_topic_loc, map_qos, mapCallback);
 
     rclcpp::Time start_time = now();

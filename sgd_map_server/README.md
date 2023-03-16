@@ -5,17 +5,23 @@ service interfaces.
 
 ## Concept for SGD 4.0
 
-SVG is loaded by IO module of map server. Map server publishes OccupancyMap message.
+SVG is loaded by IO module of map server. Map server publishes OccupancyMap message. Map server is
+capable of handling vector maps and publishes Vector_OccupancyMap.
 
 ### Occupancy Map message
 
 OccupancyMap
 - std_msgs/header
 - nav_msgs/MapMetaData
-- static_obstacles[]: 
+- static_obstacles[]:
 
+### Changes in Map Server
 
+Der Map Server aus dem Navigation 2 Paket bleibt nahezu unverändert. Er wird lediglich
+um einen Publisher für eine Vektor-Costmap erweitert.
 
+-> Custom map_io library, um Vektorkarten zu laden, zu verarbeiten und wieder zu speichern.
+Map Saver ist integriert in map_io.
 
 ## Changes from ROS1 Navigation Map Server
 

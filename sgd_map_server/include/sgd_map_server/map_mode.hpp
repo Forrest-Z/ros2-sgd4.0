@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef NAV2_MAP_SERVER__MAP_MODE_HPP_
-#define NAV2_MAP_SERVER__MAP_MODE_HPP_
+#ifndef SGD_MAP_SERVER__MAP_MODE_HPP_
+#define SGD_MAP_SERVER__MAP_MODE_HPP_
 
 #include <string>
 #include <vector>
-namespace nav2_map_server
+namespace sgd_map_server
 {
 /**
- * @enum nav2_map_server::MapMode
+ * @enum sgd_map_server::MapMode
  * @brief Describes the relation between image pixel values and map occupancy
  * status (0-100; -1). Lightness refers to the mean of a given pixel's RGB
  * channels on a scale from 0 to 255.
@@ -66,6 +66,6 @@ const char * map_mode_to_string(MapMode map_mode);
  * @return map mode corresponding to the string
  */
 MapMode map_mode_from_string(std::string map_mode_name);
-}  // namespace nav2_map_server
+}  // namespace sgd_map_server
 
-#endif  // NAV2_MAP_SERVER__MAP_MODE_HPP_
+#endif  // SGD_MAP_SERVER__MAP_MODE_HPP_

@@ -10,6 +10,16 @@ Stichworte:
 
 **TODOs:**
 
+## Aufbau der Costmap
+
+### Global Costmap
+
+Die globale Costmap wird durch eine Vektorrepräsentation ersetzt. Basis für die Vektorrepräsentation ist die OSM Karte. 
+
+### Local Costmap
+
+Die lokale Costmap wird durch ein Occupancy Grid dargestellt. Die Größe des Grids richtet sich nach dem Scanradius des Lidars. Die Hindernisse aus der globalen Costmap bilden die Grundlage für die lokale Costmap. Verschwindet ein Hindernis aus dem Bereich der lokalen Costmap, wird es in ein Vektorhindernis umgewandelt und in der globalen Costmap gespeichert.
+
 ## Obstacle Detection / Costmap creation
 
 Ziel: Objekte werden aus den Scan-Daten (im Ausblick auch aus weiteren Daten) generiert und sind in der Karte verfolgbar und klassifizierbar.

@@ -79,6 +79,14 @@ def generate_launch_description():
         emulate_tty=True,
         parameters=[params])
 
+    start_sgd_map_server_cmd = Node(
+        package='sgd_map_server',
+        executable='sgd_map_server',
+        name='sgd_map_server',
+        output='screen',
+        emulate_tty=True,
+        parameters=[params])
+
     start_gps_cmd = Node(
         package="gnss",
         executable="gnss_node",
@@ -146,6 +154,7 @@ def generate_launch_description():
 
     # Add the actions to launch all of the navigation nodes
     ld.add_action(start_map_server_cmd)
+    ld.add_action(start_sgd_map_server_cmd)
     ld.add_action(start_amcl_cmd)
     ld.add_action(start_uwb_cmd)
     ld.add_action(start_visualizer_cmd)

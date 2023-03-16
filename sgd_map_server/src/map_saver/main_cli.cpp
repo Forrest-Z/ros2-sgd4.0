@@ -18,12 +18,12 @@
 #include <vector>
 #include <stdexcept>
 
-#include "nav2_map_server/map_mode.hpp"
-#include "nav2_map_server/map_saver.hpp"
+#include "sgd_map_server/map_mode.hpp"
+#include "sgd_map_server/map_saver.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 
-using namespace nav2_map_server;  // NOLINT
+using namespace sgd_map_server;  // NOLINT
 
 const char * USAGE_STRING{
   "Usage:\n"
@@ -163,7 +163,7 @@ int main(int argc, char ** argv)
   // Call saveMapTopicToFile()
   int retcode;
   try {
-    auto map_saver = std::make_shared<nav2_map_server::MapSaver>();
+    auto map_saver = std::make_shared<sgd_map_server::MapSaver>();
     if (map_saver->saveMapTopicToFile(map_topic, save_parameters)) {
       retcode = 0;
     } else {

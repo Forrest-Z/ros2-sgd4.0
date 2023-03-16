@@ -13,26 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef NAV2_MAP_SERVER__MAP_SAVER_HPP_
-#define NAV2_MAP_SERVER__MAP_SAVER_HPP_
+#ifndef SGD_MAP_SERVER__MAP_SAVER_HPP_
+#define SGD_MAP_SERVER__MAP_SAVER_HPP_
 
 #include <string>
 #include <memory>
 
 #include "rclcpp/rclcpp.hpp"
-#include "nav2_util/lifecycle_node.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "nav2_msgs/srv/save_map.hpp"
 
 #include "map_io.hpp"
 
-namespace nav2_map_server
+namespace sgd_map_server
 {
+
+using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
 /**
  * @class nav2_map_server::MapSaver
  * @brief A class that provides map saving methods and services
  */
-class MapSaver : public nav2_util::LifecycleNode
+class MapSaver : public rclcpp_lifecycle::LifecycleNode
 {
 public:
   /**
@@ -61,31 +63,31 @@ protected:
    * @param state Lifecycle Node's state
    * @return Success or Failure
    */
-  nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
+  CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
   /**
    * @brief Called when node switched to active state
    * @param state Lifecycle Node's state
    * @return Success or Failure
    */
-  nav2_util::CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
+  CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
   /**
    * @brief Called when node switched to inactive state
    * @param state Lifecycle Node's state
    * @return Success or Failure
    */
-  nav2_util::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
+  CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
   /**
    * @brief Called when it is required node clean-up
    * @param state Lifecycle Node's state
    * @return Success or Failure
    */
-  nav2_util::CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
+  CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
   /**
    * @brief Called when in Shutdown state
    * @param state Lifecycle Node's state
    * @return Success or Failure
    */
-  nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
+  CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
 
   /**
    * @brief Map saving service callback
@@ -112,6 +114,6 @@ protected:
   rclcpp::Service<nav2_msgs::srv::SaveMap>::SharedPtr save_map_service_;
 };
 
-}  // namespace nav2_map_server
+}  // namespace sgd_map_server
 
-#endif  // NAV2_MAP_SERVER__MAP_SAVER_HPP_
+#endif  // SGD_MAP_SERVER__MAP_SAVER_HPP_

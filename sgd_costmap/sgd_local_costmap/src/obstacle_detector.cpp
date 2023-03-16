@@ -202,8 +202,13 @@ ObstacleDetector::on_scan_received(const sensor_msgs::msg::LaserScan::SharedPtr 
         }
     }
 
+    // compute expected scan
     for (auto obstacle : obstacles)
     {
+        auto points = obstacle.expected_scan(tf_map_scan.transform.translation.x, tf_map_scan.transform.translation.y, yaw);
+        // first entry is min_phi
+        
+
         obstacle_message.obstacles.push_back(obstacle.to_msg());
     }
 
@@ -253,18 +258,6 @@ ObstacleDetector::split_and_merge(std::vector<Point> subset, int start, int end,
         auto line1 = split_and_merge(subset, start, max_dist_index, depth); // first line
         auto line2 = split_and_merge(subset, max_dist_index, end, depth);   // second line
 
-        // print debug message
-        PLOGI << "line 1:";
-        for (auto p : line1)
-        {
-            PLOGI << p.x << "; " << p.y;
-        }
-        PLOGI << "line 2:";
-        for (auto p : line2)
-        {
-            PLOGI << p.x << "; " << p.y;
-        }
-
         // calculate intersection
         // replace last point of line 1 with intersection point
         auto p_intersect = calc_intersection(line1[line1.size() - 2], line1[line1.size() - 1], line2[0], line2[1]);
@@ -274,12 +267,6 @@ ObstacleDetector::split_and_merge(std::vector<Point> subset, int start, int end,
         for (int l = 1; l<line2.size(); l++)
         {
             line1.push_back(line2[l]);
-        }
-
-        PLOGI << "Resulting line:";
-        for (auto p : line1)
-        {
-            PLOGI << p.x << "; " << p.y;
         }
 
         return line1;
