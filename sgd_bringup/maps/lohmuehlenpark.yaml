@@ -1,8 +1,8 @@
-image: lohmuehlenpark.svg
+image: lohmuehlenpark.png
 # The resolution depends on the resolution of the image
 # resolution = 379.000 m / image_width in px
-#width: 379
-#height: 466
+width: 3790
+height: 4660
 resolution: 0.1
 # Global coordinates of map origin: lat=53.5532264, lon=10.0192452
 origin: [0.000000, 0.000000, 0.000000]    # origin is set to bottom left corner

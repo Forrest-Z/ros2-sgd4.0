@@ -45,7 +45,15 @@
  */
 
 #include "sgd_map_server/map_server.hpp"
-#include "sgd_map_server/Imap_io.hpp"
+
+// #include <string>
+// #include <memory>
+// #include <fstream>
+// #include <stdexcept>
+// #include <utility>
+
+// #include "lifecycle_msgs/msg/state.hpp"
+// #include "sgd_map_server/map_io.hpp"
 
 using namespace std::chrono_literals;
 using namespace std::placeholders;
@@ -53,14 +61,17 @@ using namespace std::placeholders;
 namespace sgd_map_server
 {
 
-MapServer::MapServer() : rclcpp_lifecycle::LifecycleNode("map_server")
+MapServer::MapServer()
+    : rclcpp_lifecycle::LifecycleNode("sgd_map_server")
 {
     RCLCPP_INFO(get_logger(), "Creating");
 
+    // logging parameters
+    declare_parameter("log_dir", rclcpp::ParameterValue(".ros/log/"));
+    declare_parameter("log_severity", rclcpp::ParameterValue("I"));
     // Declare the node parameters
     declare_parameter("yaml_filename");
     declare_parameter("topic_name", "map");
-    declare_parameter("topic_vector_map", "map/vector");
     declare_parameter("frame_id", "map");
 }
 
@@ -74,22 +85,23 @@ MapServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
     RCLCPP_INFO(get_logger(), "Configuring");
 
+    // initialize map_io
+    map_io = std::make_shared<sgd_map_server::Map_IO>(get_parameter("log_dir").as_string(),
+        get_parameter("log_severity").as_string());
+    
+    
     // Get the name of the YAML file to use
     std::string yaml_filename = get_parameter("yaml_filename").as_string();
 
     std::string topic_name = get_parameter("topic_name").as_string();
-    std::string topic_vector_map = get_parameter("topic_vector_map").as_string();
     frame_id_ = get_parameter("frame_id").as_string();
-
-    // initialize map_io
-    map_io = std::make_shared<Map_IO>(shared_from_this());
-    map_io_vec = std::make_shared<Map_IO_Vector>(shared_from_this());
 
     // Shared pointer to LoadMap::Response is also should be initialized
     // in order to avoid null-pointer dereference
     std::shared_ptr<nav2_msgs::srv::LoadMap::Response> rsp =
         std::make_shared<nav2_msgs::srv::LoadMap::Response>();
 
+    RCLCPP_INFO(get_logger(), "Load map from yaml");
     if (!loadMapResponseFromYaml(yaml_filename, rsp))
     {
         throw std::runtime_error("Failed to load map yaml file: " + yaml_filename);
@@ -98,6 +110,7 @@ MapServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
     // Make name prefix for services
     const std::string service_prefix = get_name() + std::string("/");
 
+    RCLCPP_INFO(get_logger(), "Create services");
     // Create a service that provides the occupancy grid
     occ_service_ = create_service<nav_msgs::srv::GetMap>(
         service_prefix + std::string(service_name_),
@@ -107,9 +120,6 @@ MapServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
     occ_pub_ = create_publisher<nav_msgs::msg::OccupancyGrid>(
         topic_name,
         rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
-
-    vec_pub_ = create_publisher<sgd_msgs::msg::VecObstacleArray>(
-        topic_vector_map, rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
 
     // Create a service that loads the occupancy grid from a file
     load_map_service_ = create_service<nav2_msgs::srv::LoadMap>(
@@ -124,20 +134,10 @@ MapServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
 {
     RCLCPP_INFO(get_logger(), "Activating");
 
-    vec_pub_->on_activate();
-
-    RCLCPP_INFO(get_logger(), "Publish vector map with size %ix%i and %i obstacles.",
-        map_io_vec->map.info.width, map_io_vec->map.info.height, map_io_vec->map.obstacles.size());
-
-    auto vec_map = std::make_unique<sgd_msgs::msg::VecObstacleArray>(map_io_vec->map);
-    vec_pub_->publish(std::move(vec_map));
-
     // Publish the map using the latched topic
     occ_pub_->on_activate();
-    auto occ_grid = std::make_unique<nav_msgs::msg::OccupancyGrid>(map_io->map);
+    auto occ_grid = std::make_unique<nav_msgs::msg::OccupancyGrid>(msg_);
     occ_pub_->publish(std::move(occ_grid));
-
-    RCLCPP_INFO(get_logger(), "Activation complete");
 
     return CallbackReturn::SUCCESS;
 }
@@ -148,7 +148,6 @@ MapServer::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
     RCLCPP_INFO(get_logger(), "Deactivating");
 
     occ_pub_->on_deactivate();
-    vec_pub_->on_deactivate();
 
     return CallbackReturn::SUCCESS;
 }
@@ -159,7 +158,6 @@ MapServer::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
     RCLCPP_INFO(get_logger(), "Cleaning up");
 
     occ_pub_.reset();
-    vec_pub_.reset();
     occ_service_.reset();
     load_map_service_.reset();
 
@@ -187,7 +185,7 @@ void MapServer::getMapCallback(
         return;
     }
     RCLCPP_INFO(get_logger(), "Handling GetMap request");
-    response->map = map_io->map;
+    response->map = msg_;
 }
 
 void MapServer::loadMapCallback(
@@ -207,10 +205,7 @@ void MapServer::loadMapCallback(
     // Load from file
     if (loadMapResponseFromYaml(request->map_url, response))
     {
-        auto vec_map = std::make_unique<sgd_msgs::msg::VecObstacleArray>(map_io_vec->map);
-        vec_pub_->publish(std::move(vec_map));
-
-        auto occ_grid = std::make_unique<nav_msgs::msg::OccupancyGrid>(map_io->map);
+        auto occ_grid = std::make_unique<nav_msgs::msg::OccupancyGrid>(msg_);
         occ_pub_->publish(std::move(occ_grid)); // publish new map
     }
 }
@@ -219,64 +214,72 @@ bool MapServer::loadMapResponseFromYaml(
     const std::string &yaml_file,
     std::shared_ptr<nav2_msgs::srv::LoadMap::Response> response)
 {
-    LOAD_MAP_STATUS load_map_status = LOAD_MAP_SUCCESS;
-    if (yaml_file.empty())
+    switch (loadMapFromYaml(yaml_file, msg_))
     {
-        RCLCPP_ERROR(get_logger(), "YAML file name is empty, can't load!");
+    case MAP_DOES_NOT_EXIST:
         response->result = nav2_msgs::srv::LoadMap::Response::RESULT_MAP_DOES_NOT_EXIST;
         return false;
-    }
-
-    RCLCPP_INFO(get_logger(), "Loading yaml file: %s", yaml_file.c_str());
-    LoadParameters load_parameters;
-    try
-    {
-        load_parameters = loadMapYaml(yaml_file);
-    }
-    catch (YAML::Exception &e)
-    {
-        RCLCPP_ERROR(get_logger(), "Failed processing YAML file %s at position (%d:%d) for reason: %s",
-                        yaml_file.c_str(), e.mark.line, e.mark.column, e.what());
+    case INVALID_MAP_METADATA:
         response->result = nav2_msgs::srv::LoadMap::Response::RESULT_INVALID_MAP_METADATA;
         return false;
-    }
-    catch (std::exception &e)
-    {
-        RCLCPP_ERROR(get_logger(), "Failed to parse map YAML loaded from file %s for reason: %s", yaml_file.c_str(), e.what());
-        response->result = nav2_msgs::srv::LoadMap::Response::RESULT_INVALID_MAP_METADATA;
-        return false;
-    }
-
-    try
-    {
-        map_io->loadMapFromFile(load_parameters);
-        map_io_vec->loadMapFromFile(load_parameters);
-    }
-    catch (std::exception &e)
-    {
-        RCLCPP_ERROR(get_logger(), "Failed to load image file %s for reason: %s", load_parameters.image_file_name.c_str(), e.what());
+    case INVALID_MAP_DATA:
         response->result = nav2_msgs::srv::LoadMap::Response::RESULT_INVALID_MAP_DATA;
         return false;
+    case LOAD_MAP_SUCCESS:
+        // Correcting msg_ header when it belongs to spiecific node
+        updateMsgHeader();
+
+        response->map = msg_;
+        response->result = nav2_msgs::srv::LoadMap::Response::RESULT_SUCCESS;
     }
-
-    // load map successful
-    // Correcting msg_ header when it belongs to specific node
-    updateMsgHeader();
-
-    response->map = map_io->map;
-    response->result = nav2_msgs::srv::LoadMap::Response::RESULT_SUCCESS;
 
     return true;
 }
 
-void MapServer::updateMsgHeader()
+LOAD_MAP_STATUS
+MapServer::loadMapFromYaml(
+    const std::string &yaml_file,
+    nav_msgs::msg::OccupancyGrid &map)
 {
-    msg_.info.map_load_time = now();
-    msg_.header.frame_id = frame_id_;
-    msg_.header.stamp = now();
+    if (yaml_file.empty())
+    {
+        PLOGE << "YAML file name is empty, can't load!";
+        return MAP_DOES_NOT_EXIST;
+    }
+    RCLCPP_INFO(get_logger(), "Loading yaml file: %s", yaml_file.c_str());
+    LoadParameters load_parameters;
+    try
+    {
+        load_parameters = loadYaml(yaml_file);
+    }
+    catch (YAML::Exception &e)
+    {
+        RCLCPP_ERROR(get_logger(), "Failed processing YAML file %s at position (%d:%d) for reason: %s",
+                    yaml_file.c_str(), e.mark.line, e.mark.column, e.what());
+        return INVALID_MAP_METADATA;
+    }
+    catch (std::exception &e)
+    {
+        RCLCPP_ERROR(get_logger(), "Failed to parse map YAML loaded from file %s for reason: %s", yaml_file.c_str(), e.what());
+        return INVALID_MAP_METADATA;
+    }
+
+    try
+    {
+        map_io->loadMapFromFile(load_parameters, map);
+        //loadMapFromFile(load_parameters, map);
+    }
+    catch (std::exception &e)
+    {
+        RCLCPP_ERROR(get_logger(), "Failed to load image file %s for reason: %s", load_parameters.image_file_name.c_str(), e.what());
+        return INVALID_MAP_DATA;
+    }
+
+    return LOAD_MAP_SUCCESS;
 }
 
-LoadParameters MapServer::loadMapYaml(const std::string &yaml_filename)
+LoadParameters
+MapServer::loadYaml(const std::string &yaml_filename)
 {
     YAML::Node doc = YAML::LoadFile(yaml_filename);
     LoadParameters load_parameters;
@@ -296,8 +299,6 @@ LoadParameters MapServer::loadMapYaml(const std::string &yaml_filename)
     load_parameters.image_file_name = image_file_name;
 
     load_parameters.resolution = yaml_get_value<double>(doc, "resolution");
-    load_parameters.width = yaml_get_value<uint>(doc, "width");
-    load_parameters.height = yaml_get_value<uint>(doc, "height");
     load_parameters.origin = yaml_get_value<std::vector<double>>(doc, "origin");
     if (load_parameters.origin.size() != 3)
     {
@@ -328,6 +329,7 @@ LoadParameters MapServer::loadMapYaml(const std::string &yaml_filename)
         load_parameters.negate = yaml_get_value<bool>(doc, "negate");
     }
 
+    RCLCPP_INFO(get_logger(), "Map parameters loaded:");
     RCLCPP_INFO(get_logger(), "resolution: %.2f", load_parameters.resolution);
     RCLCPP_INFO(get_logger(), "origin[0]: %.2f", load_parameters.origin[0]);
     RCLCPP_INFO(get_logger(), "origin[1]: %.2f", load_parameters.origin[1]);
@@ -335,19 +337,24 @@ LoadParameters MapServer::loadMapYaml(const std::string &yaml_filename)
     RCLCPP_INFO(get_logger(), "free_thresh: %.2f", load_parameters.free_thresh);
     RCLCPP_INFO(get_logger(), "occupied_thresh: %.2f", load_parameters.occupied_thresh);
     RCLCPP_INFO(get_logger(), "mode: %s", map_mode_to_string(load_parameters.mode));
-    RCLCPP_INFO(get_logger(), "negate: ", load_parameters.negate);
+    RCLCPP_INFO(get_logger(), "negate: %d", load_parameters.negate);
 
     return load_parameters;
 }
 
-} // namespace nav2_map_server
-
-int main(int argc, char **argv)
+void MapServer::updateMsgHeader()
 {
-    std::string node_name("map_server");
+    msg_.info.map_load_time = now();
+    msg_.header.frame_id = frame_id_;
+    msg_.header.stamp = now();
+}
 
-    rclcpp::init(argc, argv);
-    auto node = std::make_shared<sgd_map_server::MapServer>();
-    rclcpp::spin(node->get_node_base_interface());
-    rclcpp::shutdown();
+} // namespace sgd_map_server
+
+int main(int argc, char ** argv)
+{
+  rclcpp::init(argc, argv);
+  auto node = std::make_shared<sgd_map_server::MapServer>();
+  rclcpp::spin(node->get_node_base_interface());
+  rclcpp::shutdown();
 }

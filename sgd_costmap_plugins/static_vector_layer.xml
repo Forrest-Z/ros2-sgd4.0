@@ -1,0 +1,5 @@
+<library path="sgd_costmap_plugins_core">
+  <class name="sgd_costmap_plugins/StaticVectorLayer" type="sgd_costmap_plugin::StaticVectorLayer" base_class_type="nav2_costmap_2d::Layer">
+    <description>This is a plugin to create a rasterized map from a vector map</description>
+  </class>
+</library>

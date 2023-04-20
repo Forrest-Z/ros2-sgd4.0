@@ -12,20 +12,15 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <!--build_depend>nav2_common</build_depend-->
-
-  <depend>rclcpp</depend>
   <depend>rclcpp_lifecycle</depend>
   <depend>nav_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>sgd_msgs</depend>
-  <depend>yaml_cpp_vendor</depend>
+  <depend>rclcpp</depend>
   <depend>launch_ros</depend>
   <depend>launch_testing</depend>
   <depend>tf2</depend>
   <depend>nav2_msgs</depend>
-  <depend>nav2_util</depend>
-  <depend>graphicsmagick</depend>
+  <depend>sgd_util</depend>
 
   <test_depend>ament_lint_common</test_depend>
   <test_depend>ament_lint_auto</test_depend>

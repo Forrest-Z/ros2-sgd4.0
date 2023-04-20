@@ -17,6 +17,8 @@
 
 #include <string>
 #include <vector>
+#include <stdexcept>
+
 namespace sgd_map_server
 {
 /**

@@ -261,8 +261,9 @@ sgd_map_server:
     use_sim_time: False
     log_dir: ".ros/log/"
     log_severity: "D"
-    yaml_filename: "lohmuehlenpark.yaml"
-    topic_name: "sgd_map"
+    yaml_filename: "lohmuehlenpark_new.yaml"
+    topic_name: "map"
+    topic_vector_map: "map/vector"
     frame_id: "map"
 
 map_saver:

@@ -68,7 +68,8 @@ def generate_launch_description():
         package='tf2_ros',
         executable='static_transform_publisher',
         output='screen',
-        arguments=["10.0192452", "53.5532264", "0", "0", "0", "0", "earth", "map"]) # Lohmuehlenpark
+        #arguments=["10.0192452", "53.5532264", "0", "0", "0", "0", "earth", "map"]) # Lohmuehlenpark (alt)
+        arguments=["10.0192438", "53.5531505", "0", "0", "0", "0", "earth", "map"]) # Lohmuehlenpark (neu)
         #arguments=["9.9163604", "53.5436909", "0", "0", "0", "0", "earth", "map"])   # Test im Augustinum
         
     start_map_server_cmd = Node(
@@ -153,7 +154,7 @@ def generate_launch_description():
     ld.add_action(start_gps_cmd)
 
     # Add the actions to launch all of the navigation nodes
-    ld.add_action(start_map_server_cmd)
+    #ld.add_action(start_map_server_cmd)
     ld.add_action(start_sgd_map_server_cmd)
     ld.add_action(start_amcl_cmd)
     ld.add_action(start_uwb_cmd)

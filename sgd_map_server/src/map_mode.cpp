@@ -14,9 +14,6 @@
 
 #include "sgd_map_server/map_mode.hpp"
 
-#include <stdexcept>
-#include <string>
-
 namespace sgd_map_server
 {
 const char * map_mode_to_string(MapMode map_mode)

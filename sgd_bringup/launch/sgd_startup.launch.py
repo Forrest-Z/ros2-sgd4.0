@@ -61,7 +61,7 @@ def generate_launch_description():
 
     declare_map_yaml_cmd = DeclareLaunchArgument(
         'map',
-        default_value=os.path.join(bringup_dir, 'maps', 'lohmuehlenpark.yaml'),
+        default_value=os.path.join(bringup_dir, 'maps', 'lohmuehlenpark_new.yaml'),
         #default_value=os.path.join(bringup_dir, 'maps', 'augustinum.yaml'),
         description='Full path to map file to load')
         

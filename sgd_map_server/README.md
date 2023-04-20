@@ -1,7 +1,8 @@
 # Map Server
 
 The `Map Server` provides maps to the rest of the Navigation2 system using both topic and
-service interfaces.
+service interfaces. Based on the nav2 map server, the sgd_map_server has functions for processing
+and publishing vector maps.
 
 ## Concept for SGD 4.0
 

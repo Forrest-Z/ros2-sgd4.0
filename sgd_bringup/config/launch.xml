@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?> 
 <launch>
 <!-- localization nodes -->
-    <node name="map_server" />
+    <!--node name="map_server" /-->
     <node name="sgd_map_server" />
     <node name="obstacle_detector" start="both" />
     <!--node name="amcl" /-->

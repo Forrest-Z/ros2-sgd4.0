@@ -18,17 +18,22 @@
 #include <string>
 #include <memory>
 #include <functional>
-#include <libgen.h>
+#include <fstream>
+#include <stdexcept>
+#include <utility>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
-#include "lifecycle_msgs/msg/state.hpp"
+// #include "nav2_util/lifecycle_node.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "nav_msgs/srv/get_map.hpp"
 #include "nav2_msgs/srv/load_map.hpp"
 
+#include "yaml-cpp/yaml.h"
+#include "lifecycle_msgs/msg/state.hpp"
 #include "sgd_map_server/map_io.hpp"
-//#include "sgd_util/yaml_utils.hpp"
+#include "sgd_map_server/map_io_vector.hpp"
+#include "sgd_msgs/msg/vec_obstacle_array.hpp"
 
 namespace sgd_map_server
 {
@@ -42,14 +47,23 @@ using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface
  */
 class MapServer : public rclcpp_lifecycle::LifecycleNode
 {
+
+    typedef enum
+    {
+        LOAD_MAP_SUCCESS,
+        MAP_DOES_NOT_EXIST,
+        INVALID_MAP_METADATA,
+        INVALID_MAP_DATA
+    } LOAD_MAP_STATUS;
+
 public:
     /**
-     * @brief A constructor for nav2_map_server::MapServer
+     * @brief A constructor for sgd_map_server::MapServer
      */
     MapServer();
 
     /**
-     * @brief A Destructor for nav2_map_server::MapServer
+     * @brief A Destructor for sgd_map_server::MapServer
      */
     ~MapServer();
 
@@ -103,18 +117,7 @@ protected:
      * @return Map loading parameters obtained from YAML file
      * @throw YAML::Exception
      */
-    LoadParameters loadYaml(const std::string &yaml_filename);
-
-    /**
-     * @brief Load the map YAML, image from map file and
-     * generate an OccupancyGrid
-     * @param yaml_file Name of input YAML file
-     * @param map Output loaded map
-     * @return status of map loaded
-     */
-    LOAD_MAP_STATUS loadMapFromYaml(
-        const std::string &yaml_file,
-        nav_msgs::msg::OccupancyGrid &map);
+    LoadParameters loadMapYaml(const std::string & yaml_filename);
 
     /**
      * @brief Method correcting msg_ header when it belongs to instantiated object
@@ -157,6 +160,8 @@ protected:
 
     // A topic on which the occupancy grid will be published
     rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::OccupancyGrid>::SharedPtr occ_pub_;
+    // A topic on which the vector map will be published
+    rclcpp_lifecycle::LifecyclePublisher<sgd_msgs::msg::VecObstacleArray>::SharedPtr vec_pub_;
 
     // The frame ID used in the returned OccupancyGrid message
     std::string frame_id_;
@@ -164,32 +169,34 @@ protected:
     // The message to publish on the occupancy grid topic
     nav_msgs::msg::OccupancyGrid msg_;
 
-    std::shared_ptr<sgd_map_server::Map_IO> map_io;
+    // Map_IO class
+    std::shared_ptr<Map_IO> map_io;
+    // load vectorized image
+    std::shared_ptr<Map_IO_Vector> map_io_vec;
 
+private:
     /**
-     * @brief Get the given subnode value.
-     * The only reason this function exists is to wrap the exceptions in slightly nicer error messages,
-     * including the name of the failed key
-     *
-     * @tparam T
-     * @param node
-     * @param key
-     * @return T
-     */
-    template <typename T>
-    T yaml_get_value(const YAML::Node &node, const std::string &key)
-    {
-        try
-        {
-            return node[key].as<T>();
-        }
-        catch (YAML::Exception &e)
-        {
-            std::stringstream ss;
-            ss << "Failed to parse YAML tag '" << key << "' for reason: " << e.msg;
-            throw YAML::Exception(e.mark, ss.str());
-        }
+   * @brief Get the given subnode value. The only reason this function exists is to wrap 
+   * the exceptions in slightly nicer error messages, including the name of the failed key
+   * 
+   * @tparam T 
+   * @param node 
+   * @param key 
+   * @return T 
+   * @throw YAML::Exception
+   */
+  template<typename T>
+  T yaml_get_value(const YAML::Node & node, const std::string & key)
+  {
+    try {
+      return node[key].as<T>();
+    } catch (YAML::Exception & e) {
+      std::stringstream ss;
+      ss << "Failed to parse YAML tag '" << key << "' for reason: " << e.msg;
+      throw YAML::Exception(e.mark, ss.str());
     }
+  }
+
 };
 
 } // namespace sgd_map_server
