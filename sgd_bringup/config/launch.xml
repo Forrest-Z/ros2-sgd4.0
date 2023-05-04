@@ -3,7 +3,7 @@
 <!-- localization nodes -->
     <!--node name="map_server" /-->
     <node name="sgd_map_server" />
-    <node name="obstacle_detector" start="both" />
+    <!--node name="obstacle_detector" start="both" /-->
     <!--node name="amcl" /-->
 
 <!-- hardware nodes -->

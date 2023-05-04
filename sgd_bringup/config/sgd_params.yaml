@@ -26,13 +26,7 @@ amcl:
     max_particles: 2000
     min_particles: 500
     odom_frame_id: "odom"
-    pf_err: 0.05
-    pf_z: 0.99
-    recovery_alpha_fast: 0.1
-    recovery_alpha_slow: 0.001
-    resample_interval: 1
-    robot_model_type: "differential"
-    save_pose_rate: 0.5
+    pf_err: 0.05ptr
     sigma_hit: 0.2
     tf_broadcast: False
     transform_tolerance: 1.0
@@ -112,54 +106,44 @@ controller_server:
       stateful: True
     # TEB parameters
     FollowPath:
-      plugin: "teb_local_planner::TebLocalPlannerROS"
-      # robot configuration
-      footprint_model.type: "circular"
-      footprint_model.radius: 1.0
+      plugin: "dwb_core::DWBLocalPlanner"
+      debug_trajectory_details: True
+      min_vel_x: 0.0
+      min_vel_y: 0.0
       max_vel_x: 0.26
-      max_vel_x_backwards: 0.12
       max_vel_y: 0.0
-      max_vel_theta: 0.4
-      acc_lim_x: 0.3
+      max_vel_theta: 1.0
+      min_speed_xy: 0.0
+      max_speed_xy: 0.26
+      min_speed_theta: 0.0
+      acc_lim_x: 2.5
       acc_lim_y: 0.0
-      acc_lim_theta: 0.2
-      min_turning_radius: 0.3
-      # goal tolerance parameters
-      xy_goal_tolerance: 0.5
-      yaw_goal_tolerance: 0.1
-      free_goal_vel: False
-      # trajectory configuration parameters
-      min_samples: 3
-      global_plan_viapoint_sep: -0.1
-      max_global_plan_lookahead_dist: 10.0
-      # optimization parameters
-      penalty_epsilon: 0.1
-      weight_max_vel_x: 2.0
-      weight_max_vel_theta: 1.0
-      weight_acc_lim_x: 1.0
-      weight_acc_lim_theta: 1.0
-      weight_kinematics_forward_drive: 100.0
-      weight_optimaltime: 1.0
-      weight_obstacle: 50.0
-      weight_viapoint: 20.0
-      # obstacle parameters
-      min_obstacle_dist: 0.5
-      inflation_dist: 0.5
-      include_costmap_obstacles: True
-      costmap_converter_plugin: "costmap_converter::CostmapToPolygonsDBSMCCH"
-      costmap_converter_spin_thread: True
-      costmap_converter_rate: 5
-      # parallel planning in distinctive topologies
-      enable_homotopy_class_planning: True
-      enable_multithreading: True
-      optimization_verbose: False
-      teb_autoresize: True
-      min_samples: 3
-      max_samples: 20
-      visualize_hc_graph: False
-      # miscellaneous parameters
-      odom_topic: "odom"
-      map_frame: "map"
+      acc_lim_theta: 3.2
+      decel_lim_x: -2.5
+      decel_lim_y: 0.0
+      decel_lim_theta: -3.2
+      vx_samples: 20
+      vy_samples: 5
+      vtheta_samples: 20
+      sim_time: 1.7
+      linear_granularity: 0.05
+      angular_granularity: 0.025
+      transform_tolerance: 0.2
+      xy_goal_tolerance: 0.25
+      trans_stopped_velocity: 0.25
+      short_circuit_trajectory_evaluation: True
+      stateful: True
+      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
+      BaseObstacle.scale: 0.02
+      PathAlign.scale: 32.0
+      GoalAlign.scale: 24.0
+      PathAlign.forward_point_distance: 0.1
+      GoalAlign.forward_point_distance: 0.1
+      PathDist.scale: 32.0
+      GoalDist.scale: 24.0
+      RotateToGoal.scale: 32.0
+      RotateToGoal.slowing_factor: 5.0
+      RotateToGoal.lookahead_time: -1.0
 
 controller_server_rclcpp_node:
   ros__parameters:
@@ -168,16 +152,17 @@ controller_server_rclcpp_node:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 5.0
+      update_frequency: 1.0
       publish_frequency: 5.0
       global_frame: map
       robot_base_frame: base_link
       use_sim_time: False
       rolling_window: True
-      width: 10
-      height: 10
+      width: 15
+      height: 15
       resolution: 0.1
-      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      #plugins: ["static_layer", "static_vector_layer", "obstacle_layer", "inflation_layer"]
+      plugins: ["static_vector_layer", "inflation_layer"]
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
@@ -196,7 +181,7 @@ local_costmap:
           inf_is_valid: False
           marking: True
           clearing: False
-          obstacle_range: 5.0
+          obstacle_range: 7.0
           raytrace_range: 6.0
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
@@ -204,6 +189,13 @@ local_costmap:
         subscribe_to_updates: true
         map_subscribe_transient_local: True
         transform_tolerance: 0.1
+      static_vector_layer:
+        plugin: "sgd_costmap_plugins/StaticVectorLayer"
+        enabled: true
+        subscribe_to_updates: false
+        map_subscribe_transient_local: True
+        transform_tolerance: 0.1
+        map_topic: "/map/vector"
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: true
@@ -229,13 +221,33 @@ global_costmap:
       robot_base_frame: base_link
       footprint: "[ [-0.05, 0.35], [0.7, 0.25], [0.7, -0.25], [-0.05, -0.35] ]"
       resolution: 0.1
-      plugins: ["static_layer", "inflation_layer"]
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
         enabled: true
         subscribe_to_updates: true
         transform_tolerance: 0.1
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        footprint_clearing_enabled: true
+        max_obstacle_height: 2.0
+        combination_method: 1
+        scan:
+          topic: /scan
+          sensor_frame: "base_scan"
+          observation_persistence: 1.0
+          expected_update_rate: 15.0
+          data_type: "LaserScan"
+          min_obstacle_height: 0.0
+          max_obstacle_height: 10.0
+          inf_is_valid: False
+          marking: True
+          clearing: False
+          obstacle_range: 5.0
+          raytrace_range: 6.0
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: true
@@ -261,9 +273,8 @@ sgd_map_server:
     use_sim_time: False
     log_dir: ".ros/log/"
     log_severity: "D"
-    yaml_filename: "lohmuehlenpark_new.yaml"
+    yaml_filename: "lohmuehlenpark.yaml"
     topic_name: "map"
-    topic_vector_map: "map/vector"
     frame_id: "map"
 
 map_saver:
@@ -280,10 +291,35 @@ planner_server:
     plugins: ["GridBased"]
     use_sim_time: False
     GridBased:
-      plugin: "sgd_ctrl::LocalPlanner"
-      global_plan_topic: "global_plan_sgd"
-      interpolation_resolution: 5.0
-      radius: 0.5
+      plugin: "nav2_smac_planner/SmacPlannerHybrid"
+      downsample_costmap: false           # whether or not to downsample the map
+      downsampling_factor: 1              # multiplier for the resolution of the costmap layer (e.g. 2 on a 5cm costmap would be 10cm)
+      tolerance: 0.25                     # dist-to-goal heuristic cost (distance) for valid tolerance endpoints if exact goal cannot be found.
+      allow_unknown: true                 # allow traveling in unknown space
+      max_iterations: 1000000             # maximum total iterations to search for before failing (in case unreachable), set to -1 to disable
+      max_on_approach_iterations: 1000    # Maximum number of iterations after within tolerances to continue to try to find exact solution
+      max_planning_time: 5.0              # max time in s for planner to plan, smooth
+      motion_model_for_search: "DUBIN"    # Hybrid-A* Dubin, Redds-Shepp
+      angle_quantization_bins: 72         # Number of angle bins for search
+      analytic_expansion_ratio: 3.5       # The ratio to attempt analytic expansions during search for final approach.
+      analytic_expansion_max_length: 3.0  # For Hybrid/Lattice nodes: The maximum length of the analytic expansion to be considered valid to prevent unsafe shortcutting
+      minimum_turning_radius: 0.40        # minimum turning radius in m of path / vehicle
+      reverse_penalty: 2.0                # Penalty to apply if motion is reversing, must be => 1
+      change_penalty: 0.0                 # Penalty to apply if motion is changing directions (L to R), must be >= 0
+      non_straight_penalty: 1.2           # Penalty to apply if motion is non-straight, must be => 1
+      cost_penalty: 2.0                   # Penalty to apply to higher cost areas when adding into the obstacle map dynamic programming distance expansion heuristic. This drives the robot more towards the center of passages. A value between 1.3 - 3.5 is reasonable.
+      retrospective_penalty: 0.015
+      lookup_table_size: 20.0             # Size of the dubin/reeds-sheep distance window to cache, in meters.
+      cache_obstacle_heuristic: false     # Cache the obstacle map dynamic programming distance expansion heuristic between subsiquent replannings of the same goal location. Dramatically speeds up replanning performance (40x) if costmap is largely static.
+      smooth_path: True                   # If true, does a simple and quick smoothing post-processing to the path
+
+      smoother:
+        max_iterations: 1000
+        w_smooth: 0.3
+        w_data: 0.2
+        tolerance: 1.0e-10
+        do_refinement: true
+        refinement_num: 2
 
 planner_server_rclcpp_node:
   ros__parameters:

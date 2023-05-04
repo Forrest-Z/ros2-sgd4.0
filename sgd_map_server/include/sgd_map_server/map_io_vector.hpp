@@ -86,6 +86,8 @@ private:
     std::regex regex_fill_;
     std::regex regex_path_;
 
+    uint height_ = 0.0;
+
     /**
      * @brief Import svg
      * 

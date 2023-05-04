@@ -55,12 +55,12 @@ Map_IO::loadMapFromFile(const LoadParameters & load_parameters)
     load_parameters.image_file_name << std::endl;
   Magick::Image img(load_parameters.image_file_name);
 
-  Magick::Geometry geometry(load_parameters.width, load_parameters.height);
-  img.resize(geometry);
+  // Magick::Geometry geometry(load_parameters.width, load_parameters.height);
+  // img.resize(geometry);
 
   // Copy the image data into the map structure
-  // msg.info.width = img.size().width();
-  // msg.info.height = img.size().height();
+  msg.info.width = img.size().width();
+  msg.info.height = img.size().height();
   msg.info.width = load_parameters.width;
   msg.info.height = load_parameters.height;
 

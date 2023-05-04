@@ -84,11 +84,13 @@ Map_IO_Vector::~Map_IO_Vector() {}
 void
 Map_IO_Vector::loadMapFromFile(const LoadParameters & load_parameters)
 {
-    // check if file exists and is svg
+    // get image name and change extension from png to svg
+    std::string svg_name = load_parameters.image_file_name.substr(0, load_parameters.image_file_name.find_last_of('.')) + ".svg";
+
     // import file with tinyxml2
-    PLOGI << "Loading image_file: " << load_parameters.image_file_name;
+    PLOGI << "Loading image_file: " << svg_name;
     tinyxml2::XMLDocument doc;
-    doc.LoadFile(load_parameters.image_file_name.c_str());
+    doc.LoadFile(svg_name.c_str());
 
     // check error
     if (doc.Error())
@@ -105,6 +107,7 @@ Map_IO_Vector::loadMapFromFile(const LoadParameters & load_parameters)
         // width and height in m
         msg.info.width = std::strtoul(root->Attribute("width"), nullptr, 10);
         msg.info.height = std::strtoul(root->Attribute("height"), nullptr, 10);
+        height_ = msg.info.height;
         PLOGD << "Image width: " << msg.info.width << "; height: " << msg.info.height;
 
         PLOGD << "Import svg: Object; Points | r;cx;cy";
@@ -142,8 +145,8 @@ Map_IO_Vector::import_svg(tinyxml2::XMLElement * element, sgd_msgs::msg::VecObst
 {
     // switch if group / circle / path
     auto elem = element->FirstChildElement();
-    // check if element has transformation matrix defined
-    auto transform = element->Attribute("transform");
+    // get height
+    auto height = element->Attribute("height");
     // TODO use transformation matrix
 
     // TODO: error handling for xml attributes
@@ -166,7 +169,7 @@ Map_IO_Vector::import_svg(tinyxml2::XMLElement * element, sgd_msgs::msg::VecObst
             // get radius and position
             c.radius = char2float(elem->Attribute("r"));
             c.pose.position.x = char2float(elem->Attribute("cx"));
-            c.pose.position.y = char2float(elem->Attribute("cy"));
+            c.pose.position.y = height_ - char2float(elem->Attribute("cy"));
             
             msg.obstacles.push_back(c);
             PLOGD << "Circle; " << c.radius << "; " << c.pose.position.x << "; " << c.pose.position.y;
@@ -224,14 +227,14 @@ Map_IO_Vector::import_svg(tinyxml2::XMLElement * element, sgd_msgs::msg::VecObst
                     {
                         // absolute line start
                         pnt.x = x_;
-                        pnt.y = y_;
+                        pnt.y = height_ - y_;
                         break;
                     }
                     case 'L':
                     {
                         // lineto command, absolute mode
                         pnt.x = x_;
-                        pnt.y = y_;
+                        pnt.y = height_ -  y_;
                         break;
                     }
                     case 'l':
