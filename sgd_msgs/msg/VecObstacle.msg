@@ -16,7 +16,7 @@ geometry_msgs/Pose pose
 geometry_msgs/TwistWithCovariance twist
 
 # radius of obstacle: only used if vertices is not specified
-uint32 radius
+float32 radius
 
 # vertices of obstacle outline
 geometry_msgs/Point32[] vertices

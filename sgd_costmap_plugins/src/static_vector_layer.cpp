@@ -40,6 +40,7 @@
 #include "sgd_costmap_plugins/static_vector_layer.hpp"
 #include "sgd_costmap_plugins/delaunator.hpp"
 #include "sgd_costmap_plugins/triangle_rasterizer.hpp"
+#include "sgd_costmap_plugins/circle_rasterizer.hpp"
 
 using nav2_costmap_2d::FREE_SPACE;
 using nav2_costmap_2d::LETHAL_OBSTACLE;
@@ -376,6 +377,8 @@ namespace sgd_costmap_plugins
             return;
         }
 
+        PLOGI << "Update Costmap  -------------------";
+
         unsigned char * master_array = master_grid.getCharMap();
         unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
 
@@ -390,14 +393,14 @@ namespace sgd_costmap_plugins
         max_j = std::min(static_cast<int>(size_y), max_j);
 
         // initialize costmap with free space
-        for (int x_ = 0; x_ < layered_costmap_->getCostmap()->getSizeInCellsX(); x_++)
-        {
-            for (int y_ = 0; y_ < layered_costmap_->getCostmap()->getSizeInCellsY(); y_++)
-            {
-                uint index = master_grid.getIndex(x_, y_);
-                master_array[index] = 0U;
-            }
-        }
+        // for (int x_ = 0; x_ < layered_costmap_->getCostmap()->getSizeInCellsX(); x_++)
+        // {
+        //     for (int y_ = 0; y_ < layered_costmap_->getCostmap()->getSizeInCellsY(); y_++)
+        //     {
+        //         uint index = master_grid.getIndex(x_, y_);
+        //         master_array[index] = 0U;
+        //     }
+        // }
 
         // get world frame
         double w_min_i, w_min_j, w_max_i, w_max_j;      // world coordinates
@@ -412,10 +415,8 @@ namespace sgd_costmap_plugins
         int k = 0;
         for (int i = 0; i < box_outlines.size(); i++)
         {
-            if ((is_in_range(w_min_i, w_max_i, box_outlines[i].min_x) ||
-                    is_in_range(w_min_i, w_max_i, box_outlines[i].max_x)) &&
-                (is_in_range(w_min_j, w_max_j, box_outlines[i].min_y) ||
-                    is_in_range(w_min_j, w_max_j, box_outlines[i].max_y)))
+            if ((is_in_range(box_outlines[i].min_x, box_outlines[i].max_x, w_min_i, w_max_i) &&
+                    is_in_range(box_outlines[i].min_y, box_outlines[i].max_y, w_min_j, w_max_j)))
             {
                 k++;
                 if (!box_outlines[i].obstacle.vertices.empty())
@@ -501,7 +502,7 @@ namespace sgd_costmap_plugins
                         {
                             // cell in x direction in map frame
                             int x_map = x+btr.get_lmp() - origin_cell_x;
-                            if (x_map < 0 || x_map > layered_costmap_->getCostmap()->getSizeInCellsX())     continue;
+                            if (x_map < 0 || x_map >= layered_costmap_->getCostmap()->getSizeInCellsX())     continue;
 
                             for (int y = btr.mins[x]; y <= btr.maxs[x]; y++)
                             {
@@ -516,11 +517,37 @@ namespace sgd_costmap_plugins
                         }
                     }
                 }
-                // else
-                // {
-                //     // rasterize circle
-                // }
+                else
+                {
+                    PLOGI.printf("Rasterize circle: radius=%.3f -> integer radius=%d", box_outlines[i].obstacle.radius,
+                            (int)round(box_outlines[i].obstacle.radius * resolution));
+                    // rasterize circle
+                    CircleRasterizer cr((int)round(box_outlines[i].obstacle.radius * resolution));
+                    
+                    // 
+                    int x_start = round((box_outlines[i].obstacle.pose.position.x - box_outlines[i].obstacle.radius) * resolution) - origin_cell_x;
+                    int y_start = round((box_outlines[i].obstacle.pose.position.y - box_outlines[i].obstacle.radius) * resolution) - origin_cell_y;
+                    PLOGI.printf("Set x_start=%d and y_start=%d", x_start, y_start);
 
+                    // save to costmap
+                    for (int x = 0; x < cr.mins.size(); x++)
+                    {
+                        // cell in x direction in map frame
+                        int x_map = x_start + x;
+                        if (x_map < 0 || x_map >= layered_costmap_->getCostmap()->getSizeInCellsX())     continue;
+
+                        for (int y = cr.mins[x]; y <= cr.maxs[x]; y++)
+                        {
+                            int y_map = y_start + y;
+                            if (y_map < 0 || y_map > layered_costmap_->getCostmap()->getSizeInCellsY())     continue;
+                            // calculate local costmap coordinates [0...100]
+                            
+                            uint index = master_grid.getIndex(x_map, y_map);
+                            master_array[index] = 254U;
+                        }
+                    }
+                    PLOGI << "Circle rasterization done.";
+                }
             }
         }
         RCLCPP_INFO(node_->get_logger(), "Found %d obstacles inside frame %.3f, %.3f, %.3f, %.3f",

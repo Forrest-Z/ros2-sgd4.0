@@ -152,15 +152,24 @@ controller_server_rclcpp_node:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 1.0
-      publish_frequency: 5.0
-      global_frame: map
-      robot_base_frame: base_link
       use_sim_time: False
-      rolling_window: True
-      width: 15
+      always_send_full_costmap: False
+      footprint_padding: 0.01
+      footprint: "[ [-0.05, 0.35], [0.7, 0.25], [0.7, -0.25], [-0.05, -0.35] ]"
+      global_frame: map
       height: 15
+      width: 15
       resolution: 0.1
+      lethal_cost_threshold: 100
+      map_topic: "map"
+      publish_frequency: 5.0
+      update_frequency: 1.0
+      robot_base_frame: base_link
+      rolling_window: True
+      track_unknown_space: False
+      trinary_costmap: False
+      unknown_cost_value: 255
+      use_maximum: False
       #plugins: ["static_layer", "static_vector_layer", "obstacle_layer", "inflation_layer"]
       plugins: ["static_vector_layer", "inflation_layer"]
       obstacle_layer:

@@ -159,9 +159,13 @@ private:
    * @return true 
    * @return false 
    */
-  inline bool is_in_range(float lower, float upper, float value)
+  inline bool is_in_range(float min_obstacle, float max_obstacle, float min_costmap, float max_costmap)
   {
-    return !(value < lower) && !(value > upper);
+    // beide kleiner -> false
+    // beide größer -> false
+    if (min_obstacle < min_costmap && max_obstacle < min_costmap) return false;
+    if (min_obstacle > max_costmap && max_obstacle > max_costmap) return false;
+    return true;
   }
 
   std::string global_frame_;  ///< @brief The global frame for the costmap
