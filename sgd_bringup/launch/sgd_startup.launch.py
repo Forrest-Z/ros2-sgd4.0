@@ -1,6 +1,7 @@
 """This is all-in-one launch script to run the shared guide dog."""
 
 import os
+from datetime import datetime
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -81,9 +82,14 @@ def generate_launch_description():
             bringup_dir, 'behavior_trees', 'navigate_w_replanning_and_recovery_sgd.xml'),
         description='Full path to the behavior tree xml file to use')
 
+    now = datetime.now()
+    dtime = now.strftime("%Y-%m-%d-%H-%M-%S-plog")
+    # create directory because plog cannot create a directory
+    path = os.path.join(os.path.expanduser('~'), '.ros', 'log', dtime)
+    os.mkdir(path)
     declare_log_dir_cmd = DeclareLaunchArgument(
         'log_dir',
-        default_value=os.path.join(os.path.expanduser('~'), '.ros', 'log'),
+        default_value=path,
         description='Path to log directory'
     )
 

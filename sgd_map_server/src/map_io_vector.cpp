@@ -58,14 +58,14 @@ Map_IO_Vector::Map_IO_Vector(rclcpp_lifecycle::LifecycleNode::SharedPtr parent)
     parent->get_parameter("log_dir", log_dir);
     parent->get_parameter("log_severity", log_sev);
 
-    time_t now = time(0);
-    tm *ltm = localtime(&now);
+    // time_t now = time(0);
+    // tm *ltm = localtime(&now);
 
-    char buf[24];
-    std::sprintf(&buf[0], "%4d-%02d-%02d_%02d-%02d-%02d.log", 1900+ltm->tm_year, 1+ltm->tm_mon, ltm->tm_mday,
-                            ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
-    std::string log_file_(buf);
-    std::string log_file(log_dir + "/map_io_" + log_file_);
+    // char buf[24];
+    // std::sprintf(&buf[0], "%4d-%02d-%02d_%02d-%02d-%02d.log", 1900+ltm->tm_year, 1+ltm->tm_mon, ltm->tm_mday,
+    //                         ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
+    // std::string log_file_(buf);
+    std::string log_file(log_dir + "/map_io.log");
     plog::init(plog::severityFromString(log_sev.c_str()), log_file.c_str());
 
     RCLCPP_INFO(parent->get_logger(), "Save map_io_vector log to %s", log_file.c_str());

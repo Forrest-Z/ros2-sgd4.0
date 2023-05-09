@@ -30,7 +30,9 @@ Wird aktuell nicht genutzt.
 This node uses the costmap 2D parameters and has no specific parameters.
 
 | Parameter Name | Type           | Default Value  | Description    |
-| -------------- | -------------- | -------------- | -------------- | 
+| -------------- | -------------- | -------------- | -------------- |
+| log_dir        | String         | ".ros/log/"    | PLOG log directory |
+| log_severity   | String         | "I"            | PLOG logging severity |
 
 
 ## Lidar Costmap Plugin

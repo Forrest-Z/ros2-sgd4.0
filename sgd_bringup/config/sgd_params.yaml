@@ -159,7 +159,7 @@ local_costmap:
       global_frame: map
       height: 15
       width: 15
-      resolution: 0.1
+      resolution: 0.05
       lethal_cost_threshold: 100
       map_topic: "map"
       publish_frequency: 5.0
@@ -200,6 +200,8 @@ local_costmap:
         transform_tolerance: 0.1
       static_vector_layer:
         plugin: "sgd_costmap_plugins/StaticVectorLayer"
+        log_dir: ".ros/log/"
+        log_severity: "I"
         enabled: true
         subscribe_to_updates: false
         map_subscribe_transient_local: True
