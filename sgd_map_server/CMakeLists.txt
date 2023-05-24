@@ -23,6 +23,8 @@ find_package(GRAPHICSMAGICKCPP REQUIRED)
 find_package(tinyxml2_vendor REQUIRED)
 find_package(TinyXML2 REQUIRED)
 
+find_package(sgd_rasterizer REQUIRED)
+
 include_directories(include)
 
 set(map_server_executable sgd_map_server)
@@ -32,6 +34,9 @@ add_executable(${map_server_executable}
   src/map_io.cpp
   src/map_io_vector.cpp
   src/map_mode.cpp)
+  # src/rasterizer/circle_rasterizer.cpp
+  # src/rasterizer/delaunator.cpp
+  # src/rasterizer/triangle_rasterizer.cpp)
 
 # set(map_io_library_name map_io)
 
@@ -59,7 +64,8 @@ set(map_server_dependencies
   yaml_cpp_vendor
   std_msgs
   sgd_msgs
-  TinyXML2)
+  TinyXML2
+  sgd_rasterizer)
 
 ament_target_dependencies(${map_server_executable}
   ${map_server_dependencies})
@@ -76,11 +82,10 @@ ament_target_dependencies(${map_server_executable}
 # target_link_libraries(${map_server_executable}
 #   ${library_name})
 
-target_include_directories(${map_server_executable} SYSTEM PRIVATE
-  ${GRAPHICSMAGICKCPP_INCLUDE_DIRS})
+# target_include_directories(${map_server_executable} SYSTEM PRIVATE
+#   ${GRAPHICSMAGICKCPP_INCLUDE_DIRS})
 
-target_link_libraries(${map_server_executable}
-  ${GRAPHICSMAGICKCPP_LIBRARIES} plog::plog)
+target_link_libraries(${map_server_executable} plog::plog)
 
 # install(TARGETS
 #   ${library_name} ${map_io_library_name}

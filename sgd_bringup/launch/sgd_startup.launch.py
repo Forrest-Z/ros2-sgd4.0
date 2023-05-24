@@ -93,12 +93,6 @@ def generate_launch_description():
         description='Path to log directory'
     )
 
-    declare_log_sev_cmd = DeclareLaunchArgument(
-        'log_severity',
-        default_value='D',
-        description='Log severity - E/W/I/D/V - Error/Warn/Info/Debug/Verbose'
-    )
-
     declare_rviz_config_file_cmd = DeclareLaunchArgument(
         'rviz_config_file',
         default_value=os.path.join(bringup_dir, 'rviz', 'nav2_default_view.rviz'),
@@ -117,7 +111,6 @@ def generate_launch_description():
     param_substitutions = {
         'use_sim_time': sim,
         'log_dir': log_dir,
-        'log_severity': log_severity,
         'default_bt_xml_filename': default_bt_xml_filename,
         'map_subscribe_transient_local': 'true',
         'yaml_filename': map_yaml_file,
@@ -229,7 +222,6 @@ def generate_launch_description():
     ld.add_action(declare_hardware_params_file_cmd)
     ld.add_action(declare_bt_xml_cmd)
     ld.add_action(declare_log_dir_cmd)
-    ld.add_action(declare_log_sev_cmd)
     ld.add_action(declare_rviz_config_file_cmd)
     ld.add_action(declare_simulator_cmd)
     ld.add_action(declare_world_cmd)

@@ -20,17 +20,16 @@ find_package(nav2_costmap_2d REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(sgd_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(sgd_rasterizer REQUIRED)
 
 set(dep_pkgs
     rclcpp
     nav2_costmap_2d
     pluginlib
-    sgd_msgs)
+    sgd_msgs
+    sgd_rasterizer)
 
-add_library(${lib_name} SHARED src/static_vector_layer.cpp
-        include/sgd_costmap_plugins/delaunator.hpp
-        src/triangle_rasterizer.cpp
-        include/sgd_costmap_plugins/circle_rasterizer.hpp)
+add_library(${lib_name} SHARED src/static_vector_layer.cpp)
 include_directories(include)
 
 install(TARGETS ${lib_name}

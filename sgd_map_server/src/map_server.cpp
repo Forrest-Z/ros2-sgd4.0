@@ -57,6 +57,17 @@ MapServer::MapServer() : rclcpp_lifecycle::LifecycleNode("map_server")
 {
     RCLCPP_INFO(get_logger(), "Creating");
 
+    // initialize plog
+    if (!has_parameter("log_dir"))     declare_parameter("log_dir", rclcpp::ParameterValue(".ros/log/"));
+    if (!has_parameter("log_severity"))     declare_parameter("log_severity", rclcpp::ParameterValue("I"));
+
+    std::string log_dir, log_sev;
+    get_parameter("log_dir", log_dir);
+    get_parameter("log_severity", log_sev);
+    std::string log_file(log_dir + "/sgd_map_server.log");
+    plog::init(plog::severityFromString(log_sev.c_str()), log_file.c_str());
+    RCLCPP_INFO(get_logger(), "Save sgd map server log to %s", log_file.c_str());
+
     // Declare the node parameters
     declare_parameter("yaml_filename");
     declare_parameter("topic_name", "map");

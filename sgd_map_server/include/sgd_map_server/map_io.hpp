@@ -19,77 +19,95 @@
 
 #include <string>
 #include <vector>
-#include <libgen.h>
 #include <iostream>
 #include <fstream>
-#include <stdexcept>
+#include <regex>
 
-#include "rclcpp/rclcpp.hpp"
-#include "rclcpp_lifecycle/lifecycle_node.hpp"
-#include "tf2/LinearMath/Matrix3x3.h"
-#include "tf2/LinearMath/Quaternion.h"
-#include "sgd_map_server/map_mode.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
+#include "sgd_map_server/map_mode.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
 
-#include "Magick++.h"
+#include "tinyxml2.h"
 #include "yaml-cpp/yaml.h"
 
+#include <plog/Log.h>
+#include <plog/Initializers/RollingFileInitializer.h>
+
 #include "sgd_map_server/Imap_io.hpp"
+// #include "sgd_map_server/rasterizer/circle_rasterizer.hpp"
+// #include "sgd_map_server/rasterizer/triangle_rasterizer.hpp"
+// #include "sgd_map_server/rasterizer/delaunator.hpp"
+// #include "sgd_map_server/rasterizer/ray_rasterizer.hpp"
 
-/* === Map input part === */
+#include "sgd_rasterizer/circle_rasterizer.hpp"
+#include "sgd_rasterizer/ray_rasterizer.hpp"
 
+/* Map input part */
 namespace sgd_map_server
 {
 
 class Map_IO : public IMap_IO
 {
-
-
 private:
+    std::regex regex_path_;
+
+    float height_ = 0.0;
+
+    /**
+     * @brief Import svg
+     * 
+     * @param element element to import
+     */
+    void import_svg(tinyxml2::XMLElement * element, nav_msgs::msg::OccupancyGrid &msg);
+
+    /**
+     * @brief Converts a numeric attribute to a float value
+     * 
+     * @param attribute tinyxml2 Attribute
+     * @return float 
+     */
+    float char2float(const char * attribute);
+
+    bool is_point_inside_polygon(std::vector<double> polygon_outline, float px, float py);
 
 public:
-  Map_IO(rclcpp_lifecycle::LifecycleNode::SharedPtr parent);
-  ~Map_IO();
+    Map_IO(rclcpp_lifecycle::LifecycleNode::SharedPtr parent);
+    ~Map_IO();
 
-  nav_msgs::msg::OccupancyGrid map;
+    nav_msgs::msg::OccupancyGrid map;
 
-  /* Map input part */
+    /**
+     * @brief Load the image from map file and generate an OccupancyGrid
+     * @param map Output loaded map
+     * @throw std::exception
+     */
+    void loadMapFromFile(const LoadParameters & load_parameters) override;
 
-  /**
-   * @brief Load the image from map file and generate an OccupancyGrid
-   * @param load_parameters Parameters of loading map
-   * @param map Output loaded map
-   * @throw std::exception
-   */
-  void loadMapFromFile(const LoadParameters & load_parameters) override;
+    /* Map output part */
+    /**
+     * @brief Checks map saving parameters for consistency
+     * @param save_parameters Map saving parameters.
+     * NOTE: save_parameters could be updated during function execution.
+     * @throw std::exception in case of inconsistent parameters
+     */
+    void checkSaveParameters(SaveParameters &save_parameters);
 
-  /* Map output part */
+    /**
+     * @brief Write OccupancyGrid map to file
+     * @param map OccupancyGrid map data
+     * @return true or false
+     */
+    bool saveMapToFile(const SaveParameters & save_parameters) override;
 
-  /**
-   * @brief Checks map saving parameters for consistency
-   * @param save_parameters Map saving parameters.
-   * NOTE: save_parameters could be updated during function execution.
-   * @throw std::exception in case of inconsistent parameters
-   */
-  void checkSaveParameters(SaveParameters & save_parameters);
-  
-  /**
-   * @brief Write OccupancyGrid map to file
-   * @param map OccupancyGrid map data
-   * @param save_parameters Map saving parameters.
-   * @return true or false
-   */
-  bool saveMapToFile(const SaveParameters & save_parameters) override;
-
-  /**
-   * @brief Tries to write map data into a file
-   * @param map Occupancy grid data
-   * @param save_parameters Map saving parameters
-   * @throw std::expection in case of problem
-   */
-  void tryWriteMapToFile(const SaveParameters & save_parameters);
+    /**
+     * @brief Tries to write map data into a file
+     * @param map Occupancy grid data
+     * @param save_parameters Map saving parameters
+     * @throw std::expection in case of problem
+     */
+    void tryWriteMapToFile(const SaveParameters &save_parameters);
 };
 
-}  // namespace sgd_map_server
+} // namespace sgd_map_server
 
-#endif  // SGD_MAP_SERVER__MAP_IO_HPP_
+#endif // SGD_MAP_SERVER__MAP_IO_HPP_

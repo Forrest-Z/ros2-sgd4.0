@@ -38,9 +38,9 @@
  *********************************************************************/
 
 #include "sgd_costmap_plugins/static_vector_layer.hpp"
-#include "sgd_costmap_plugins/delaunator.hpp"
-#include "sgd_costmap_plugins/triangle_rasterizer.hpp"
-#include "sgd_costmap_plugins/circle_rasterizer.hpp"
+//#include "sgd_costmap_plugins/delaunator.hpp"
+//#include "sgd_costmap_plugins/triangle_rasterizer.hpp"
+//#include "sgd_costmap_plugins/circle_rasterizer.hpp"
 
 namespace sgd_costmap_plugins
 {
@@ -71,6 +71,10 @@ StaticVectorLayer::onInitialize()
     map_sub_ = node_->create_subscription<sgd_msgs::msg::VecObstacleArray>(
         map_topic_, map_qos,
         std::bind(&StaticVectorLayer::incomingMap, this, std::placeholders::_1));
+
+    // create rasterizer
+    rr = std::make_unique<sgd_rasterizer::RayRasterizer>(layered_costmap_->getCostmap()->getSizeInCellsX(),
+                                                         layered_costmap_->getCostmap()->getSizeInCellsY());
 
     // if (subscribe_to_updates_)
     // {
@@ -146,9 +150,7 @@ StaticVectorLayer::initLogging()
     node_->get_parameter(name_ + ".log_dir", log_dir_);
     node_->get_parameter(name_ + ".log_severity", log_sev_);
 
-    std::string log_file(log_dir_ + "/static_vector_plugin.csv");
-    RCLCPP_INFO(node_->get_logger(), "Save StaticVectorPlugin log file to: %s", log_file.c_str());
-
+    std::string log_file(log_dir_ + "/static_vector_plugin.log");
     plog::init(plog::severityFromString(log_sev_.c_str()), log_file.c_str());
     PLOGI.printf("Created StaticVectorLayer plugin. PLOG logging severity is %s", log_sev_.c_str());
 }
@@ -240,17 +242,23 @@ StaticVectorLayer::updateBounds(
         return;
     }
 
-    // only update bounds if robot has moved since last call to updateBounds
+    // update bounds
+    *min_x = robot_x - layered_costmap_->getCostmap()->getSizeInMetersX()/2;
+    *max_x = robot_x + layered_costmap_->getCostmap()->getSizeInMetersX()/2;
+    *min_y = robot_y - layered_costmap_->getCostmap()->getSizeInMetersY()/2;
+    *max_y = robot_y + layered_costmap_->getCostmap()->getSizeInMetersY()/2;
+
+    // check if robot has moved since last call to updateBounds
     if (!equals_eps(last_robot_x, robot_x) || !equals_eps(last_robot_y, robot_y))
     {
-        // update bounds
-        *min_x = robot_x - layered_costmap_->getCostmap()->getSizeInMetersX()/2;
-        *max_x = robot_x + layered_costmap_->getCostmap()->getSizeInMetersX()/2;
-        *min_y = robot_y - layered_costmap_->getCostmap()->getSizeInMetersY()/2;
-        *max_y = robot_y + layered_costmap_->getCostmap()->getSizeInMetersY()/2;
+        robo_has_moved = true;
 
         last_robot_x = robot_x;
         last_robot_y = robot_y;
+    }
+    else
+    {
+        robo_has_moved = false;
     }
 }
 
@@ -278,9 +286,22 @@ StaticVectorLayer::updateCosts(
         return;
     }
 
+    unsigned char * master_array = master_grid.getCharMap();
+
+    if (!robo_has_moved)
+    {
+        // copy rasterized data to costmap
+        for (int j = 0; j < rr->data.size(); j++)
+        {
+            master_array[j] = std::max(rr->data[j], master_array[j]);
+        }
+        return;
+    }
+
+    // reset rasterizer
+    rr->reset();
     PLOGI << "Update Costmap  -------------------";
 
-    unsigned char * master_array = master_grid.getCharMap();
     unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
 
     // {min_i, min_j} - {max_i, max_j} - are update-window coordinates.
@@ -298,10 +319,13 @@ StaticVectorLayer::updateCosts(
     layered_costmap_->getCostmap()->mapToWorld(min_i, min_j, w_min_i, w_min_j);
     layered_costmap_->getCostmap()->mapToWorld(max_i, max_j, w_max_i, w_max_j);
 
-    double resolution = master_grid.getResolution();        /// @brief resolution of the costmap im meter/pixel
+    double resolution = master_grid.getResolution();        /// @brief resolution of the local costmap im meter/pixel
     uint origin_cell_x = (int)round(w_min_i/resolution);    /// @brief origin of the costmap in global costmap
     uint origin_cell_y = (int)round(w_min_j/resolution);    /// @brief origin of the costmap in global costmap
+    PLOGD.printf("Set origin to %u, %u", origin_cell_x, origin_cell_y);
 
+    PLOGD.printf("Create RayRasterizer with size %u X %u", master_grid.getSizeInCellsX(), master_grid.getSizeInCellsY());
+    //sgd_rasterizer::RayRasterizer rr(master_grid.getSizeInCellsX(), master_grid.getSizeInCellsY());
     int k = 0;  /// @brief counter for obstacles
     for (int i = 0; i < box_outlines.size(); i++)
     {
@@ -314,56 +338,29 @@ StaticVectorLayer::updateCosts(
             if (!box_outlines[i].obstacle.vertices.empty())
             {
                 // triangulate polygon
-                std::vector<double> coords;     /// @brief coordinates in meters
+                std::vector<float> coords;      /// @brief coordinates in meters
                 std::vector<int> icoords;       /// @brief coordinates in cells
 
                 PLOGD << "Vertices:";
                 for (auto vert : box_outlines[i].obstacle.vertices)
                 {
-                    // add vertices to vector -> required for delauny triangulation with delaunator
-                    coords.push_back(vert.x);
-                    coords.push_back(vert.y);
-                    PLOGD.printf("%.3f, %.3f", vert.x, vert.y);
-                }
-                // delauny triangulation happens here
-                delaunator::Delaunator d(coords);
-
-                // calculates local coordinates (integer celll values) from global coordinates (meter)
-                for (auto c : d.coords)
-                {
-                    icoords.push_back((int)round(c/resolution));
+                    // add vertices to vector -> required for rasterization
+                    coords.push_back(vert.x / resolution - origin_cell_x);
+                    coords.push_back(vert.y / resolution - origin_cell_y);
+                    PLOGD.printf("%.3f, %.3f", coords[coords.size()-2], coords[coords.size()-1]);
                 }
 
-                for(std::size_t j = 0; j < d.triangles.size(); j+=3)
-                {                    
-                    // Checks if the calculated triangle is part of the polygon. For concave polygons,
-                    // the delaunator also returns triangles that lie outside the boundary
-                    // calculate center of gravity
-                    float sx = (d.coords[2*d.triangles[j]] + d.coords[2*d.triangles[j+1]] + d.coords[2*d.triangles[j+2]])/3.0F;
-                    float sy = (d.coords[2*d.triangles[j]+1] + d.coords[2*d.triangles[j+1]+1] + d.coords[2*d.triangles[j+2]+1])/3.0F;
-                    // Checks if the center of gravity of the triangle is inside the polygon boundary
-                    if (!is_point_inside_polygon(coords, sx, sy, box_outlines[i].min_x))    continue;
-
-                    // init triangle rasterizer with triangle points
-                    TriangleRasterizer btr(
-                        icoords[2 * d.triangles[j]], icoords[2 * d.triangles[j] + 1],       // x1, y1
-                        icoords[2 * d.triangles[j + 1]], icoords[2 * d.triangles[j + 1] + 1],   // x2, y2
-                        icoords[2 * d.triangles[j + 2]], icoords[2 * d.triangles[j + 2] + 1]);  // x3, y3
-
-                    // save to costmap
-                    save_to_costmap(master_grid,
-                            btr.get_lmp()-origin_cell_x, -origin_cell_y,
-                            btr.mins, btr.maxs);
-                }
+                rr->add_object(coords, 254U);
+                PLOGD << "Polygon rasterization done.";
             }
             else
             {
                 PLOGD.printf("Rasterize circle: radius=%.3f -> integer radius=%d", box_outlines[i].obstacle.radius,
                         (int)round(box_outlines[i].obstacle.radius / resolution));
                 // rasterize circle
-                CircleRasterizer cr((int)round(box_outlines[i].obstacle.radius / resolution));
+                sgd_rasterizer::CircleRasterizer cr((int)round(box_outlines[i].obstacle.radius / resolution));
 
-                save_to_costmap(master_grid,
+                save_to_costmap(master_grid, 254U,
                         round((box_outlines[i].obstacle.pose.position.x - box_outlines[i].obstacle.radius) / resolution) - origin_cell_x,
                         round((box_outlines[i].obstacle.pose.position.y - box_outlines[i].obstacle.radius) / resolution) - origin_cell_y,
                         cr.mins, cr.maxs);
@@ -371,6 +368,11 @@ StaticVectorLayer::updateCosts(
                 PLOGD << "Circle rasterization done.";
             }
         }
+    }
+    // copy rasterized data to costmap
+    for (int j = 0; j < rr->data.size(); j++)
+    {
+        master_array[j] = std::max(rr->data[j], master_array[j]);
     }
     PLOGI.printf("Found %d obstacles inside frame %.3f, %.3f, %.3f, %.3f",
             k, w_min_i, w_min_j, w_max_i, w_max_j);
@@ -430,7 +432,7 @@ StaticVectorLayer::is_point_inside_polygon(std::vector<double> polygon_outline, 
 
 void
 StaticVectorLayer::save_to_costmap(
-        nav2_costmap_2d::Costmap2D &master_grid,
+        nav2_costmap_2d::Costmap2D &master_grid, uint8_t confidence,
         int x_start, int y_start,
         std::vector<int> lower_bound, std::vector<int> upper_bound)
 {
@@ -452,7 +454,7 @@ StaticVectorLayer::save_to_costmap(
             
             // calculate local costmap coordinates [0...100]
             uint index = master_grid.getIndex(x_map, y_map);
-            master_array[index] = 254U;
+            master_array[index] = confidence;
         }
     }
 }

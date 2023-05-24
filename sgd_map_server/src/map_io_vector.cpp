@@ -50,26 +50,6 @@ namespace sgd_map_server
 
 Map_IO_Vector::Map_IO_Vector(rclcpp_lifecycle::LifecycleNode::SharedPtr parent)
 {
-    // initialize plog
-    if (!parent->has_parameter("log_dir"))     parent->declare_parameter("log_dir", rclcpp::ParameterValue(".ros/log/"));
-    if (!parent->has_parameter("log_severity"))     parent->declare_parameter("log_severity", rclcpp::ParameterValue("I"));
-
-    std::string log_dir, log_sev;
-    parent->get_parameter("log_dir", log_dir);
-    parent->get_parameter("log_severity", log_sev);
-
-    // time_t now = time(0);
-    // tm *ltm = localtime(&now);
-
-    // char buf[24];
-    // std::sprintf(&buf[0], "%4d-%02d-%02d_%02d-%02d-%02d.log", 1900+ltm->tm_year, 1+ltm->tm_mon, ltm->tm_mday,
-    //                         ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
-    // std::string log_file_(buf);
-    std::string log_file(log_dir + "/map_io.log");
-    plog::init(plog::severityFromString(log_sev.c_str()), log_file.c_str());
-
-    RCLCPP_INFO(parent->get_logger(), "Save map_io_vector log to %s", log_file.c_str());
-
     // init regex to parse fill attribute and path coordinates
     regex_fill_ = "fill:#(\\d);.*";
     regex_path_ = "(-?\\d+\\.\\d+),(-?\\d+\\.\\d+)";
@@ -164,7 +144,8 @@ Map_IO_Vector::import_svg(tinyxml2::XMLElement * element, sgd_msgs::msg::VecObst
             // parse circle -> create circle
             // Circle c;
             sgd_msgs::msg::VecObstacle c;
-            c.confidence = 128;
+            // TODO id
+            c.confidence = std::stoi(elem->Attribute("cfd"));
             c.clss.data = std::string(elem->Attribute("class"));
             // get radius and position
             c.radius = char2float(elem->Attribute("r"));
@@ -178,7 +159,8 @@ Map_IO_Vector::import_svg(tinyxml2::XMLElement * element, sgd_msgs::msg::VecObst
         {
             // parse path -> create polygon
             sgd_msgs::msg::VecObstacle p;
-            p.confidence = 128;
+            // TODO id
+            p.confidence = std::stoi(elem->Attribute("cfd"));
             p.clss.data = std::string(elem->Attribute("class"));
 
             std::stringstream path(elem->Attribute("d"));
@@ -270,36 +252,6 @@ Map_IO_Vector::char2float(const char * attribute)
     return std::stof(f);
 }
 
-// OBSTACLE_TYPE
-// Map_IO_Vector::parse_style_attribute(std::string style)
-// {
-//     std::smatch matches;
-//     std::regex_match(style, matches, regex_fill_);
-    
-//     if (matches.size() > 1)
-//     {
-//         // color is formatted as hex
-//         uint32_t col = std::stoul(matches[1], nullptr, 16);
-
-//         switch (col)
-//         {
-//         case 0xFF00:
-//             // green: natural structures: trees, etc.
-//             return NATURAL;
-//         case 0xFF0000:
-//             // red: barrier, bollard, etc.
-//             return BARRIER;
-//         case 0:
-//             // black: walls, etc.
-//             return WALL;
-//         default:
-//             // unknown color or parse error
-//             return UNDEFINED;
-//         }
-//     }
-//     return UNDEFINED;
-// }
-
 // === Map output part ===
 
 void
@@ -374,21 +326,6 @@ Map_IO_Vector::checkSaveParameters(SaveParameters &save_parameters)
         PLOGW << "Requested image format '" << save_parameters.image_format << "' is not one of the recommended formats: " << ss.str();
     }
     const std::string FALLBACK_FORMAT = "png";
-
-    // try
-    // {
-    //     Magick::CoderInfo info(save_parameters.image_format);
-    //     if (!info.isWritable())
-    //     {
-    //         PLOGW << "Format '" << save_parameters.image_format << "' is not writable. Using '" << FALLBACK_FORMAT << "' instead";
-    //         save_parameters.image_format = FALLBACK_FORMAT;
-    //     }
-    // }
-    // catch (Magick::ErrorOption &e)
-    // {
-    //     PLOGW << "Format '" << save_parameters.image_format << "' is not usable. Using '" << FALLBACK_FORMAT << "' instead:" << e.what();
-    //     save_parameters.image_format = FALLBACK_FORMAT;
-    // }
 
     // Checking map mode
     if (

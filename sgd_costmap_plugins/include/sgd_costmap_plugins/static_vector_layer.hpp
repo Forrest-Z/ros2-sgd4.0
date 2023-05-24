@@ -31,6 +31,8 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 #include "sgd_msgs/msg/vec_obstacle_array.hpp"
+#include "sgd_rasterizer/circle_rasterizer.hpp"
+#include "sgd_rasterizer/ray_rasterizer.hpp"
 
 #include <plog/Log.h>
 #include "plog/Initializers/RollingFileInitializer.h"
@@ -177,7 +179,7 @@ private:
      * @param lower_bound lower boundary of the obstacle
      * @param upper_bound upper boundary of the obstacle
      */
-    void save_to_costmap(nav2_costmap_2d::Costmap2D &master_grid,
+    void save_to_costmap(nav2_costmap_2d::Costmap2D &master_grid, uint8_t confidence,
             int x_start, int y_start, std::vector<int> lower_bound, std::vector<int> upper_bound);
 
     // std::string global_frame_; /// @brief The global frame for the costmap
@@ -207,6 +209,9 @@ private:
     // sgd variables
     double last_robot_x = -1.0;     /// @brief x position of robot on last iteration
     double last_robot_y = -1.0;     /// @brief y position of robot on last iteration
+    bool robo_has_moved = true;     /// @brief update costmap only if robot has moved
+
+    std::unique_ptr<sgd_rasterizer::RayRasterizer> rr;
 
     /**
      * @brief Checks if d1 and d2 are equal in the range of 1 centimeter.

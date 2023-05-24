@@ -16,15 +16,16 @@
 #define SGD_MAP_SERVER__MAP_SERVER_HPP_
 
 #include <string>
+#include <vector>
 #include <memory>
 #include <functional>
 #include <fstream>
 #include <stdexcept>
 #include <utility>
+#include <libgen.h>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
-// #include "nav2_util/lifecycle_node.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "nav_msgs/srv/get_map.hpp"
 #include "nav2_msgs/srv/load_map.hpp"
