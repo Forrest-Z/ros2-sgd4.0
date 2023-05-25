@@ -1,0 +1,9 @@
+<library path="sgd_rviz_plugins">
+
+  <class name="sgd_rviz_plugins/ObstacleDisplay"
+         type="sgd_rviz_plugins::ObstacleDisplay"
+         base_class_type="rviz_common::Display">
+    <description>A display to render obstacles as polygons.</description>
+  </class>
+
+</library>

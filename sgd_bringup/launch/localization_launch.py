@@ -31,36 +31,12 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time')
     params = LaunchConfiguration('params')
 
-    # Create our own temporary YAML files that include substitutions
-    # param_substitutions = {
-    #     'use_sim_time': use_sim_time,
-    #     'yaml_filename': map_yaml_file,
-    #     'tag_defs': os.path.join(bringup_dir, 'config', 'uwb_tag_defs.yaml'),
-    #     'parser_file': os.path.join(bringup_dir, 'config', 'nmea.xml')}
-
-    # configured_params = RewrittenYaml(
-    #     source_file=params,
-    #     param_rewrites=param_substitutions,
-    #     convert_types=True)
-
-    # config_file = os.path.join(bringup_dir, 'config', 'dual_ekf.yaml')
-
     # Set env var to print messages to stdout immediately
     SetEnvironmentVariable('RCUTILS_LOGGING_BUFFERED_STREAM', '1')
-    
-    # declare_map_cmd = DeclareLaunchArgument(
-    #     'map',
-    #     default_value=os.path.join(bringup_dir, 'maps', 'lohmuehlenpark.yaml'),
-    #     description='Full path to map yaml file to load')
 
     declare_sim_cmd = DeclareLaunchArgument(
         'use_sim_time', default_value='true',
         description='Use simulation (Gazebo) clock if true')
-
-    # declare_params_cmd = DeclareLaunchArgument(
-    #     'params_file',
-    #     default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
-    #     description='Full path to the ROS2 parameters file to use')
 
     # Provide the transform between earth and map frame
     # this is the transformation in WGS84 coordinates to map origin specified in <map>.yaml
@@ -68,13 +44,14 @@ def generate_launch_description():
         package='tf2_ros',
         executable='static_transform_publisher',
         output='screen',
-        arguments=["10.0192452", "53.5532264", "0", "0", "0", "0", "earth", "map"]) # Lohmuehlenpark
+        #arguments=["10.0192452", "53.5532264", "0", "0", "0", "0", "earth", "map"]) # Lohmuehlenpark (alt)
+        arguments=["10.0181853", "53.5525418", "0", "0", "0", "0", "earth", "map"]) # Lohmuehlenpark (neu)
         #arguments=["9.9163604", "53.5436909", "0", "0", "0", "0", "earth", "map"])   # Test im Augustinum
-        
-    start_map_server_cmd = Node(
-        package='nav2_map_server',
-        executable='map_server',
-        name='map_server',
+
+    start_sgd_map_server_cmd = Node(
+        package='sgd_map_server',
+        executable='sgd_map_server',
+        name='sgd_map_server',
         output='screen',
         emulate_tty=True,
         parameters=[params])
@@ -135,8 +112,6 @@ def generate_launch_description():
 
     # Declare the launch options
     ld.add_action(declare_sim_cmd)
-    #ld.add_action(declare_map_cmd)
-    #ld.add_action(declare_params_cmd)
 
     # nodes publishing transforms
     ld.add_action(start_tf_earth_map_cmd)
@@ -145,7 +120,7 @@ def generate_launch_description():
     ld.add_action(start_gps_cmd)
 
     # Add the actions to launch all of the navigation nodes
-    ld.add_action(start_map_server_cmd)
+    ld.add_action(start_sgd_map_server_cmd)
     ld.add_action(start_amcl_cmd)
     ld.add_action(start_uwb_cmd)
     ld.add_action(start_visualizer_cmd)

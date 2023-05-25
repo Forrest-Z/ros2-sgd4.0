@@ -1,11 +1,8 @@
-#ifndef SGD_HARDWARE__IMU_ROS_NODE_HPP_
-#define SGD_HARDWARE__IMU_ROS_NODE_HPP_
+#ifndef SGD_HARDWARE_DRIVERS__IMU_ROS_NODE_HPP_
+#define SGD_HARDWARE_DRIVERS__IMU_ROS_NODE_HPP_
 
-#include <regex>
 #include <string>
 #include <cmath>
-#include <iostream>
-#include <fstream>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
@@ -14,7 +11,6 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "sgd_io/serial.hpp"
-#include "sgd_util/log_utils.hpp"
 
 #include <plog/Log.h>
 #include "plog/Initializers/RollingFileInitializer.h"
@@ -42,14 +38,6 @@ protected:
     CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
     CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
     CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
-
-    //! \brief Init parameters
-    void init_parameters();
-    std::string imu_topic_;
-    std::string imu_temp_topic_;
-    std::string sgd_move_topic_;
-    std::string cmd_vel_topic_;
-    std::string log_dir_;
 
     // classes for sensors
     std::unique_ptr<BNO055> bno055_;

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
 #ifndef SGD_UTIL__LOG_UTILS_HPP_
 #define SGD_UTIL__LOG_UTILS_HPP_
 

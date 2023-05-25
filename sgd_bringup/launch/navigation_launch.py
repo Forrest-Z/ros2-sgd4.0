@@ -26,133 +26,116 @@ def generate_launch_description():
     # Get the launch directory
     bringup_dir = get_package_share_directory('sgd_bringup')
 
-    map_yaml_file = LaunchConfiguration('map')
     use_sim_time = LaunchConfiguration('use_sim_time')
     params = LaunchConfiguration('params')
-    default_bt_xml_filename = LaunchConfiguration('default_bt_xml_filename')
-    map_subscribe_transient_local = LaunchConfiguration('map_subscribe_transient_local')
 
-    # Map fully qualified names to relative ones so the node's namespace can be prepended.
-    # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
-    # https://github.com/ros/geometry2/issues/32
-    # https://github.com/ros/robot_state_publisher/pull/30
-    # TODO(orduno) Substitute with `PushNodeRemapping`
-    #              https://github.com/ros2/launch_ros/issues/56
-    #remappings = [('/tf', 'tf'),
-    #              ('/tf_static', 'tf_static')]
+    set_env_rcutils = SetEnvironmentVariable('RCUTILS_LOGGING_BUFFERED_STREAM', '1')
 
-    # Create our own temporary YAML files that include substitutions
-    # param_substitutions = {
-    #     'use_sim_time': use_sim_time,
-    #     'default_bt_xml_filename': default_bt_xml_filename,
-    #     'map_subscribe_transient_local': map_subscribe_transient_local,
-    #     'yaml_filename': map_yaml_file,
-    #     'log_dir': '~home/.ros/log/'}
+    declare_sim_cmd = DeclareLaunchArgument(
+        'use_sim_time', default_value='true',
+        description='Use simulation (Gazebo) clock if true')
 
-    # configured_params = RewrittenYaml(
-    #         source_file=params_file,
-    #         param_rewrites=param_substitutions,
-    #         convert_types=True)
+    declare_bt_xml_filename = DeclareLaunchArgument(
+        'default_bt_xml_filename',
+        default_value=os.path.join(bringup_dir,'behavior_trees', 'navigate_w_replanning_and_recovery_sgd.xml'),
+        description='Full path to the behavior tree xml file to use')
 
-    return LaunchDescription([
-        # Set env var to print messages to stdout immediately
-        SetEnvironmentVariable('RCUTILS_LOGGING_BUFFERED_STREAM', '1'),
+    start_sgd_controller_cmd = Node(
+        package='sgd_controller',
+        executable='subsum_controller',
+        name='subsum_controller',
+        output='screen',
+        emulate_tty=True,
+        parameters=[params])
 
-        DeclareLaunchArgument(
-            'use_sim_time', default_value='true',
-            description='Use simulation (Gazebo) clock if true'),
+    start_obstacle_checker_cmd = Node(
+        package='sgd_safety',
+        executable='ros2_obstacle_checker',
+        name='ros2_obstacle_checker',
+        output='screen',
+        emulate_tty=True,
+        parameters=[params])
 
-        # DeclareLaunchArgument(
-        #     'params',
-        #     default_value=os.path.join(bringup_dir, 'params', 'simulation_params.yaml'),
-        #     description='Full path to the ROS2 parameters file to use'),
+    start_depth_camera_cmd = Node(
+        package='sgd_safety',
+        executable='ros2_depthCamera_obstacle_checker',
+        name='ros2_depthCamera_obstacle_checker',
+        output='screen',
+        emulate_tty=True,
+        parameters=[params])
 
-        DeclareLaunchArgument(
-            'default_bt_xml_filename',
-            default_value=os.path.join(
-                bringup_dir,'behavior_trees', 'navigate_w_replanning_and_recovery_sgd.xml'),
-            description='Full path to the behavior tree xml file to use'),
+    start_nav2_controller_cmd = Node(
+        package='nav2_controller',
+        executable='controller_server',
+        name='controller_server',
+        output='screen',
+        emulate_tty=True,
+        parameters=[params])
 
-        DeclareLaunchArgument(
-            'map_subscribe_transient_local', default_value='false',
-            description='Whether to set the map subscriber QoS to transient local'),
+    start_nav2_planner_cmd = Node(
+        package='nav2_planner',
+        executable='planner_server',
+        name='planner_server',
+        output='screen',
+        emulate_tty=True,
+        parameters=[params])
 
-        Node(
-            package='sgd_controller',
-            executable='subsum_controller',
-            name='subsum_controller',
-            output='screen',
-            emulate_tty=True,
-            parameters=[params]),
+    start_nav2_recoveries_cmd = Node(
+        package='nav2_recoveries',
+        executable='recoveries_server',
+        name='recoveries_server',
+        output='screen',
+        emulate_tty=True,
+        parameters=[params])
 
-        Node(
-            package='sgd_safety',
-            executable='ros2_obstacle_checker',
-            name='ros2_obstacle_checker',
-            output='screen',
-            emulate_tty=True,
-            parameters=[params]),
+    start_bt_navigator_cmd = Node(
+        package='nav2_bt_navigator',
+        executable='bt_navigator',
+        name='bt_navigator',
+        output='screen',
+        emulate_tty=True,
+        parameters=[params])
 
-        Node(
-            package='sgd_safety',
-            executable='ros2_depthCamera_obstacle_checker',
-            name='ros2_depthCamera_obstacle_checker',
-            output='screen',
-            emulate_tty=True,
-            parameters=[params]),
+    start_waypoint_follower_cmd = Node(
+        package='nav2_waypoint_follower',
+        executable='waypoint_follower',
+        name='waypoint_follower',
+        output='screen',
+        emulate_tty=True,
+        parameters=[params])
 
-        Node(
-            package='nav2_controller',
-            executable='controller_server',
-            name='controller_server',
-            output='screen',
-            emulate_tty=True,
-            parameters=[params]),
+    start_global_planner_cmd = Node(
+        package='sgd_global_planner',
+        executable='global_planner',
+        name='osm_planner',
+        output='screen',
+        emulate_tty=True,
+        parameters=[params])
 
-        Node(
-            package='nav2_planner',
-            executable='planner_server',
-            name='planner_server',
-            output='screen',
-            emulate_tty=True,
-            parameters=[params]),
+    start_frsky_rx8r_cmd = Node(
+        package='frsky_rx8r',
+        executable='frsky_rx8r',
+        name='frsky_rx8r',
+        output='screen',
+        parameters=[params])
 
-        Node(
-            package='nav2_recoveries',
-            executable='recoveries_server',
-            name='recoveries_server',
-            output='screen',
-            emulate_tty=True,
-            parameters=[params]),
+    # Create the launch description and populate
+    ld = LaunchDescription()
 
-        Node(
-            package='nav2_bt_navigator',
-            executable='bt_navigator',
-            name='bt_navigator',
-            output='screen',
-            emulate_tty=True,
-            parameters=[params]),
+    # Declare the launch options
+    ld.add_action(set_env_rcutils)
+    ld.add_action(declare_sim_cmd)
+    ld.add_action(declare_bt_xml_filename)
 
-        Node(
-            package='nav2_waypoint_follower',
-            executable='waypoint_follower',
-            name='waypoint_follower',
-            output='screen',
-            emulate_tty=True,
-            parameters=[params]),
+    ld.add_action(start_sgd_controller_cmd)
+    # ld.add_action(start_obstacle_checker_cmd)
+    # ld.add_action(start_depth_camera_cmd)
+    ld.add_action(start_nav2_controller_cmd)
+    ld.add_action(start_nav2_planner_cmd)
+    ld.add_action(start_nav2_recoveries_cmd)
+    ld.add_action(start_bt_navigator_cmd)
+    ld.add_action(start_waypoint_follower_cmd)
+    ld.add_action(start_global_planner_cmd)
+    ld.add_action(start_frsky_rx8r_cmd)
 
-        Node(
-            package='sgd_global_planner',
-            executable='global_planner',
-            name='osm_planner',
-            output='screen',
-            emulate_tty=True,
-            parameters=[params]),
-
-        Node(
-            package='frsky_rx8r',
-            executable='frsky_rx8r',
-            name='frsky_rx8r',
-            output='screen',
-            parameters=[params])
-    ])
+    return ld

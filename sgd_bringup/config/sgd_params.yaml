@@ -26,13 +26,7 @@ amcl:
     max_particles: 2000
     min_particles: 500
     odom_frame_id: "odom"
-    pf_err: 0.05
-    pf_z: 0.99
-    recovery_alpha_fast: 0.1
-    recovery_alpha_slow: 0.001
-    resample_interval: 1
-    robot_model_type: "differential"
-    save_pose_rate: 0.5
+    pf_err: 0.05ptr
     sigma_hit: 0.2
     tf_broadcast: False
     transform_tolerance: 1.0
@@ -115,7 +109,7 @@ controller_server:
       plugin: "teb_local_planner::TebLocalPlannerROS"
       # robot configuration
       footprint_model.type: "circular"
-      footprint_model.radius: 1.0
+      footprint_model.radius: 0.1
       max_vel_x: 0.26
       max_vel_x_backwards: 0.12
       max_vel_y: 0.0
@@ -168,16 +162,26 @@ controller_server_rclcpp_node:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 5.0
-      publish_frequency: 5.0
-      global_frame: odom
-      robot_base_frame: base_link
       use_sim_time: False
-      rolling_window: true
-      width: 20
-      height: 20
-      resolution: 0.1
-      plugins: ["obstacle_layer"]
+      always_send_full_costmap: True
+      footprint_padding: 0.01
+      footprint: "[ [-0.05, 0.35], [0.7, 0.25], [0.7, -0.25], [-0.05, -0.35] ]"
+      global_frame: map
+      height: 15
+      width: 15
+      resolution: 0.05
+      lethal_cost_threshold: 100
+      map_topic: "map"
+      publish_frequency: 5.0
+      update_frequency: 1.0
+      robot_base_frame: base_link
+      rolling_window: True
+      track_unknown_space: False
+      trinary_costmap: False
+      unknown_cost_value: 255
+      use_maximum: False
+      #plugins: ["static_layer", "static_vector_layer", "obstacle_layer", "inflation_layer"]
+      plugins: ["static_vector_layer", "obstacle_layer", "inflation_layer"]
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
@@ -187,16 +191,41 @@ local_costmap:
         combination_method: 1
         scan:
           topic: /scan
-          obstacle_max_range: 10.0
-          obstacle_min_range: 0.0
-          raytrace_max_range: 10.0
-          raytrace_min_range: 0.0
-          max_obstacle_height: 10.0
-          min_obstacle_height: 0.0
-          clearing: True
-          marking: True
+          sensor_frame: "base_scan"
+          observation_persistence: 1.0
+          expected_update_rate: 25.0
           data_type: "LaserScan"
-          inf_is_valid: false
+          min_obstacle_height: 0.0
+          max_obstacle_height: 10.0
+          inf_is_valid: False
+          marking: True
+          clearing: True
+          obstacle_max_range: 10.0
+          obstacle_min_range: 0.5
+          raytrace_max_range: 6.0
+          raytrace_min_range: 0.5
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        enabled: true
+        subscribe_to_updates: true
+        map_subscribe_transient_local: True
+        transform_tolerance: 0.1
+      static_vector_layer:
+        plugin: "sgd_costmap_plugins/StaticVectorLayer"
+        log_dir: ".ros/log/"
+        log_severity: "D"
+        enabled: true
+        subscribe_to_updates: false
+        map_subscribe_transient_local: True
+        transform_tolerance: 0.1
+        map_topic: "/map/vector"
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        enabled: true
+        inflation_radius: 0.55
+        cost_scaling_factor: 1.0
+        inflate_unknown: false
+        inflate_around_unknown: true
   local_costmap_client:
     ros__parameters:
       use_sim_time: False
@@ -215,7 +244,14 @@ global_costmap:
       robot_base_frame: base_link
       footprint: "[ [-0.05, 0.35], [0.7, 0.25], [0.7, -0.25], [-0.05, -0.35] ]"
       resolution: 0.1
+      #plugins: ["static_layer"]
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
+        enabled: true
+        subscribe_to_updates: true
+        transform_tolerance: 0.1
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
@@ -225,22 +261,19 @@ global_costmap:
         combination_method: 1
         scan:
           topic: /scan
-          obstacle_max_range: 10.0
-          obstacle_min_range: 0.0
-          raytrace_max_range: 10.0
-          raytrace_min_range: 0.0
-          max_obstacle_height: 2.0
-          min_obstacle_height: 0.0
-          clearing: True
-          marking: True
+          sensor_frame: "base_scan"
+          observation_persistence: 1.0
+          expected_update_rate: 25.0
           data_type: "LaserScan"
-          inf_is_valid: false
-      static_layer:
-        plugin: "nav2_costmap_2d::StaticLayer"
-        map_subscribe_transient_local: True
-        enabled: true
-        subscribe_to_updates: true
-        transform_tolerance: 0.1
+          min_obstacle_height: 0.0
+          max_obstacle_height: 10.0
+          inf_is_valid: False
+          marking: True
+          clearing: True
+          obstacle_max_range: 1.0
+          obstacle_min_range: 0.5
+          raytrace_max_range: 6.0
+          raytrace_min_range: 0.5
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: true
@@ -260,6 +293,15 @@ map_server:
   ros__parameters:
     use_sim_time: False
     yaml_filename: "lohmuehlenpark.yaml"
+
+sgd_map_server:
+  ros__parameters:
+    use_sim_time: False
+    log_dir: ".ros/log/"
+    log_severity: "D"
+    yaml_filename: "lohmuehlenpark.yaml"
+    topic_name: "map"
+    frame_id: "map"
 
 map_saver:
   ros__parameters:
@@ -349,7 +391,7 @@ gnss_node:
   ros__parameters:
     use_sim_time: False
     log_dir: ".ros/log/"
-    log_severity: "I"
+    log_severity: "D"
     port: "/dev/serial/by-id/usb-u-blox_AG_-_www.u-blox.com_u-blox_GNSS_receiver-if00"
     parser_file: "sgd_bringup/config/nmea.xml"
     parser_type: "nmea"
@@ -381,19 +423,22 @@ wh_fcruiser:
   ros__parameters:
     use_sim_time: False
     log_dir: ".ros/log/"
-    log_severity: "I"
-    port: "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0"
-    odom_topic: "odom/hardware"
+    log_severity: "D"
+    gps_topic: "gps/local"
+    imu_topic: "imu"
+    pico_base_sub_topic: "pico_base_odom"
     odom_sim_topic: "odom"
+    sgd_move_topic: "sgd_move_base"
+    odom_topic: "odom/hardware"
+    pico_base_pub_topic: "pico_base_motor"
     battery_state_topic: "battery"
-    vel_twist_topic: "sgd_move_base"
     wheel_separation: 0.74
     wheel_circumference: 0.80
-    sim_battery_state: 37.0
+    sim_battery_volt: 37.0
     compass_gain: 0.045
     gps_orientation_gain: 0.5
     relative: True
-
+    
 uwb_node:
   ros__parameters:
     use_sim_time: False

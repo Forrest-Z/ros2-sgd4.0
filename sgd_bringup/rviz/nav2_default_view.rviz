@@ -570,6 +570,18 @@ Visualization Manager:
         Value: true
       Enabled: true
       Name: Visualization
+    - Class: sgd_rviz_plugins/ObstacleDisplay
+      Alpha: 1.0
+      Color: 25; 255; 0
+      Enabled: true
+      Name: ObstacleDisplay
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /obstacles/vec
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

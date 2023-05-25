@@ -30,7 +30,6 @@
 
 #include "sgd_util/geotools.hpp"
 #include "sgd_io/serial.hpp"
-#include "sgd_util/log_utils.hpp"
 
 #include <plog/Log.h>
 #include "plog/Initializers/RollingFileInitializer.h"

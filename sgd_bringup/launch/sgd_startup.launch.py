@@ -1,6 +1,7 @@
 """This is all-in-one launch script to run the shared guide dog."""
 
 import os
+from datetime import datetime
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -61,7 +62,7 @@ def generate_launch_description():
 
     declare_map_yaml_cmd = DeclareLaunchArgument(
         'map',
-        default_value=os.path.join(bringup_dir, 'maps', 'lohmuehlenpark.yaml'),
+        default_value=os.path.join(bringup_dir, 'maps', 'lohmuehlenpark_new.yaml'),
         #default_value=os.path.join(bringup_dir, 'maps', 'augustinum.yaml'),
         description='Full path to map file to load')
         
@@ -81,16 +82,15 @@ def generate_launch_description():
             bringup_dir, 'behavior_trees', 'navigate_w_replanning_and_recovery_sgd.xml'),
         description='Full path to the behavior tree xml file to use')
 
+    now = datetime.now()
+    dtime = now.strftime("%Y-%m-%d-%H-%M-%S-plog")
+    # create directory because plog cannot create a directory
+    path = os.path.join(os.path.expanduser('~'), '.ros', 'log', dtime)
+    os.mkdir(path)
     declare_log_dir_cmd = DeclareLaunchArgument(
         'log_dir',
-        default_value=os.path.join(os.path.expanduser('~'), '.ros', 'log'),
+        default_value=path,
         description='Path to log directory'
-    )
-
-    declare_log_sev_cmd = DeclareLaunchArgument(
-        'log_severity',
-        default_value='D',
-        description='Log severity - E/W/I/D/V - Error/Warn/Info/Debug/Verbose'
     )
 
     declare_rviz_config_file_cmd = DeclareLaunchArgument(
@@ -111,7 +111,6 @@ def generate_launch_description():
     param_substitutions = {
         'use_sim_time': sim,
         'log_dir': log_dir,
-        'log_severity': log_severity,
         'default_bt_xml_filename': default_bt_xml_filename,
         'map_subscribe_transient_local': 'true',
         'yaml_filename': map_yaml_file,
@@ -223,7 +222,6 @@ def generate_launch_description():
     ld.add_action(declare_hardware_params_file_cmd)
     ld.add_action(declare_bt_xml_cmd)
     ld.add_action(declare_log_dir_cmd)
-    ld.add_action(declare_log_sev_cmd)
     ld.add_action(declare_rviz_config_file_cmd)
     ld.add_action(declare_simulator_cmd)
     ld.add_action(declare_world_cmd)
@@ -244,6 +242,6 @@ def generate_launch_description():
 
     ld.add_action(start_rviz_cmd)
     ## add event handler
-    ld.add_action(exit_event_handler)
+    # ld.add_action(exit_event_handler)
 
     return ld

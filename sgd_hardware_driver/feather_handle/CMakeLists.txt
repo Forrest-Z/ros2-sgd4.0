@@ -25,7 +25,6 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(sgd_io REQUIRED)
-find_package(sgd_util REQUIRED)
 
 include_directories(include)
 
@@ -37,11 +36,13 @@ set(dependencies
   tf2_geometry_msgs
   geometry_msgs
   sgd_io
-  sgd_util
 )
 
 # add executable
-add_executable(${executable_name} src/feather_handle_ros.cpp include/feather_handle/bno055.hpp include/feather_handle/vl53l1x.hpp)
+add_executable(${executable_name}
+        src/feather_handle_ros.cpp
+        src/bno055.cpp
+        src/vl53l1x.cpp)
 target_link_libraries(${executable_name} nlohmann_json::nlohmann_json sgd_io::sgd_io_core plog::plog)
 ament_target_dependencies(${executable_name} ${dependencies})
 

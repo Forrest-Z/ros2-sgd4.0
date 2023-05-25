@@ -1,0 +1,431 @@
+amcl:
+  ros__parameters:
+    use_sim_time: False
+    alpha1: 0.2
+    alpha2: 0.2
+    alpha3: 0.2
+    alpha4: 0.2
+    alpha5: 0.2
+    base_frame_id: "base_link"
+    beam_skip_distance: 0.5
+    beam_skip_error_threshold: 0.9
+    beam_skip_threshold: 0.3
+    do_beamskip: false
+    global_frame_id: "map"
+    lambda_short: 0.1
+    laser_likelihood_max_dist: 5.0
+    laser_max_range: 25.0
+    laser_min_range: -1.0
+    laser_model_type: "likelihood_field"
+    set_initial_pose: False
+    initial_pose.x: 0.0
+    initial_pose.y: 0.0
+    initial_pose.z: 0.0
+    initial_pose.yaw: 0.00
+    max_beams: 60
+    max_particles: 2000
+    min_particles: 500
+    odom_frame_id: "odom"
+    pf_err: 0.05
+    pf_z: 0.99
+    recovery_alpha_fast: 0.1
+    recovery_alpha_slow: 0.001
+    resample_interval: 1
+    robot_model_type: "differential"
+    save_pose_rate: 0.5
+    sigma_hit: 0.2
+    tf_broadcast: False
+    transform_tolerance: 1.0
+    update_min_a: 0.1
+    update_min_d: 0.25
+    z_hit: 0.5
+    z_max: 0.05
+    z_rand: 0.5
+    z_short: 0.05
+    always_reset_initial_pose: False
+    scan_topic: scan
+    map_topic: map
+
+amcl_map_client:
+  ros__parameters:
+    use_sim_time: False
+
+amcl_rclcpp_node:
+  ros__parameters:
+    use_sim_time: False
+
+bt_navigator:
+  ros__parameters:
+    use_sim_time: False
+    global_frame: map
+    robot_base_frame: base_link
+    odom_topic: /odom
+    default_bt_xml_filename: "navigate_w_replanning_and_recovery_sgd.xml"
+    plugin_lib_names:
+    - nav2_compute_path_to_pose_action_bt_node
+    - nav2_follow_path_action_bt_node
+    - nav2_back_up_action_bt_node
+    - nav2_wait_action_bt_node
+    - nav2_clear_costmap_service_bt_node
+    - nav2_is_stuck_condition_bt_node
+    - nav2_goal_reached_condition_bt_node
+    - nav2_goal_updated_condition_bt_node
+    - nav2_initial_pose_received_condition_bt_node
+    - nav2_reinitialize_global_localization_service_bt_node
+    - nav2_rate_controller_bt_node
+    - nav2_distance_controller_bt_node
+    - nav2_speed_controller_bt_node
+    - nav2_truncate_path_action_bt_node
+    - nav2_goal_updater_node_bt_node
+    - nav2_recovery_node_bt_node
+    - nav2_pipeline_sequence_bt_node
+    - nav2_round_robin_node_bt_node
+    - nav2_transform_available_condition_bt_node
+    - nav2_time_expired_condition_bt_node
+    - nav2_distance_traveled_condition_bt_node
+
+bt_navigator_rclcpp_node:
+  ros__parameters:
+    use_sim_time: False
+
+controller_server:
+  ros__parameters:
+    use_sim_time: False
+    controller_frequency: 5.0
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.5
+    min_theta_velocity_threshold: 0.001
+    progress_checker_plugin: "progress_checker"
+    goal_checker_plugin: "goal_checker"
+    controller_plugins: ["FollowPath"]
+
+    # Progress checker parameters
+    progress_checker:
+      plugin: "sgd_ctrl::SgdProgressChecker"
+      required_movement_radius: 0.1
+      movement_time_allowance: 30.0
+    # Goal checker parameters
+    goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 1.0
+      yaw_goal_tolerance: 0.5
+      stateful: True
+    # TEB parameters
+    FollowPath:
+      plugin: "teb_local_planner::TebLocalPlannerROS"
+      # robot configuration
+      footprint_model.type: "circular"
+      footprint_model.radius: 1.0
+      max_vel_x: 0.26
+      max_vel_x_backwards: 0.12
+      max_vel_y: 0.0
+      max_vel_theta: 0.4
+      acc_lim_x: 0.3
+      acc_lim_y: 0.0
+      acc_lim_theta: 0.2
+      min_turning_radius: 0.3
+      # goal tolerance parameters
+      xy_goal_tolerance: 0.5
+      yaw_goal_tolerance: 0.1
+      free_goal_vel: False
+      # trajectory configuration parameters
+      min_samples: 3
+      global_plan_viapoint_sep: -0.1
+      max_global_plan_lookahead_dist: 10.0
+      # optimization parameters
+      penalty_epsilon: 0.1
+      weight_max_vel_x: 2.0
+      weight_max_vel_theta: 1.0
+      weight_acc_lim_x: 1.0
+      weight_acc_lim_theta: 1.0
+      weight_kinematics_forward_drive: 100.0
+      weight_optimaltime: 1.0
+      weight_obstacle: 50.0
+      weight_viapoint: 20.0
+      # obstacle parameters
+      min_obstacle_dist: 0.5
+      inflation_dist: 0.5
+      include_costmap_obstacles: True
+      costmap_converter_plugin: "costmap_converter::CostmapToPolygonsDBSMCCH"
+      costmap_converter_spin_thread: True
+      costmap_converter_rate: 5
+      # parallel planning in distinctive topologies
+      enable_homotopy_class_planning: True
+      enable_multithreading: True
+      optimization_verbose: False
+      teb_autoresize: True
+      min_samples: 3
+      max_samples: 20
+      visualize_hc_graph: False
+      # miscellaneous parameters
+      odom_topic: "odom"
+      map_frame: "map"
+
+controller_server_rclcpp_node:
+  ros__parameters:
+    use_sim_time: False
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      update_frequency: 5.0
+      publish_frequency: 5.0
+      global_frame: map
+      robot_base_frame: base_link
+      use_sim_time: False
+      rolling_window: True
+      width: 10
+      height: 10
+      resolution: 0.1
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        footprint_clearing_enabled: true
+        max_obstacle_height: 2.0
+        combination_method: 1
+        scan:
+          topic: /scan
+          sensor_frame: "base_scan"
+          observation_persistence: 1.0
+          expected_update_rate: 15.0
+          data_type: "LaserScan"
+          min_obstacle_height: 0.0
+          max_obstacle_height: 10.0
+          inf_is_valid: False
+          marking: True
+          clearing: False
+          obstacle_range: 5.0
+          raytrace_range: 6.0
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        enabled: true
+        subscribe_to_updates: true
+        map_subscribe_transient_local: True
+        transform_tolerance: 0.1
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        enabled: true
+        inflation_radius: 0.55
+        cost_scaling_factor: 1.0
+        inflate_unknown: false
+        inflate_around_unknown: true
+  local_costmap_client:
+    ros__parameters:
+      use_sim_time: False
+  local_costmap_rclcpp_node:
+    ros__parameters:
+      use_sim_time: False
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      use_sim_time: False
+      footprint_padding: 0.03
+      update_frequency: 1.0
+      publish_frequency: 1.0
+      global_frame: map
+      robot_base_frame: base_link
+      footprint: "[ [-0.05, 0.35], [0.7, 0.25], [0.7, -0.25], [-0.05, -0.35] ]"
+      resolution: 0.1
+      plugins: ["static_layer", "inflation_layer"]
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
+        enabled: true
+        subscribe_to_updates: true
+        transform_tolerance: 0.1
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        enabled: true
+        inflation_radius: 0.55
+        cost_scaling_factor: 1.0
+        inflate_unknown: false
+        inflate_around_unknown: true
+      always_send_full_costmap: True
+  global_costmap_client:
+    ros__parameters:
+      use_sim_time: False
+  global_costmap_rclcpp_node:
+    ros__parameters:
+      use_sim_time: False
+
+map_server:
+  ros__parameters:
+    use_sim_time: False
+    yaml_filename: "lohmuehlenpark.yaml"
+
+sgd_map_server:
+  ros__parameters:
+    use_sim_time: False
+    log_dir: ".ros/log/"
+    log_severity: "D"
+    yaml_filename: "lohmuehlenpark_new.yaml"
+    topic_name: "map"
+    topic_vector_map: "map/vector"
+    frame_id: "map"
+
+map_saver:
+  ros__parameters:
+    use_sim_time: False
+    save_map_timeout: 5000
+    free_thresh_default: 0.25
+    occupied_thresh_default: 0.65
+    map_subscribe_transient_local: False
+
+planner_server:
+  ros__parameters:
+    expected_planner_frequency: 1.0
+    plugins: ["GridBased"]
+    use_sim_time: False
+    GridBased:
+      plugin: "sgd_ctrl::LocalPlanner"
+      global_plan_topic: "global_plan_sgd"
+      interpolation_resolution: 5.0
+      radius: 0.5
+
+planner_server_rclcpp_node:
+  ros__parameters:
+    use_sim_time: False
+
+recoveries_server:
+  ros__parameters:
+    costmap_topic: local_costmap/costmap_raw
+    footprint_topic: local_costmap/published_footprint
+    cycle_frequency: 10.0
+    recovery_plugins: ["backup", "wait"]
+    backup:
+      plugin: "nav2_recoveries/BackUp"
+    wait:
+      plugin: "nav2_recoveries/Wait"
+    global_frame: odom
+    robot_base_frame: base_link
+    transform_timeout: 0.1
+    use_sim_time: False
+    simulate_ahead_time: 2.0
+    max_rotational_vel: 0.5
+    min_rotational_vel: 0.2
+    rotational_acc_lim: 1.6
+
+robot_state_publisher:
+  ros__parameters:
+    use_sim_time: False
+
+subsum_controller:
+  ros__parameters:
+    use_sim_time: False
+    move_topics: ["cmd_vel_master", "cmd_vel_lidar", "cmd_vel_frsky", "depthCamera_cmd_vel", "cmd_vel"]
+    sgd_move_topic: "sgd_move_base"
+    
+ros2_obstacle_checker:
+  ros__parameters:
+    use_sim_time: False
+    scan_topic: "scan"
+    cmd_vel_contr_topic: "cmd_vel"
+    sgd_move_topic: "cmd_vel_lidar"
+
+osm_planner:
+  ros__parameters:
+    use_sim_time: False
+    log_dir: ".ros/log/"
+    log_severity: "I"
+    waypoints_topic: "global_plan_sgd"
+    clicked_point_topic: "clicked_point"
+    yaml_filename: "lohmuehlenpark.yaml"
+
+visualizer:
+  ros__parameters:
+    use_sim_time: False
+    topics: ["uwb/local", "gps/local"]
+
+### Hardware parameters ###
+sick_scan2:
+  ros__parameters:
+    use_sim_time: False
+    hostname : "141.22.33.150"
+    frame_id : "base_scan"
+    scanner_name : "sick_tim_5xx"
+    port : 2112
+    min_ang : -2.35619449
+    max_ang : 2.35619449
+
+gnss_node:
+  ros__parameters:
+    use_sim_time: False
+    log_dir: ".ros/log/"
+    log_severity: "I"
+    port: "/dev/serial/by-id/usb-u-blox_AG_-_www.u-blox.com_u-blox_GNSS_receiver-if00"
+    parser_file: "sgd_bringup/config/nmea.xml"
+    parser_type: "nmea"
+    publish_local_pose: True
+    publish_tf: False
+    local_pose_topic: "gps/local"
+    gps_sim_topic: "gps/sim"
+    utc_topic: "clock/utc"
+    gps_topic: "gps"
+    transform_to_base_link: True
+    base_link_frame_id: "base_link"
+    odom_frame_id: "odom"
+    ntrip_server: "sapos.geonord.de"
+    ntrip_port: "2101"
+    ntrip_mountpoint: "VRS_3_4G_HH"
+    ntrip_auth: "SEFXSGFtMTpoSHNwMDgzOA=="
+    ntrip_send_nmea: True
+
+frsky_rx8r:
+  ros__parameters:
+    use_sim_time: False
+    log_dir: ".ros/log/"
+    log_severity: "I"
+    port: "/dev/serial/by-id/usb-Arduino__www.arduino.cc__0042_5573530323435111D172-if00"
+    max_vel: 1.0
+    max_rot_vel: 1.57
+
+wh_fcruiser:
+  ros__parameters:
+    use_sim_time: False
+    log_dir: ".ros/log/"
+    log_severity: "I"
+    port: "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0"
+    odom_topic: "odom/hardware"
+    odom_sim_topic: "odom"
+    battery_state_topic: "battery"
+    vel_twist_topic: "sgd_move_base"
+    wheel_separation: 0.74
+    wheel_circumference: 0.80
+    sim_battery_state: 37.0
+    compass_gain: 0.045
+    gps_orientation_gain: 0.5
+    relative: True
+
+uwb_node:
+  ros__parameters:
+    use_sim_time: False
+    log_dir: ".ros/log/"
+    log_severity: "I"
+    port: "/dev/serial/by-id/usb-Raspberry_Pi_Pico_E6615CC1D391502F-if00"
+    tag_defs: "uwb_tag_defs.yaml"
+    publish_wgs84_pose: False
+
+feather_handle_ros:
+  ros__parameters:
+    use_sim_time: false
+    log_dir: ".ros/log/"
+    log_severity: "I"
+    port: "/dev/serial/by-id/usb-Adafruit_Feather_M0_C9F072FA50525151322E3120FF0B1C13-if00"
+    imu_topic: "imu"
+    imu_temp_topic: "imu/temp"
+    sgd_move_topic: "cmd_vel_laser"
+    cmd_vel_topic: "cmd_vel"
+
+led_strip:
+  ros__parameters:
+    log_dir: ".ros/log/"
+    log_severity: "I"
+    port: "/dev/serial/by-id/usb-Adafruit_Feather_M0_FAE285E450533830332E3120FF171343-if00"
+
+sgd_audio:
+  ros__parameters:
+    input_topic: "lights"
+    voice_msgs_dir: "/"
