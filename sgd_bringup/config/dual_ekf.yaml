@@ -128,17 +128,17 @@ ekf_filter_node_map:
     pose0_rejection_threshold: 50.0
     pose0_nodelay: true
 
-    pose1: /uwb/local
-    pose1_config: [true,  true,  false,
-                   false, false, false,
-                   false, false, false,
-                   false, false, false,
-                   false, false, false]
-    pose1_differential: false
-    pose1_relative: false
-    pose1_queue_size: 10
-    pose1_rejection_threshold: 50.0
-    pose1_nodelay: true
+    # pose1: /uwb/local
+    # pose1_config: [true,  true,  false,
+    #                false, false, false,
+    #                false, false, false,
+    #                false, false, false,
+    #                false, false, false]
+    # pose1_differential: false
+    # pose1_relative: false
+    # pose1_queue_size: 10
+    # pose1_rejection_threshold: 50.0
+    # pose1_nodelay: true
 
     #smooth_lagged_data: true
     use_control: false

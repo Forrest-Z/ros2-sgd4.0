@@ -1,8 +1,9 @@
 #ifndef SGD_HARDWARE__WH_FCRUISER_HPP_
 #define SGD_HARDWARE__WH_FCRUISER_HPP_
 
-#include <nlohmann/json.hpp>
+//#include <nlohmann/json.hpp>
 #include <iostream>
+#include <cmath>
 
 namespace sgd_hardware_drivers
 {

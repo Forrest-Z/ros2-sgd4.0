@@ -15,8 +15,6 @@
   <depend>nav_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_geometry_msgs</depend>
-  <depend>sgd_io</depend>
-  <depend>sgd_util</depend>
 
   <test_depend>ament_lint_common</test_depend>
   <test_depend>ament_lint_auto</test_depend>

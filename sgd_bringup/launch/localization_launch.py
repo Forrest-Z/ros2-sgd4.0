@@ -47,14 +47,6 @@ def generate_launch_description():
         #arguments=["10.0192452", "53.5532264", "0", "0", "0", "0", "earth", "map"]) # Lohmuehlenpark (alt)
         arguments=["10.0181853", "53.5525418", "0", "0", "0", "0", "earth", "map"]) # Lohmuehlenpark (neu)
         #arguments=["9.9163604", "53.5436909", "0", "0", "0", "0", "earth", "map"])   # Test im Augustinum
-        
-    start_map_server_cmd = Node(
-        package='nav2_map_server',
-        executable='map_server',
-        name='map_server',
-        output='screen',
-        emulate_tty=True,
-        parameters=[params])
 
     start_sgd_map_server_cmd = Node(
         package='sgd_map_server',
@@ -120,8 +112,6 @@ def generate_launch_description():
 
     # Declare the launch options
     ld.add_action(declare_sim_cmd)
-    #ld.add_action(declare_map_cmd)
-    #ld.add_action(declare_params_cmd)
 
     # nodes publishing transforms
     ld.add_action(start_tf_earth_map_cmd)
@@ -130,7 +120,6 @@ def generate_launch_description():
     ld.add_action(start_gps_cmd)
 
     # Add the actions to launch all of the navigation nodes
-    #ld.add_action(start_map_server_cmd)
     ld.add_action(start_sgd_map_server_cmd)
     ld.add_action(start_amcl_cmd)
     ld.add_action(start_uwb_cmd)

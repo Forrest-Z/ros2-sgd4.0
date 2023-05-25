@@ -423,19 +423,22 @@ wh_fcruiser:
   ros__parameters:
     use_sim_time: False
     log_dir: ".ros/log/"
-    log_severity: "I"
-    port: "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0"
-    odom_topic: "odom/hardware"
+    log_severity: "D"
+    gps_topic: "gps/local"
+    imu_topic: "imu"
+    pico_base_sub_topic: "pico_base_odom"
     odom_sim_topic: "odom"
+    sgd_move_topic: "sgd_move_base"
+    odom_topic: "odom/hardware"
+    pico_base_pub_topic: "pico_base_motor"
     battery_state_topic: "battery"
-    vel_twist_topic: "sgd_move_base"
     wheel_separation: 0.74
     wheel_circumference: 0.80
-    sim_battery_state: 37.0
+    sim_battery_volt: 37.0
     compass_gain: 0.045
     gps_orientation_gain: 0.5
     relative: True
-
+    
 uwb_node:
   ros__parameters:
     use_sim_time: False

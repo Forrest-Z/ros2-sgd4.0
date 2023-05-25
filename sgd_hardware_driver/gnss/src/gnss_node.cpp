@@ -59,10 +59,9 @@ Gnss_Node::Gnss_Node():
     std::string log_dir_, log_sev_;
     get_parameter("log_dir", log_dir_);
     get_parameter("log_severity", log_sev_);
-    std::string log_file(log_dir_ + "/" + sgd_util::create_log_file("gps"));
-
+    std::string log_file(log_dir_ + "/gnss_node.csv");
     plog::init(plog::severityFromString(log_sev_.c_str()), log_file.c_str());
-    PLOGD << "Message: utc; lat; lon; x; y; hdop; fix";
+    PLOGI.printf("Created Gnss node. PLOG logging severity is %s", log_sev_.c_str());
 }
 
 Gnss_Node::~Gnss_Node() {}
@@ -70,6 +69,7 @@ Gnss_Node::~Gnss_Node() {}
 CallbackReturn
 Gnss_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
+    PLOGD << "Configuring...";
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
     if (is_pub_local_pose_)
@@ -85,6 +85,7 @@ Gnss_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unu
     try
     {
         // set start / stop frames and open port
+        PLOGI.printf("Open port %s, set start frame to %c and end frame to %c", port.c_str(), '$', "\\n");
         serial.set_start_frame('$');
         serial.set_stop_frame('\n');
         serial.open_port(port, 115200);
@@ -99,7 +100,7 @@ Gnss_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unu
     // Initialize nmea parser
     if (parser_type_ == "nmea")
     {
-        RCLCPP_INFO(get_logger(), "Initialize parser for nmea data");
+        PLOGI << "Initialize parser for nmea data";
         parser_ = std::make_unique<Nmea_Parser>();
     }
     return CallbackReturn::SUCCESS;
@@ -108,16 +109,22 @@ Gnss_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unu
 CallbackReturn
 Gnss_Node::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused))) 
 {
+    PLOGI << "Activating...";
     init_pub_sub();
 
-    if (is_sim_) return CallbackReturn::SUCCESS;
+    if (is_sim_)
+    {
+        PLOGD << "Message: utc; lat; lon; x; y; hdop; fix";
+        return CallbackReturn::SUCCESS;
+    }
 
     // import xml file with nmea specification
-    RCLCPP_DEBUG(get_logger(), "Import parser file %s", xml_file_.c_str());
+    PLOGD.printf("Import parser file %s", xml_file_.c_str());
     parser_->import_xml(xml_file_);
 
     if (parser_->has_error())
     {
+        PLOGE << parser_->get_last_error().to_string();
         RCLCPP_ERROR(get_logger(), parser_->get_last_error().to_string());
         return CallbackReturn::FAILURE;
     }
@@ -149,17 +156,20 @@ Gnss_Node::on_activate(const rclcpp_lifecycle::State & state __attribute__((unus
     //     return CallbackReturn::SUCCESS;
     // }
     
+    PLOGI << "Start ntrip client";
     RCLCPP_INFO(get_logger(), "Start ntrip client");
     // initialize ntrip client and start in new thread
     client = std::make_unique<Ntrip_Client>(ntrip_options_);
     client->start_client();
 
+    PLOGD << "Message: utc; lat; lon; x; y; hdop; fix";
     return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn
 Gnss_Node::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
+    PLOGI << "Deactivating...";
     pub_navsatfix_->on_deactivate();
     if (is_pub_local_pose_)
     {
@@ -172,6 +182,7 @@ Gnss_Node::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((un
 CallbackReturn
 Gnss_Node::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
+    PLOGI << "Cleaning up...";
     pub_navsatfix_.reset();
     if (is_pub_local_pose_) pub_local_pose_.reset();
 
@@ -182,6 +193,7 @@ Gnss_Node::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unuse
 CallbackReturn
 Gnss_Node::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
+    PLOGI << "Shutting down...";
     return CallbackReturn::SUCCESS;
 }
 
@@ -215,16 +227,17 @@ Gnss_Node::init_parameters()
 void
 Gnss_Node::init_pub_sub()
 {
+    PLOGD << "Init publisher and subscriber";
     if (!is_sim_)
     {
         timer_ = this->create_wall_timer(10ms, std::bind(&Gnss_Node::read_serial, this));
-        RCLCPP_DEBUG(get_logger(), "Create publisher on topic %s", utc_clock_topic_.c_str());
+        PLOGD.printf("Create publisher on topic %s", utc_clock_topic_.c_str());
         pub_utc_time_ = this->create_publisher<builtin_interfaces::msg::Time>(utc_clock_topic_, default_qos);
         pub_utc_time_->on_activate();
     }
     else
     {
-        RCLCPP_DEBUG(get_logger(), "Create subscription for topic %s", gnss_sim_topic_.c_str());
+        PLOGD.printf("Create subscription for topic %s", gnss_sim_topic_.c_str());
         sub_gps_sim = this->create_subscription<sensor_msgs::msg::NavSatFix>(gnss_sim_topic_, default_qos,
                         std::bind(&Gnss_Node::on_gps_sim_received, this, std::placeholders::_1));
     }
@@ -232,17 +245,18 @@ Gnss_Node::init_pub_sub()
     if (is_publish_tf_)
     {
         // TODO bind to received positions
+        PLOGD << "Create timer to publish tf every 100ms";
         timer_tf_ = this->create_wall_timer(100ms, std::bind(&Gnss_Node::publish_tf, this));
     }
     
-    RCLCPP_DEBUG(get_logger(), "Create publisher on topic %s", gnss_topic_.c_str());
+    PLOGD.printf("Create publisher on topic %s", gnss_topic_.c_str());
     pub_navsatfix_ = this->create_publisher<sensor_msgs::msg::NavSatFix>(gnss_topic_, default_qos);
     pub_navsatfix_->on_activate();
 
     if (is_pub_local_pose_)
     {
         // create publisher for pose in local coordinates
-        RCLCPP_DEBUG(get_logger(), "Create publisher on topic %s", local_pose_topic_.c_str());
+        PLOGD.printf("Create publisher on topic %s", local_pose_topic_.c_str());
         pub_local_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(local_pose_topic_, default_qos);
         pub_local_pose_->on_activate();
     }
@@ -331,10 +345,14 @@ void
 Gnss_Node::on_gps_sim_received(sensor_msgs::msg::NavSatFix::SharedPtr msg)
 {
     pub_navsatfix_->publish(*msg);
+    geometry_msgs::msg::PoseWithCovarianceStamped local_pose;
     if (pub_local_pose_)
     {
-        pub_local_pose_->publish(to_local(*msg));
+        local_pose = to_local(*msg);
+        pub_local_pose_->publish(local_pose);
     }
+    PLOGD.printf("%d; %.7f; %.7f; %.3f; %.3f; - ; %d",
+            msg->header.stamp.sec, msg->latitude, msg->longitude, local_pose.pose.pose.position.x, local_pose.pose.pose.position.y, msg->status.status);
 
     // calculate orientation before overwriting last_msg
     sgd_util::LatLon ll1(last_msg_.latitude, last_msg_.longitude);
@@ -385,6 +403,7 @@ Gnss_Node::publish_tf()
 void
 Gnss_Node::init_transforms()
 {
+    PLOGD << "Init transforms...";
     //transform_tolerance_ = tf2::durationFromSec(1.0);
     // transformation from earth -> map in WGS84 coordinates
     // according to REP-105 the x-axis points east (lon) and the y-axis north (lat)
@@ -401,8 +420,10 @@ Gnss_Node::init_transforms()
     }
 
     auto tf_ = get_transform("earth", "map");
-    auto tmp_tf_base_gps_ = get_transform(base_link_frame_id_, "gps_link");
-    tf_base_gps_ = tmp_tf_base_gps_.transform;
+    //auto tmp_tf_base_gps_ = get_transform(base_link_frame_id_, "gps_link");
+    tf_base_gps_ = get_transform(base_link_frame_id_, "gps_link").transform;
+    PLOGD.printf("Transform from base_frame to gps_frame is %.3f, %.3f", tf_base_gps_.translation.x, tf_base_gps_.translation.y);
+    PLOGD.printf("Set map origin to %.7f, %.7f", tf_.transform.translation.y, tf_.transform.translation.x);
     map_origin.set_global_coordinates(tf_.transform.translation.y, tf_.transform.translation.x);
 }
 
