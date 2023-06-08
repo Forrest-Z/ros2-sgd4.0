@@ -6,7 +6,7 @@ from datetime import datetime
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription, EmitEvent, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription, EmitEvent, RegisterEventHandler, SetEnvironmentVariable
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
 from launch.events import Shutdown
@@ -62,7 +62,7 @@ def generate_launch_description():
 
     declare_map_yaml_cmd = DeclareLaunchArgument(
         'map',
-        default_value=os.path.join(bringup_dir, 'maps', 'lohmuehlenpark_new.yaml'),
+        default_value=os.path.join(bringup_dir, 'maps', 'lohmuehlenpark.yaml'),
         #default_value=os.path.join(bringup_dir, 'maps', 'augustinum.yaml'),
         description='Full path to map file to load')
         
@@ -82,20 +82,23 @@ def generate_launch_description():
             bringup_dir, 'behavior_trees', 'navigate_w_replanning_and_recovery_sgd.xml'),
         description='Full path to the behavior tree xml file to use')
 
+    # create log dir
     now = datetime.now()
-    dtime = now.strftime("%Y-%m-%d-%H-%M-%S-plog")
+    dtime = now.strftime("%Y-%m-%d-%H-%M-%S")
     # create directory because plog cannot create a directory
     path = os.path.join(os.path.expanduser('~'), '.ros', 'log', dtime)
-    os.mkdir(path)
+    plog_path = os.path.join(path, 'data')
+    os.makedirs(plog_path)
+    set_env_log = SetEnvironmentVariable('ROS_LOG_DIR', path)
     declare_log_dir_cmd = DeclareLaunchArgument(
         'log_dir',
-        default_value=path,
+        default_value=plog_path,
         description='Path to log directory'
     )
 
     declare_rviz_config_file_cmd = DeclareLaunchArgument(
         'rviz_config_file',
-        default_value=os.path.join(bringup_dir, 'rviz', 'nav2_default_view.rviz'),
+        default_value=os.path.join(bringup_dir, 'rviz', 'sgd_default_view.rviz'),
         description='Full path to the RVIZ config file to use')
 
     declare_simulator_cmd = DeclareLaunchArgument(
@@ -225,6 +228,7 @@ def generate_launch_description():
     ld.add_action(declare_rviz_config_file_cmd)
     ld.add_action(declare_simulator_cmd)
     ld.add_action(declare_world_cmd)
+    ld.add_action(set_env_log)
 
     # Add the actions to launch all of the navigation nodes
     ld.add_action(start_robot_state_publisher_cmd)

@@ -2,8 +2,8 @@
 
 string username
 
-# id of destination node
-string dest_id
+# address of destination node
+string dest_address
 
 ---
 # Array of poses from start to goal if one was successfully found.

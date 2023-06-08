@@ -1,0 +1,17 @@
+{
+    "addresslist": [
+        {"address": "Alexanderstraße 37", "nodes": ["10910883420"]},
+        {"address": "Alexanderstraße 39", "nodes": ["8656050027"]},
+        {"address": "Bei der Hauptfeuerwache 4", "nodes": ["719549270"]},
+        {"address": "Bei der Hauptfeuerwache 6", "nodes": ["719549350"]},
+        {"address": "Berliner Tor 13", "nodes": ["606906388"]},
+        {"address": "Berliner Tor 21", "nodes": ["91938456", "3693927703", "313339524"]},
+        {"address": "Berliner Tor 3", "nodes": ["364125358"]},
+        {"address": "Berliner Tor 5", "nodes": ["4623635466", "1741175351", "1741175461"]},
+        {"address": "Berliner Tor 7", "nodes": ["1741175439", "1741175455"]},
+        {"address": "Berliner Tor 9", "nodes": ["310185683"]},
+        {"address": "Lübeckertordamm 2", "nodes": ["2263121822"]},
+        {"address": "Stiftstraße 69", "nodes": ["7156477916", "5139451961", "302305996"]},
+        {"address": "Wismarer Straße 4", "nodes": ["5139452007"]}
+    ]
+}

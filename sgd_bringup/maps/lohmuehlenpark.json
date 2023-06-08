@@ -1,15 +1,17 @@
 {
     "addresslist": [
-        {"address": "Berliner Tor 11", "nodes": ["931036503"]},
-        {"address": "Berliner Tor 13", "nodes": ["645773195"]},
-        {"address": "Berliner Tor 21", "nodes": ["520505435", "313339524", "3693927703"]},
+        {"address": "Alexanderstrasse 37", "nodes": ["10910883420"]},
+        {"address": "Alexanderstrasse 39", "nodes": ["8656050027"]},
+        {"address": "Bei der Hauptfeuerwache 4", "nodes": ["719549270"]},
+        {"address": "Bei der Hauptfeuerwache 6", "nodes": ["719549350"]},
+        {"address": "Berliner Tor 13", "nodes": ["188604358"]},
+        {"address": "Berliner Tor 21", "nodes": ["3693927703", "44697776", "313339524"]},
         {"address": "Berliner Tor 3", "nodes": ["364125358"]},
-        {"address": "Berliner Tor 5", "nodes": ["1741175461", "4623635466", "1741175351", "313339214"]},
+        {"address": "Berliner Tor 5", "nodes": ["1741175351", "1741175461", "4623635466"]},
         {"address": "Berliner Tor 7", "nodes": ["1741175439", "1741175455"]},
-        {"address": "Berliner Tor 9", "nodes": ["58800609"]},
-        {"address": "Minenstraße 3", "nodes": ["5139452007"]},
-        {"address": "Stiftstraße 69", "nodes": ["105428103", "5139451961", "7156477916"]},
-        {"address": "Testfahrt1", "nodes": ["261831268"]},
-        {"address": "Testfahrt2", "nodes": ["5018571326"]}
+        {"address": "Berliner Tor 9", "nodes": ["83792511"]},
+        {"address": "Luebeckertordamm 2", "nodes": ["2263121822"]},
+        {"address": "Stiftstrasse 69", "nodes": ["5139451961", "736671606", "7156477916"]},
+        {"address": "Wismarer Strasse 4", "nodes": ["5139452007"]}
     ]
 }

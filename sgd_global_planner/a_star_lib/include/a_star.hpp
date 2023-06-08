@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef NAV_SGD_A_STAR_HPP_
-#define NAV_SGD_A_STAR_HPP_
+#ifndef SGD_GLOBAL_PLANNER__A_STAR_HPP_
+#define SGD_GLOBAL_PLANNER__A_STAR_HPP_
 
 #include <string>
 #include <memory>
 #include <vector>
-#include <fstream>
-#include <iostream>
 #include <ctime>
 #include <chrono>
 
@@ -31,12 +29,14 @@
 #include "tinyxml2.h"
 #include "a_star_users.hpp"
 #include "a_star_node.hpp"
+#include "a_star_path.hpp"
 #include "sgd_util/geotools.hpp"
 
-namespace nav_sgd
-{
+#include <plog/Log.h>
+#include "plog/Initializers/RollingFileInitializer.h"
 
-typedef int64_t llong;  // format used to store the ids
+namespace sgd_global_planner
+{
 
 struct ROUTE
 {
@@ -49,35 +49,42 @@ class A_Star
 {
 
 public:
-    A_Star(std::string osm_map_file, std::shared_ptr<A_Star_Users> users, std::string log_dir);
+    A_Star(std::string osm_map_file, std::shared_ptr<A_Star_Users> users);
     ~A_Star();
 
+    /**
+     * @brief Load the map
+     * 
+     * @param nav_filename 
+     */
     void load_map(std::string nav_filename);
 
-    void set_start(sgd_util::LatLon start);
-    void set_dest(sgd_util::LatLon dest);
-    void set_dest(llong node_id);
-    void set_username(std::string username);
+    /**
+     * @brief Set the current user
+     * 
+     * @param username name of the user
+     */
+    void set_user(std::string username);
 
     /**
      * @brief Compute the optimal path from a starting point to a destination point.
      * 
-     * @return true if path computation was succesful, false otherwise
+     * @param start
+     * @param dest
+     * @return ROUTE the route to the destination node or a route with length = -1 if
+     * path generation was not successfull
      */
-    ROUTE compute_path();
+    ROUTE compute_path(sgd_util::LatLon start, sgd_util::LatLon dest);
 
-private:
-    //std::string map_file_;
-    std::unordered_map<llong, A_Star_Node> nodelist_;
-
-    //std::string adr_file;
-    std::shared_ptr<A_Star_Users> users_ = nullptr;
-
-    std::ofstream log_file;
-
-    // start and destination nodes
-    llong start_node_, dest_node_;
-    std::unordered_map<llong, A_Star_Node> closedList;
+    /**
+     * @brief Compute the optimal path from a starting point to a destination point.
+     * 
+     * @param start 
+     * @param dest_node_id 
+     * @return ROUTE the route to the destination node or a route with length = -1 if
+     * path generation was not successfull
+     */
+    ROUTE compute_path(sgd_util::LatLon start, llong dest_node_id);
 
     /**
      * @brief Find the nearest node to the specified lat/lon
@@ -86,7 +93,15 @@ private:
      * @return node id
      */
     llong node_near_lat_lon(sgd_util::LatLon latlon);
-    //A_Star_Node node_from_xml(tinyxml2::XMLElement *node);
+
+    std::vector<A_Star_Node> get_nodelist();
+
+private:
+
+    std::unordered_map<llong, A_Star_Node> nodelist_;       /// @brief map to store all nodes. Access via node id
+    std::shared_ptr<A_Star_Users> users_ = nullptr;         /// @brief TODO
+
+    std::unordered_map<llong, A_Star_Node> closedList;
 
     /**
      * @brief Traces the path and outputs all nodes in the correct order
@@ -95,13 +110,6 @@ private:
      * @param dest destination node
      */
     ROUTE trace_path(std::unordered_map<llong, A_Star_Node> closedList, A_Star_Node dest);
-
-    inline void log(std::string msg)
-    {
-        auto now = std::chrono::system_clock::now().time_since_epoch();
-        log_file << "[a_star] [" << now.count() << "]: " << msg << std::endl;
-    }
-
 };
 
 }   // namespace nav_sgd

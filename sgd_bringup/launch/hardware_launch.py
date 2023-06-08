@@ -29,21 +29,6 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time')
     params = LaunchConfiguration('params')
 
-    # Create our own temporary YAML files that include substitutions
-    # param_substitutions = {
-    #     'use_sim_time': use_sim_time,
-    #     'parser_file': os.path.join(bringup_dir, 'config', 'nmea.xml')}
-
-    # configured_params = RewrittenYaml(
-    #     source_file=params_file,
-    #     param_rewrites=param_substitutions,
-    #     convert_types=True)
-
-    # declare_params_file_cmd = DeclareLaunchArgument(
-    #     'params_file',
-    #     default_value=os.path.join(bringup_dir, 'config', 'sgd_params.yaml'),
-    #     description='Full path to the ROS2 parameters file to use for all launched nodes')
-
     start_sick_lidar_cmd = Node(
         package='sick_scan2',
         name = 'sick_scan2',
@@ -76,14 +61,23 @@ def generate_launch_description():
         emulate_tty=True,
         parameters=[params])
 
+    start_scan_timer_cmd = Node(
+        package='sgd_util',
+        executable='scan_timer',
+        name='scan_timer',
+        output='screen',
+        emulate_tty=True,
+        parameters=[params])
+
     # Create the launch description and populate
     ld = LaunchDescription()
     #ld.add_action(declare_params_file_cmd)
 
     # Add the actions to launch all of the navigation nodes
-    #ld.add_action(start_sick_lidar_cmd)
+    # ld.add_action(start_sick_lidar_cmd)
     ld.add_action(start_led_strip_cmd)
     ld.add_action(start_motorcontroller_cmd)
     ld.add_action(start_feather_handle_cmd)
+    # ld.add_action(start_scan_timer_cmd)
 
     return ld

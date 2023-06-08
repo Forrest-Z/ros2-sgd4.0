@@ -366,10 +366,15 @@ osm_planner:
   ros__parameters:
     use_sim_time: False
     log_dir: ".ros/log/"
-    log_severity: "I"
+    log_severity: "D"
     waypoints_topic: "global_plan_sgd"
     clicked_point_topic: "clicked_point"
     yaml_filename: "lohmuehlenpark.yaml"
+    map_info_srv: "get_map_info"
+    global_plan_srv: "get_global_plan"
+    global_frame: "earth"
+    map_frame: "map"
+    robot_base_frame: "base_link"
 
 visualizer:
   ros__parameters:
@@ -387,11 +392,15 @@ sick_scan2:
     min_ang : -2.35619449
     max_ang : 2.35619449
 
+scan_timer:
+  ros__parameters:
+    use_sim_time: False
+
 gnss_node:
   ros__parameters:
     use_sim_time: False
     log_dir: ".ros/log/"
-    log_severity: "D"
+    log_severity: "I"
     port: "/dev/serial/by-id/usb-u-blox_AG_-_www.u-blox.com_u-blox_GNSS_receiver-if00"
     parser_file: "sgd_bringup/config/nmea.xml"
     parser_type: "nmea"
@@ -423,7 +432,7 @@ wh_fcruiser:
   ros__parameters:
     use_sim_time: False
     log_dir: ".ros/log/"
-    log_severity: "D"
+    log_severity: "I"
     gps_topic: "gps/local"
     imu_topic: "imu"
     pico_base_sub_topic: "pico_base_odom"
@@ -444,9 +453,14 @@ uwb_node:
     use_sim_time: False
     log_dir: ".ros/log/"
     log_severity: "I"
-    port: "/dev/serial/by-id/usb-Raspberry_Pi_Pico_E6615CC1D391502F-if00"
+    port: "/dev/serial/by-id/usb-Raspberry_Pi_Pico_E6615CC1D32CB52F-if00"
     tag_defs: "uwb_tag_defs.yaml"
     publish_wgs84_pose: False
+    local_pose_topic: uwb/local
+    marker_topic: uwb/tags
+    distance_topic: uwb/distance
+    global_pose_topic: uwb/global
+    odom_improved_topic: odom/improved
 
 feather_handle_ros:
   ros__parameters:

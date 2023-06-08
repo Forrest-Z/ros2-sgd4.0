@@ -32,15 +32,52 @@ private:
     double lat_, lon_;
 
 public:
+    
+    /**
+     * @brief Construct a new Lat Lon object
+     * 
+     */
     LatLon();
-    LatLon(double lat, double lon);
+    
+    /**
+     * @brief Construct a new LatLon object
+     * 
+     * @param lat 
+     * @param lon 
+     */
+    LatLon(const double lat, const double lon);
     ~LatLon();
 
+    /**
+     * @brief return the latitude
+     * 
+     * @return double 
+     */
     double lat();
+
+    /**
+     * @brief return the longitude
+     * 
+     * @return double 
+     */
     double lon();
 
-    void set_global_coordinates(double lat, double lon);
-    void set_local_coordinates(LatLon origin, double x, double y);
+    /**
+     * @brief Set the global coordinates of this LatLon object
+     * 
+     * @param lat 
+     * @param lon 
+     */
+    void set_global_coordinates(const double lat, const double lon);
+
+    /**
+     * @brief Set the local coordinates of this LatLon object
+     * 
+     * @param origin 
+     * @param x 
+     * @param y 
+     */
+    void set_local_coordinates(const LatLon origin, const double x, const double y);
 
     /**
      * @brief Calculate the euclidian distance from this Lat/Lon to the other Lat/Lon and returns the
@@ -49,7 +86,7 @@ public:
      * @param another_latlon the other Lat/Lon
      * @return double the distance
      */
-    double distance_to(LatLon another_latlon);
+    double distance_to(const LatLon another_latlon) const;
 
     /**
      * @brief Calculate the euclidian distance from this Lat/Lon to the other Lat/Lon and returns the
@@ -59,7 +96,7 @@ public:
      * @param lon 
      * @return double 
      */
-    double distance_to(double lat, double lon);
+    double distance_to(const double lat, const double lon) const;
 
     /**
      * @brief Transform WGS84 coordinate system into local coordinate system.
@@ -67,7 +104,7 @@ public:
      * @param origin the latlon from which the local coordinates are to be computed
      * @return std::pair<double, double> 
      */
-    std::pair<double, double> to_local(const LatLon origin);
+    std::pair<double, double> to_local(const LatLon origin) const;
 
     /**
      * @brief Transform WGS84 coordinate system into local coordinate system.
@@ -76,7 +113,7 @@ public:
      * @param lon 
      * @return std::pair<double, double> 
      */
-    std::pair<double, double> to_local(const double lat, const double lon);
+    std::pair<double, double> to_local(const double lat, const double lon) const;
 
     /**
      * @brief Interpolate between two points. The interpolation is based on the euclidian distance,
@@ -86,7 +123,7 @@ public:
      * @param points_to_insert how many points to insert, defaults to 1
      * @return the vector containing only the new points
      */
-    std::vector<LatLon> interpolate(LatLon other, int points_to_insert = 1);
+    std::vector<LatLon> interpolate(const LatLon other, int points_to_insert = 1);
 
     /**
      * @brief Calculates the bearing between the path from this position to the other position. The north axis is defined as 0.
@@ -94,14 +131,14 @@ public:
      * @param other 
      * @return bearing in the interval [0;2*PI]
      */
-    double bearing(LatLon other);
+    double bearing(const LatLon other) const;
 
     /**
      * @brief Create string <lat, lon> with 7 digits precision
      * 
      * @return string
      */
-	std::string to_string();
+	std::string to_string() const;
 };
 
 }   // namespace sgd_util

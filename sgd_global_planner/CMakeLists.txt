@@ -15,17 +15,12 @@ endif()
 
 include(FetchContent)
 FetchContent_Declare(
-  json
-  URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz
+  json URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz
 )
-FetchContent_MakeAvailable(json)
-
-#include(FetchContent)
-#FetchContent_Declare(
-#  googletest
-#  URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
-#)
-#FetchContent_MakeAvailable(googletest)
+FetchContent_Declare(
+  plog URL https://github.com/SergiusTheBest/plog/archive/refs/tags/1.1.8.tar.gz
+)
+FetchContent_MakeAvailable(json plog)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -35,6 +30,7 @@ find_package(rclcpp_lifecycle REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sgd_msgs REQUIRED)
 find_package(sgd_util REQUIRED)
@@ -47,6 +43,7 @@ set(dependencies
   rclcpp_action
   rclcpp_lifecycle
   geometry_msgs
+  visualization_msgs
   nav_msgs
   sgd_msgs
   sgd_util
@@ -57,13 +54,16 @@ set(dependencies
 )
 
 include_directories(include)
+add_subdirectory(a_star_lib)
 
 # add executable
 set(EXE_NAME global_planner)
-set(CPP_FILES src/global_planner.cpp src/a_star.cpp)
-set(HPP_FILES include/sgd_global_planner/a_star_node.hpp include/sgd_global_planner/a_star_users.hpp)
-add_executable(${EXE_NAME} ${CPP_FILES} ${HPP_FILES})
-target_link_libraries(${EXE_NAME} sgd_util::sgd_util_core nlohmann_json::nlohmann_json)
+add_executable(${EXE_NAME} src/global_planner.cpp)
+
+target_link_libraries(${EXE_NAME} sgd_util::sgd_util_core nlohmann_json::nlohmann_json plog::plog AStar)
+target_include_directories(${EXE_NAME} PUBLIC
+            "${PROJECT_BINARY_DIR}"
+            "${PROJECT_SOURCE_DIR}/a_star_lib")
 ament_target_dependencies(${EXE_NAME} ${dependencies})
 
 add_executable(client src/srv_client.cpp)

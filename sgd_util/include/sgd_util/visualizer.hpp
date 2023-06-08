@@ -39,9 +39,9 @@ public:
 
 protected:
   //! \brief Init parameters
-  bool debug_;  // internal variable to check if debugging is enabled
-  std::string debug_out_dir_;
-  std::vector<std::string> debug_files_;
+  // bool debug_;  // internal variable to check if debugging is enabled
+  // std::string debug_out_dir_;
+  // std::vector<std::string> debug_files_;
   std::vector<std::string> in_topics_;
 
   //! \brief Init publisher and subscriber
@@ -51,7 +51,7 @@ protected:
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pub_map_marker;
   std::vector<rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr> subscriber;
 
-  double time_at_start_;
+  // double time_at_start_;
 
   bool is_map_published_;
   void pub_map_markers();

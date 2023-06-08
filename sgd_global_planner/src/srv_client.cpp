@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     node->create_client<sgd_msgs::srv::GetGlobalPlan>("get_global_plan");
 
   auto request = std::make_shared<sgd_msgs::srv::GetGlobalPlan::Request>();
-  request->dest_id = std::string(argv[1]);
+  request->dest_address = std::string(argv[1]);
 
   while (!client->wait_for_service(1s)) {
     if (!rclcpp::ok()) {

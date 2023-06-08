@@ -1,6 +1,6 @@
 #include "sgd_global_planner/global_planner.hpp"
 
-namespace nav_sgd
+namespace sgd_global_planner
 {
 
 using std::placeholders::_1;
@@ -9,13 +9,31 @@ using namespace std::chrono_literals;
 Global_Planner_OSM::Global_Planner_OSM():
         rclcpp_lifecycle::LifecycleNode("global_planner_osm") 
 {
-    RCLCPP_DEBUG(get_logger(), "Creating");
-
     // declare parameters and default values
+    declare_parameter("log_dir", rclcpp::ParameterValue(".ros/log/"));
+    declare_parameter("log_severity", rclcpp::ParameterValue("I"));
+
     declare_parameter("waypoints_topic", rclcpp::ParameterValue("global_plan"));
     declare_parameter("clicked_point_topic", rclcpp::ParameterValue("clicked_point"));
     declare_parameter("yaml_filename", rclcpp::ParameterValue("map.yaml"));
-    declare_parameter("log_dir", rclcpp::ParameterValue("/home/pascal/.ros/log/"));
+    declare_parameter("map_info_srv", rclcpp::ParameterValue("get_map_info"));
+    declare_parameter("global_plan_srv", rclcpp::ParameterValue("get_global_plan"));
+
+    declare_parameter("global_frame", rclcpp::ParameterValue("earth"));
+    declare_parameter("map_frame", rclcpp::ParameterValue("map"));
+    declare_parameter("robot_base_frame", rclcpp::ParameterValue("base_link"));
+
+    declare_parameter("visual_topic", rclcpp::ParameterValue("map_visualization"));
+
+    // init logging
+    std::string log_dir_, log_sev_;
+    get_parameter("log_dir", log_dir_);
+    get_parameter("log_severity", log_sev_);
+
+    std::string log_file(log_dir_ + "/global_planner_osm.log");
+    plog::init(plog::severityFromString(log_sev_.c_str()), log_file.c_str());
+    PLOGI.printf("Created Global_Planner_OSM node. PLOG logging severity is %s", log_sev_.c_str());
+    RCLCPP_INFO(get_logger(), "Created Global_Planner_OSM node. Save log file to %s", log_file.c_str());
 }
 
 Global_Planner_OSM::~Global_Planner_OSM()
@@ -26,16 +44,13 @@ Global_Planner_OSM::~Global_Planner_OSM()
 CallbackReturn
 Global_Planner_OSM::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_INFO(get_logger(), "Configuring");
+    PLOGD << "Configuring...";
 
-    // Initialize parameters, pub/sub, services, etc.
-    get_parameter("waypoints_topic", waypoints_topic_);
-    get_parameter("clicked_point_topic", clicked_point_topic_);
-    get_parameter("yaml_filename", yaml_filename_);
-    get_parameter("log_dir", ros_log_dir);
-
-    init_transforms();
     init_yaml();
+
+    // init parameters
+    get_parameter("map_frame", map_frame_);
+    get_parameter("robot_base_frame", robot_base_frame_);
 
     // check if file exists
     FILE * mFile, * uFile;
@@ -44,12 +59,11 @@ Global_Planner_OSM::on_configure(const rclcpp_lifecycle::State & state __attribu
     if (mFile == NULL || uFile == NULL)
     {
         RCLCPP_ERROR(get_logger(), "Map file %s or users file %s does not exist!", map_filename.c_str(), users_filename.c_str());
+        PLOGE.printf("Map file %s or users file %s does not exist!", map_filename.c_str(), users_filename.c_str());
         return CallbackReturn::FAILURE;
     }
 
     init_pub_sub();
-    
-    RCLCPP_INFO(get_logger(), "Configuring complete");
 
     return CallbackReturn::SUCCESS;
 }
@@ -57,10 +71,10 @@ Global_Planner_OSM::on_configure(const rclcpp_lifecycle::State & state __attribu
 CallbackReturn
 Global_Planner_OSM::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_INFO(get_logger(), "Activating");
+    PLOGD << "Activating...";
 
     a_star_users = std::make_shared<A_Star_Users>(users_filename);
-    a_star = std::make_unique<A_Star>(map_filename, a_star_users, ros_log_dir);
+    a_star = std::make_unique<A_Star>(map_filename, a_star_users);
 
     // read address file
     std::string line, json = "";
@@ -68,15 +82,20 @@ Global_Planner_OSM::on_activate(const rclcpp_lifecycle::State & state __attribut
     infile >> js;
 
     publisher_path_->on_activate();
+    pub_map_visual_->on_activate();
 
-    return wait_for_transform();
+    auto ret_code = wait_for_transform();
+
+    pub_map_visual_->publish(create_map_visual());
+    return ret_code;
 }
 
 CallbackReturn
 Global_Planner_OSM::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Deactivating");
+    PLOGD << "Deactivating...";
     publisher_path_->on_deactivate();
+    pub_map_visual_->on_deactivate();
     
     return CallbackReturn::SUCCESS;
 }
@@ -84,8 +103,9 @@ Global_Planner_OSM::on_deactivate(const rclcpp_lifecycle::State & state __attrib
 CallbackReturn
 Global_Planner_OSM::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Cleanup");
+    PLOGD << "Cleaning up...";
     publisher_path_.reset();
+    pub_map_visual_.reset();
     map_info_srv.reset();
     compute_path_srv.reset();
 
@@ -95,46 +115,47 @@ Global_Planner_OSM::on_cleanup(const rclcpp_lifecycle::State & state __attribute
 CallbackReturn
 Global_Planner_OSM::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
-    RCLCPP_DEBUG(get_logger(), "Shutdown");
+    PLOGD << "Shutting down...";
     return CallbackReturn::SUCCESS;
 }
 
 void
 Global_Planner_OSM::init_pub_sub()
 {
+    std::string clicked_point_topic_ = get_parameter("clicked_point_topic").as_string();
+    PLOGI.printf("Subscribe to %s", clicked_point_topic_.c_str());
+    sub_clicked_pnt_ = this->create_subscription<geometry_msgs::msg::PointStamped>(clicked_point_topic_,
+            default_qos, std::bind(&Global_Planner_OSM::on_clicked_pnt, this, _1));
+
+    std::string waypoints_topic_ = get_parameter("waypoints_topic").as_string();
+    PLOGI.printf("Create publisher on topic %s", waypoints_topic_.c_str());
     publisher_path_ = this->create_publisher<nav_msgs::msg::Path>(waypoints_topic_, default_qos);
-    
-    RCLCPP_INFO(get_logger(), "Initialised publisher on topic %s",
-            waypoints_topic_.c_str());
 
     // create compute path service
-    map_info_srv = create_service<sgd_msgs::srv::GetMapInfo>("get_map_info",
+    std::string map_info_srv_ = get_parameter("map_info_srv").as_string();
+    PLOGI.printf("Create service on %s", map_info_srv_.c_str());
+    map_info_srv = create_service<sgd_msgs::srv::GetMapInfo>(map_info_srv_,
         std::bind(&Global_Planner_OSM::getMapInfo, this, _1, _2));
-    compute_path_srv = create_service<sgd_msgs::srv::GetGlobalPlan>("get_global_plan",
+
+    std::string global_plan_srv_ = get_parameter("global_plan_srv").as_string();
+    PLOGI.printf("Create service on %s", global_plan_srv_.c_str());
+    compute_path_srv = create_service<sgd_msgs::srv::GetGlobalPlan>(global_plan_srv_,
         std::bind(&Global_Planner_OSM::computePath, this, _1, _2));
 
-    RCLCPP_INFO(get_logger(), "Publisher and subscriber initialized.");
-}
-
-void
-Global_Planner_OSM::init_transforms()
-{
-    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(get_clock());
-    auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
-        get_node_base_interface(),
-        get_node_timers_interface());
-    tf_buffer_->setCreateTimerInterface(timer_interface);
-    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+    std::string visual_topic_ = get_parameter("visual_topic").as_string();
+    PLOGI.printf("Create publisher on topic %s", visual_topic_.c_str());
+    pub_map_visual_ = create_publisher<visualization_msgs::msg::Marker>(visual_topic_, default_qos);
 }
 
 CallbackReturn
 Global_Planner_OSM::init_yaml()
 {
+    std::string yaml_filename_ = get_parameter("yaml_filename").as_string();
+    PLOGD.printf("Init yaml file %s", yaml_filename_.c_str());
     YAML::Node doc = YAML::LoadFile(yaml_filename_);
 
     // get directory from yaml filename
     std::string base_path = yaml_filename_.substr(0, yaml_filename_.find_last_of("/")+1);
-
     try
     {
         map_filename = yaml_get_value<std::string>(doc, "osm_map_file");
@@ -144,6 +165,7 @@ Global_Planner_OSM::init_yaml()
     catch(const YAML::Exception& e)
     {
         RCLCPP_ERROR(get_logger(), "Error reading yaml file: %s", e.what());
+        PLOGE.printf("Error reading yaml file %s: %s", yaml_filename_.c_str(), e.what());
         return CallbackReturn::FAILURE;
     }
 
@@ -158,15 +180,26 @@ Global_Planner_OSM::init_yaml()
 CallbackReturn
 Global_Planner_OSM::wait_for_transform()
 {
-    // Wait for transform to be available
-    RCLCPP_INFO(get_logger(), "Wait for transform");
+    std::string global_frame_ = get_parameter("global_frame").as_string();
+
+    PLOGD.printf("Lookup transform from %s to %s", global_frame_.c_str(), map_frame_.c_str());
+    
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(get_clock());
+    auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
+        get_node_base_interface(),
+        get_node_timers_interface());
+    tf_buffer_->setCreateTimerInterface(timer_interface);
+    tf_buffer_->setUsingDedicatedThread(true);
+    // Warum wird der Listener hier benötigt?? Ohne den kann der Transform nicht bestimmt werden
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
     std::string err;
     int retries = 0;
-    while (rclcpp::ok() && !tf_buffer_->canTransform("earth", "map", tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
+    while (rclcpp::ok() && !tf_buffer_->canTransform(global_frame_, map_frame_, tf2::TimePointZero, tf2::durationFromSec(0.1), &err)
         && retries < 10)
     {
-        RCLCPP_INFO(this->get_logger(), "Timeout waiting for transform. Tf error: %s", err);
+        RCLCPP_WARN(this->get_logger(), "Timeout waiting for transform. Tf error: %s", err.c_str());
+        PLOGW.printf("Timeout waiting for transform. Tf error: %s", err.c_str());
         err.clear();
         rclcpp::sleep_for(500000000ns);
         retries++;
@@ -174,17 +207,37 @@ Global_Planner_OSM::wait_for_transform()
 
     if (retries > 9)
     {
+        RCLCPP_ERROR(get_logger(), "Failed to get transform from %s to %s", global_frame_.c_str(), map_frame_.c_str());
+        PLOGE.printf("Failed to get transform from %s to %s", global_frame_.c_str(), map_frame_.c_str());
         return CallbackReturn::FAILURE;
     }
 
     // transformation from earth -> map in WGS84 coordinates
     // according to REP-105 the x-axis points east (lon) and the y-axis north (lat)
-    auto tf_ = tf_buffer_->lookupTransform("earth", "map", rclcpp::Time(0), rclcpp::Duration(5,0));
+    auto tf_ = tf_buffer_->lookupTransform(global_frame_, map_frame_, rclcpp::Time(0), rclcpp::Duration(5,0));
     map_origin.set_global_coordinates(tf_.transform.translation.y, tf_.transform.translation.x);
 
-    RCLCPP_INFO(get_logger(), "Set map origin to %s", map_origin.to_string().c_str());
+    PLOGI.printf("Set map origin to %s", map_origin.to_string().c_str());
 
     return CallbackReturn::SUCCESS;
+}
+
+void
+Global_Planner_OSM::on_clicked_pnt(std::shared_ptr<geometry_msgs::msg::PointStamped> msg)
+{
+    PLOGI.printf("Received a clicked point at %.3f, %.3f", msg->point.x, msg->point.y);
+    RCLCPP_WARN(get_logger(), "Received a clicked point at %.3f, %.3f", msg->point.x, msg->point.y);
+
+    sgd_util::LatLon ll;
+    ll.set_local_coordinates(map_origin, msg->point.x, msg->point.y);
+
+    //std::shared_ptr<sgd_msgs::srv::GetGlobalPlan::Request> request;
+
+    auto request = std::make_shared<sgd_msgs::srv::GetGlobalPlan::Request>();
+    request->dest_address = "#" + std::to_string(a_star->node_near_lat_lon(ll));
+    auto response = std::make_shared<sgd_msgs::srv::GetGlobalPlan::Response>();
+
+    computePath(request, response);
 }
 
 void
@@ -200,18 +253,23 @@ void
 Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPlan::Request> request,
                                 std::shared_ptr<sgd_msgs::srv::GetGlobalPlan::Response> response)
 {
+    PLOGD.printf("Compute path to %s", request->dest_address.c_str());
     // get current position in local coordinate frame
     sgd_util::LatLon position;
     try
     {
         // transformation from map -> base_link in local cooridinates
-        geometry_msgs::msg::TransformStamped tf_ = tf_buffer_->lookupTransform("map", "base_link",
+        geometry_msgs::msg::TransformStamped tf_ = tf_buffer_->lookupTransform(map_frame_, robot_base_frame_,
                     rclcpp::Time(0), rclcpp::Duration(5,0));
-        position.set_local_coordinates(map_origin, tf_.transform.translation.x, tf_.transform.translation.y);        
+
+        PLOGD.printf("Set current position to %.3f, %.3f", tf_.transform.translation.x, tf_.transform.translation.y);
+        position.set_local_coordinates(map_origin, tf_.transform.translation.x, tf_.transform.translation.y);
     }
     catch (tf2::TransformException &ex)
     {
-        RCLCPP_WARN(this->get_logger(), "%s", ex.what());
+        RCLCPP_WARN(this->get_logger(), "Could not get transform from '%s' to '%s': %s",
+                map_frame_.c_str(), robot_base_frame_.c_str(), ex.what());
+        PLOGW.printf("Could not get transform from '%s' to '%s': %s", map_frame_.c_str(), robot_base_frame_.c_str(), ex.what());
         return;
     }
 
@@ -223,7 +281,7 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
     std::vector<int64_t> dest_ids;
     for (auto& adr : js["addresslist"])
     {
-        if (adr["address"] == request->dest_id)
+        if (adr["address"] == request->dest_address)
         {
             for (auto& nd : adr["nodes"])
             {
@@ -234,29 +292,32 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
                 catch(const std::exception& e)
                 {
                     RCLCPP_ERROR(get_logger(), "Could not parse %s", nd.get<std::string>().c_str());
+                    PLOGE.printf("Could not parse %s", nd.get<std::string>().c_str());
                 }
             }
         }
     }
 
-    RCLCPP_INFO(get_logger(), "Set start position to %s", position.to_string().c_str());
-    a_star->set_start(position);
+    if (dest_ids.empty() && request->dest_address.at(0) == '#')
+    {
+        // do not use address
+        PLOGD.printf("Direct mode id: %s", request->dest_address.substr(1).c_str());
+        auto id = std::stoll(request->dest_address.substr(1));
+        dest_ids.push_back(id);
+    }
 
     for (auto dest_id : dest_ids)
     {
-        RCLCPP_INFO(get_logger(), "Compute path to node %d", dest_id);
+        RCLCPP_INFO(get_logger(), "Compute path from %s to node %d", position.to_string().c_str(), dest_id);
         try
         {
-            // set start and destination
-            a_star->set_dest(dest_id);
-
-            // Hier gibt es einen Fehler -> dauert viel zu lange
             RCLCPP_INFO(get_logger(), "Start path computation");
+            auto route = a_star->compute_path(position, dest_id);
             //auto route = a_star->compute_path();
-            //if (route.waypoints.size() > 2 && route.cost < best_route_.cost)
-            //{
-            //    best_route_ = route;
-            //}
+            if (route.waypoints.size() > 2 && route.cost < best_route_.cost)
+            {
+               best_route_ = route;
+            }
         }
         catch(const std::exception& e)
         {
@@ -264,7 +325,7 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
         }
     }
 
-    if (request->dest_id == "Testfahrt1")
+    if (request->dest_address == "Testfahrt1")
     {
         // temporary path for BSVH demonstration -> Testfahrt1
         std::vector<sgd_util::LatLon> tmp_ll_;
@@ -294,7 +355,7 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
         tmp_ll_.push_back(ll11);
         best_route_.waypoints = tmp_ll_;
     }
-    else if (request->dest_id == "Testfahrt2")
+    else if (request->dest_address == "Testfahrt2")
     {
         // temporary path for BSVH demonstration -> Testfahrt2
         std::vector<sgd_util::LatLon> tmp_ll_;
@@ -361,7 +422,7 @@ Global_Planner_OSM::publish_path(std::vector<geometry_msgs::msg::Pose> data)
 {
     nav_msgs::msg::Path path_;
 
-    path_.header.frame_id = "map";
+    path_.header.frame_id = map_frame_;
     path_.header.stamp = this->get_clock()->now();
 
     for (auto p : data)
@@ -419,12 +480,47 @@ Global_Planner_OSM::create_poses_from_waypoints(std::vector<sgd_util::LatLon> wa
     return poses_list;
 }
 
-}   // namespace nav_sgd
+visualization_msgs::msg::Marker
+Global_Planner_OSM::create_map_visual()
+{
+    // go through all nodes
+    visualization_msgs::msg::Marker marker;
+    marker.header.stamp = now();
+    marker.header.frame_id = "map";
+    marker.ns = "sgd";
+    marker.id = now().nanoseconds();
+    marker.type = visualization_msgs::msg::Marker::POINTS;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.scale.x = 0.1;
+    marker.scale.y = 0.1;
+    //marker.scale.z = 10.05;
+    marker.lifetime.sec = 0;
+    marker.color.a = 1.0;
+    marker.color.r = 0;
+    marker.color.g = 0;
+    marker.color.b = 1.0;
+
+    for (auto node : a_star->get_nodelist())
+    {
+        // get local coordinates
+        auto xy = node.get_latlon().to_local(map_origin);
+
+        geometry_msgs::msg::Point pnt;
+        pnt.x = xy.first;
+        pnt.y = xy.second;
+        pnt.z = 1.0;
+        marker.points.push_back(pnt);
+        marker.colors.push_back(marker.color);
+    }
+    return marker;    
+}
+
+}   // namespace sgd_global_planner
 
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<nav_sgd::Global_Planner_OSM>();
+    auto node = std::make_shared<sgd_global_planner::Global_Planner_OSM>();
     rclcpp::spin(node->get_node_base_interface());
     rclcpp::shutdown();
 }

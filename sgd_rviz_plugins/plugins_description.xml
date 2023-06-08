@@ -1,9 +1,15 @@
 <library path="sgd_rviz_plugins">
 
-  <class name="sgd_rviz_plugins/ObstacleDisplay"
-         type="sgd_rviz_plugins::ObstacleDisplay"
-         base_class_type="rviz_common::Display">
-    <description>A display to render obstacles as polygons.</description>
-  </class>
+    <class name="sgd_rviz_plugins/ObstacleDisplay"
+            type="sgd_rviz_plugins::ObstacleDisplay"
+            base_class_type="rviz_common::Display">
+        <description>A display to render obstacles as polygons.</description>
+    </class>
+
+    <class name="sgd_rviz_plugins/SGD4Panel"
+            type="sgd_rviz_plugins::SGD4Panel"
+            base_class_type="rviz_common::Panel">
+        <description>A panel to control the Shared Guide Dog 4.0</description>
+    </class>
 
 </library>

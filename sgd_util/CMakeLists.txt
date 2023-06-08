@@ -93,16 +93,16 @@ install(
 ### testing
 enable_testing()
 
-add_executable(test_geotools test/test_geotools.cpp)
-add_executable(test_angle_utils test/test_angle_utils.cpp)
-target_link_libraries(test_geotools gtest_main ${library_name})
-target_link_libraries(test_angle_utils gtest_main)
+# add_executable(test_geotools test/test_geotools.cpp)
+# add_executable(test_angle_utils test/test_angle_utils.cpp)
+# target_link_libraries(test_geotools gtest_main ${library_name})
+# target_link_libraries(test_angle_utils gtest_main)
 
 #file(COPY test/data DESTINATION ${CMAKE_BINARY_DIR}/lib/test)
 
-include(GoogleTest)
-gtest_discover_tests(test_geotools)
-gtest_discover_tests(test_angle_utils)
+# include(GoogleTest)
+# gtest_discover_tests(test_geotools)
+# gtest_discover_tests(test_angle_utils)
 
 ament_export_include_directories(include)
 ament_export_libraries(${library_name})

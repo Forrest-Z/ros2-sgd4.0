@@ -20,9 +20,10 @@ namespace sgd_utils
 Scan_Timer::Scan_Timer():
     Node("scan_timer")
 {
-    pub_scan_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan", default_qos);
-    sub_scan_ = this->create_subscription<sensor_msgs::msg::LaserScan>("scan_sim", default_qos,
+    pub_scan_ = this->create_publisher<sensor_msgs::msg::LaserScan>("/scan", default_qos);
+    sub_scan_ = this->create_subscription<sensor_msgs::msg::LaserScan>("/scan/hardware", default_qos,
         std::bind(&Scan_Timer::on_scan_received, this, std::placeholders::_1));
+    RCLCPP_INFO(get_logger(), "Scan_timer initialized...");
 }
 
 Scan_Timer::~Scan_Timer()
@@ -33,10 +34,15 @@ Scan_Timer::~Scan_Timer()
 void
 Scan_Timer::on_scan_received(sensor_msgs::msg::LaserScan::SharedPtr msg)
 {
-    RCLCPP_INFO(get_logger(), "Publish scan");
+    // RCLCPP_INFO(get_logger(), "Publish scan");
     sensor_msgs::msg::LaserScan laser;
     laser = *msg;
     laser.header.stamp = now();
+    for (int i = 0; i < laser.ranges.size(); i++)
+    {
+        if (laser.ranges.at(i) < 0.3)   laser.ranges.at(i) = laser.range_max;
+    }
+
     pub_scan_->publish(laser);
 }
 

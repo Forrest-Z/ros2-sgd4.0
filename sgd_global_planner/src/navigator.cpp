@@ -2,7 +2,7 @@
 #include "sgd_global_planner/navigator.hpp"
 
 
-namespace nav_sgd
+namespace sgd_global_planner
 {
 
 using namespace std::chrono_literals;

@@ -123,6 +123,6 @@ def generate_launch_description():
     ld.add_action(start_sgd_map_server_cmd)
     ld.add_action(start_amcl_cmd)
     ld.add_action(start_uwb_cmd)
-    ld.add_action(start_visualizer_cmd)
+    # ld.add_action(start_visualizer_cmd)
 
     return ld

@@ -18,7 +18,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace nav_sgd
+namespace sgd_global_planner
 {
     
 class Adr_Server

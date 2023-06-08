@@ -475,6 +475,8 @@ Gnss_Node::to_local(sensor_msgs::msg::NavSatFix msg)
     // publish local pose
     pose.pose.pose.position.x = xy.first - tf_base_gps_.translation.x * cos(rot_z_);
     pose.pose.pose.position.y = xy.second - tf_base_gps_.translation.x * sin(rot_z_);
+    // pose.pose.pose.position.x = 247.37;
+    // pose.pose.pose.position.y = 319.88;
 
     for (uint8_t i = 0; i < 36; i+=7)
     {

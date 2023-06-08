@@ -1,10 +1,10 @@
-image: lohmuehlenpark.png
+image: lohmuehlenpark.png  # convert the svg file to a pixel image and put path here
 # The resolution depends on the resolution of the image
-# resolution = 379.000 m / image_width in px
-width: 3790
-height: 4660
-resolution: 0.1
-# Global coordinates of map origin: lat=53.5532264, lon=10.0192452
+# resolution = 376.000 m / image_width in px
+mode: scale
+width: 5080
+height: 5790
+resolution: 0.1   # how much meters per pixel, recommended <= 0.1
 origin: [0.000000, 0.000000, 0.000000]    # origin is set to bottom left corner
 negate: 0
 occupied_thresh: 0.65

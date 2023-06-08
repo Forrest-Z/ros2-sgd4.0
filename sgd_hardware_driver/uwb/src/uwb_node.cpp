@@ -23,21 +23,26 @@ UWB_Node::UWB_Node():
     // declare parameters with default values
     declare_parameter("log_dir", rclcpp::ParameterValue(".ros/log/"));
     declare_parameter("log_severity", rclcpp::ParameterValue("I"));
+
     declare_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
     declare_parameter("tag_defs", rclcpp::ParameterValue("uwb_tag_defs.yaml"));
     declare_parameter("publish_wgs84_pose", rclcpp::ParameterValue(true));
     declare_parameter("publish_marker", rclcpp::ParameterValue(true));
     declare_parameter("exp_meas_frequ", rclcpp::ParameterValue(10));
 
+    declare_parameter("local_pose_topic", rclcpp::ParameterValue("uwb/local"));
+    declare_parameter("marker_topic", rclcpp::ParameterValue("uwb/tags"));
+    declare_parameter("distance_topic", rclcpp::ParameterValue("uwb/distance"));
+    declare_parameter("global_pose_topic", rclcpp::ParameterValue("uwb/global"));
+    declare_parameter("odom_improved_topic", rclcpp::ParameterValue("odom/improved"));
+
     optimizer = std::make_unique<LevMarq>();
 
     // initialize logging
-    std::string log_dir_;
-    get_parameter("log_dir", log_dir_);
-    std::string log_sev_;
-    get_parameter("log_severity", log_sev_);
-    plog::init(plog::severityFromString(log_sev_.c_str()), (log_dir_ + "/" + sgd_util::create_log_file("uwb")).c_str());
-    PLOGD << "tag_id; dist_m";
+    std::string log_sev_ = get_parameter("log_severity").as_string();
+    std::string log_file(get_parameter("log_dir").as_string() + "/uwb_node.csv");
+    plog::init(plog::severityFromString(log_sev_.c_str()), log_file.c_str());
+    PLOGI.printf("Created uwb node. PLOG logging severity is %s", log_sev_.c_str());
 }
 
 UWB_Node::~UWB_Node()
@@ -48,6 +53,7 @@ UWB_Node::~UWB_Node()
 CallbackReturn
 UWB_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
+    PLOGD << "Configuring...";
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
     std::string port;
@@ -55,6 +61,7 @@ UWB_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unus
     try
     {
         RCLCPP_INFO(get_logger(), "Open serial port %s", port.c_str());
+        PLOGI.printf("Open serial port %s", port.c_str());
         serial.set_start_frame('{');
         serial.set_stop_frame('\n');
         serial.open_port(port, 115200);
@@ -62,6 +69,7 @@ UWB_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unus
     catch(const sgd_io::io_exception& e)
     {
         RCLCPP_ERROR(get_logger(), e.what());
+        PLOGE << e.what();
         return CallbackReturn::FAILURE;
     }
     
@@ -74,6 +82,7 @@ UWB_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unus
 CallbackReturn
 UWB_Node::on_activate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
+    PLOGD << "Initializing...";
     init_pub_sub();
 
     pub_position_->on_activate();
@@ -89,6 +98,7 @@ UWB_Node::on_activate(const rclcpp_lifecycle::State & state __attribute__((unuse
 CallbackReturn
 UWB_Node::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
+    PLOGD << "Deactivating...";
     pub_position_->on_deactivate();
     if (is_pub_wgs84_pose_) pub_wgs84_pose_->on_deactivate();
     return CallbackReturn::SUCCESS;
@@ -97,6 +107,7 @@ UWB_Node::on_deactivate(const rclcpp_lifecycle::State & state __attribute__((unu
 CallbackReturn
 UWB_Node::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
+    PLOGD << "Cleaning up...";
     pub_position_.reset();
     if (is_pub_wgs84_pose_) pub_wgs84_pose_.reset();
     return CallbackReturn::SUCCESS;
@@ -105,6 +116,7 @@ UWB_Node::on_cleanup(const rclcpp_lifecycle::State & state __attribute__((unused
 CallbackReturn
 UWB_Node::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
+    PLOGD << "Shutting down...";
     return CallbackReturn::SUCCESS;
 }
 
@@ -120,24 +132,31 @@ UWB_Node::init_parameters()
 void
 UWB_Node::init_pub_sub()
 {
-    RCLCPP_DEBUG(get_logger(), "Create Publisher on topic 'uwb/local'");
-    pub_position_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("uwb/local", default_qos);
+    std::string local_pose_topic_ = get_parameter("local_pose_topic").as_string();
+    PLOGD.printf("Create Publisher on topic '%s'", local_pose_topic_.c_str());
+    pub_position_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(local_pose_topic_, default_qos);
 
-    sub_odom_impr = this->create_subscription<sgd_msgs::msg::OdomImproved>("odom/improved", default_qos,
+    std::string odom_improved_topic_ = get_parameter("odom_improved_topic").as_string();
+    PLOGD.printf("Create Publisher on topic '%s'", odom_improved_topic_.c_str());
+    sub_odom_impr = this->create_subscription<sgd_msgs::msg::OdomImproved>(odom_improved_topic_, default_qos,
             std::bind(&UWB_Node::on_odom_impr_received, this, std::placeholders::_1));
 
     if (is_pub_marker_)
     {
-        RCLCPP_DEBUG(get_logger(), "Create Publisher on topic 'uwb/tags'");
-        pub_tag_marker_ = this->create_publisher<visualization_msgs::msg::Marker>("uwb/tags", default_qos);
-        RCLCPP_DEBUG(get_logger(), "Create Publisher on topic 'uwb/distance'");
-        pub_dist_marker_ = this->create_publisher<visualization_msgs::msg::Marker>("uwb/distance", default_qos);
+        std::string marker_topic_ = get_parameter("marker_topic").as_string();
+        PLOGD.printf("Create Publisher on topic '%s'", marker_topic_.c_str());
+        pub_tag_marker_ = this->create_publisher<visualization_msgs::msg::Marker>(marker_topic_, default_qos);
+
+        std::string distance_topic_ = get_parameter("distance_topic").as_string();
+        PLOGD.printf("Create Publisher on topic '%s'", distance_topic_.c_str());
+        pub_dist_marker_ = this->create_publisher<visualization_msgs::msg::Marker>(distance_topic_, default_qos);
     }
     
     if (is_pub_wgs84_pose_)
     {
-        RCLCPP_DEBUG(get_logger(), "Create Publisher on topic 'uwb/global'");
-        pub_wgs84_pose_ = this->create_publisher<sensor_msgs::msg::NavSatFix>("uwb/global", default_qos);
+        std::string global_pose_topic_ = get_parameter("global_pose_topic").as_string();
+        PLOGD.printf("Create Publisher on topic '%s'", global_pose_topic_.c_str());
+        pub_wgs84_pose_ = this->create_publisher<sensor_msgs::msg::NavSatFix>(global_pose_topic_, default_qos);
     }
 
     timer_ = this->create_wall_timer(5ms, std::bind(&UWB_Node::read_serial, this));
@@ -173,20 +192,21 @@ UWB_Node::init_yaml()
 
                     uwb_pf.registerBeacon(xy.first, xy.second, tag_id);
                     
-                    RCLCPP_INFO(get_logger(), "Insert tag with id %d at position %.3f, %.3f",
-                                tag_id, xy.first, xy.second);
+                    PLOGI.printf("Insert tag with id %d at position %.3f, %.3f", tag_id, xy.first, xy.second);
                     num_tags++;
                 }
             }
             catch(const YAML::Exception& e)
             {
                 RCLCPP_ERROR(get_logger(), "YAML parse error: %s", e.what());
+                PLOGE.printf("YAML parse error: %s", e.what());
             }
         }
         publish_marker();
     }
 
     RCLCPP_INFO(get_logger(), "Read %i tag definitions.", optimizer->tags.size());
+    PLOGI.printf("Read %i tag definitions.", optimizer->tags.size());
     return (num_tags > 0 ? CallbackReturn::SUCCESS : CallbackReturn::FAILURE);
 }
 
@@ -215,6 +235,7 @@ UWB_Node::read_serial()
     {
         // json string parsing
         std::string msg = "{" + serial.get_msg();
+        PLOGV.printf("json: %s", msg.c_str());
 
         nlohmann::json js;
         try
@@ -224,6 +245,7 @@ UWB_Node::read_serial()
         catch(const std::exception& e)
         {
             RCLCPP_WARN(get_logger(), "JSON error: %s", e.what());
+            PLOGW.printf("JSON error: %s", e.what());
             return;
         }
         
@@ -239,7 +261,7 @@ UWB_Node::read_serial()
 
             //uwb_pf.updateUwbMeasurement(dist/1000.0, tag_id);
             PLOGD << tag_id << ";" << dist;
-            //publish_dist_marker(tag_id, dist);
+            publish_dist_marker(tag_id, dist);
         }
         t_last_meas = now().nanoseconds() / 1.0E6;
     }
@@ -348,8 +370,6 @@ UWB_Node::publish_dist_marker(int tag_id, double dist)
 
         pub_dist_marker_->publish(marker);
     }
-
-    
 }
 
 void

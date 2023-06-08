@@ -31,7 +31,7 @@ LatLon::set_local_coordinates(const LatLon origin, const double x, const double 
 }
 
 double
-LatLon::distance_to(const LatLon another_latlon)
+LatLon::distance_to(const LatLon another_latlon) const
 {
     auto xy = to_local(another_latlon);
     //return std::hypot(xy.first, xy.second);
@@ -39,18 +39,20 @@ LatLon::distance_to(const LatLon another_latlon)
 }
 
 double
-LatLon::distance_to(const double lat, const double lon)
+LatLon::distance_to(const double lat, const double lon) const
 {
     return distance_to(LatLon(lat, lon));
 }
 
 std::pair<double, double>
-LatLon::to_local(const LatLon origin) {
+LatLon::to_local(const LatLon origin) const
+{
     return to_local(origin.lat_, origin.lon_);
 }
 
 std::pair<double, double>
-LatLon::to_local(const double lat, const double lon) {
+LatLon::to_local(const double lat, const double lon) const
+{
     double x = (lon_ - lon) * LATLON_TO_METER * cos((lat + lat_) * M_PI/360);
     double y = (lat_ - lat) * LATLON_TO_METER;
     return {x,y};
@@ -84,7 +86,7 @@ LatLon::interpolate(const LatLon other, int points_to_insert)
 }
 
 double
-LatLon::bearing(const LatLon other)
+LatLon::bearing(const LatLon other) const
 {
     auto ang = atan2((other.lat_-lat_)/180*M_PI, (other.lon_-lon_)/180*M_PI*cos(lat_/180*M_PI)) * -1.0 + M_PI_2;
     if (ang < 0)
@@ -99,7 +101,8 @@ LatLon::bearing(const LatLon other)
 }
 
 std::string
-LatLon::to_string() {
+LatLon::to_string() const
+{
     const char *out = "%3.7f, %3.7f";
     int sz = std::snprintf(nullptr, 0, out, lat_, lon_);
     char buf[sz + 1]; // note +1 for null terminator

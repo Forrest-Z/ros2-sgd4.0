@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef NAV_SGD__GLOBAL_PLANNER_OSM_HPP_
-#define NAV_SGD__GLOBAL_PLANNER_OSM_HPP_
+#ifndef SGD_GLOBAL_PLANNER__PLANNER_OSM_HPP_
+#define SGD_GLOBAL_PLANNER__PLANNER_OSM_HPP_
 
 #include <string>
 #include <memory>
@@ -37,12 +37,17 @@
 #include "sgd_msgs/srv/get_global_plan.hpp"
 #include "sgd_msgs/srv/get_map_info.hpp"
 #include "sgd_util/geotools.hpp"
-#include "a_star.hpp"
-#include "a_star_users.hpp"
+#include "visualization_msgs/msg/marker.hpp"
+// #include "a_star_lib/a_star.hpp"
+// #include "a_star.hpp"
+// #include "a_star_users.hpp"
+#include "../../a_star_lib/include/a_star.hpp"
 
 #include <nlohmann/json.hpp>
+#include <plog/Log.h>
+#include "plog/Initializers/RollingFileInitializer.h"
 
-namespace nav_sgd
+namespace sgd_global_planner
 {
 
 using namespace std::placeholders;
@@ -58,7 +63,12 @@ struct POSE
 };
 
 public:
+    /**
+     * @brief Construct a new Global_Planner_OSM object
+     * 
+     */
     Global_Planner_OSM();
+
     ~Global_Planner_OSM();
 
 protected:
@@ -69,24 +79,22 @@ protected:
     CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
     CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
 
-    //! \brief Init parameters
-    std::string waypoints_topic_;
-    std::string clicked_point_topic_;
-    std::string yaml_filename_;
-    std::string ros_log_dir;
-
     //! \brief Init Publisher and subscriber
     void init_pub_sub();
     rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-    rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>::SharedPtr publisher_path_;    
+    rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>::SharedPtr publisher_path_;
+    rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr sub_clicked_pnt_;
+    rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::Marker>::SharedPtr pub_map_visual_;
 
     //! \brief Init transforms
-    void init_transforms();
-    sgd_util::LatLon map_origin;
-    CallbackReturn wait_for_transform();
-    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-    std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+    sgd_util::LatLon map_origin;            /// @brief origin of the map frame
+    CallbackReturn wait_for_transform();    /// @brief get the transform between earth and map frame from tf
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer_;    /// @brief tf buffer to get transforms
     geometry_msgs::msg::TransformStamped tf_map_odom_;
+
+    std::string map_frame_;
+    std::string robot_base_frame_;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 
     /**
      * @brief Read the map yaml and parse parameters
@@ -101,8 +109,17 @@ protected:
     std::shared_ptr<A_Star_Users> a_star_users;
     std::unique_ptr<A_Star> a_star;
 
-    // create services for global planner
     rclcpp::Service<sgd_msgs::srv::GetMapInfo>::SharedPtr map_info_srv;
+    rclcpp::Service<sgd_msgs::srv::GetGlobalPlan>::SharedPtr compute_path_srv;
+    // rclcpp::Service<sgd_msgs::srv::GetMapInfo>::SharedPtr reload_map_srv;
+
+    /**
+     * @brief Handle subscription to clicked_point topic
+     * 
+     * @param msg 
+     */
+    void on_clicked_pnt(std::shared_ptr<geometry_msgs::msg::PointStamped> msg);
+
     /**
      * @brief Get information about the active map
      * 
@@ -112,7 +129,6 @@ protected:
     void getMapInfo(const std::shared_ptr<sgd_msgs::srv::GetMapInfo::Request> request,
                     std::shared_ptr<sgd_msgs::srv::GetMapInfo::Response> response);
 
-    rclcpp::Service<sgd_msgs::srv::GetGlobalPlan>::SharedPtr compute_path_srv;
     /**
      * @brief Compute a path from current position to goal pose
      * 
@@ -161,8 +177,10 @@ protected:
             throw YAML::Exception(e.mark, ss.str());
         }
     }
+
+    visualization_msgs::msg::Marker create_map_visual();
 };
 
-}   // namespace nav_sgd
+}   // namespace sgd_global_planner
 
-#endif  // NAV_SGD__GLOBAL_PLANNER_OSM_HPP_
+#endif  // SGD_GLOBAL_PLANNER__PLANNER_OSM_HPP_

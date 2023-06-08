@@ -22,6 +22,8 @@ find_package(rviz_rendering REQUIRED)
 find_package(rviz_default_plugins REQUIRED)
 find_package(sgd_msgs REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Widgets Test)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 
 # find_package(geometry_msgs REQUIRED)
 # find_package(nav2_util REQUIRED)
@@ -37,6 +39,7 @@ find_package(Qt5 REQUIRED COMPONENTS Widgets Test)
 
 set(sgd_rviz_plugins_headers_to_moc
   include/sgd_rviz_plugins/obstacle_display.hpp
+  include/sgd_rviz_plugins/sgd4_panel.hpp
 )
 
 include_directories(
@@ -47,6 +50,7 @@ set(library_name ${PROJECT_NAME})
 
 add_library(${library_name} SHARED
   src/obstacle_display.cpp
+  src/sgd4_panel.cpp
   ${sgd_rviz_plugins_headers_to_moc}
 )
 
@@ -58,6 +62,8 @@ set(dependencies
   rviz_default_plugins
   Qt5
   sgd_msgs
+  geometry_msgs
+  nav_msgs
 
   # geometry_msgs
   # nav2_util

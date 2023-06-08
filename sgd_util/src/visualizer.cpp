@@ -29,21 +29,6 @@ Visualizer::Visualizer() : rclcpp::Node("visualizer"),
         return;
     }
 
-    debug_out_dir_ = declare_parameter<std::string>("debug_out_dir", "");   // if dir name is empty no debug file is created
-    debug_ = debug_out_dir_.size() > 1;
-
-    // set current time in millis as start time
-    time_at_start_ = round(now().nanoseconds() / 1.0E6); // time in millis
-    std::string time = std::to_string(time_at_start_);
-
-    if (debug_)
-    {
-        for (auto str : in_topics_)
-        {
-            debug_files_.push_back(debug_out_dir_ + "/" + str + "_" + time + ".log");
-        }
-    }
-
     // Initialize parameters, pub/sub, services, etc.
     init_pub_sub();
     is_map_published_ = false;
@@ -152,23 +137,6 @@ Visualizer::on_pose_received(const geometry_msgs::msg::PoseWithCovarianceStamped
     marker.color.b = b[2];
 
     publisher->publish(marker);
-
-    if (debug_)
-    {
-        for (auto str : debug_files_)
-        {
-            std::fstream out;
-            out.open(str, std::ios::out | std::ios::app);
-            out << sensor << ";";
-            out << time_to_string() << ";";
-            out << stamp_to_string(msg->header) << ";";
-
-            out << ";Pose:[";
-            out << pose_to_string(msg->pose.pose);
-            out << "]\n";
-            out.close();
-        }
-    }
 }
 
 visualization_msgs::msg::Marker
