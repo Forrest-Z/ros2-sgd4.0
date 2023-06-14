@@ -17,11 +17,12 @@ Subsum_Controller::Subsum_Controller()
     declare_parameter("sgd_move_topic", rclcpp::ParameterValue("sgd_move_base"));
 
     // initialize logging
-    std::string log_dir_;
-    get_parameter("log_dir", log_dir_);
-    std::string log_sev_;
-    get_parameter("log_severity", log_sev_);
-    plog::init(plog::severityFromString(log_sev_.c_str()), (log_dir_ + "/" + sgd_util::create_log_file("subsum")).c_str());
+    std::string log_sev_ = get_parameter("log_severity").as_string();
+    std::string log_file(get_parameter("log_dir").as_string() + "/subsum_controller.csv");
+    plog::init(plog::severityFromString(log_sev_.c_str()), log_file.c_str());
+    PLOGI.printf("Created subsumption controller node. PLOG logging severity is %s", log_sev_.c_str());
+    RCLCPP_INFO(get_logger(), "Created subsumption controller node. Save log file to %s", log_file.c_str());
+
     PLOGD << "Message: layer, cmd_vel.linear.x, cmd_vel.angular.z";
 }
 
@@ -169,9 +170,6 @@ int main(int argc, char const *argv[])
 {
     rclcpp::init(argc, argv);
     std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node = std::make_shared<sgd_ctrl::Subsum_Controller>();
-
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Subsumption controller startup completed.");
-
     rclcpp::spin(node->get_node_base_interface());
     rclcpp::shutdown();
     return 0;

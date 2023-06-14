@@ -23,12 +23,12 @@ find_package(geometry_msgs REQUIRED)
 find_package(sgd_msgs REQUIRED)
 find_package(nav2_core REQUIRED)
 find_package(nav_msgs REQUIRED)
-find_package(sgd_util REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(nav2_msgs REQUIRED)
+find_package(sgd_util REQUIRED)
 
 include_directories(include)
 
@@ -40,7 +40,6 @@ ament_target_dependencies(subsum_controller
   rclcpp_lifecycle
   geometry_msgs
   sgd_msgs
-  sgd_util
 )
 
 add_executable(master_control_unit src/master_control_unit.cpp)
@@ -66,7 +65,6 @@ ament_target_dependencies(sgd_progress_checker
   sgd_msgs
   nav2_core
   nav_msgs
-  sgd_util
 )
 
 # prevent pluginlib from using boost

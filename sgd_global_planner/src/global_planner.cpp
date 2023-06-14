@@ -23,7 +23,7 @@ Global_Planner_OSM::Global_Planner_OSM():
     declare_parameter("map_frame", rclcpp::ParameterValue("map"));
     declare_parameter("robot_base_frame", rclcpp::ParameterValue("base_link"));
 
-    declare_parameter("visual_topic", rclcpp::ParameterValue("map_visualization"));
+    declare_parameter("visual_topic", rclcpp::ParameterValue("visual/map"));
 
     // init logging
     std::string log_dir_, log_sev_;

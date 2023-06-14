@@ -35,8 +35,6 @@
 #include "visualization_msgs/msg/marker.hpp"
 #include "sgd_io/serial.hpp"
 #include "sgd_util/geotools.hpp"
-#include "sgd_util/ieee_754_conv.hpp"
-#include "sgd_util/log_utils.hpp"
 #include "sgd_msgs/msg/odom_improved.hpp"
 #include "yaml-cpp/yaml.h"
 

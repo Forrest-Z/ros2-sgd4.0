@@ -17,21 +17,29 @@
 namespace sgd_util
 {
 
-Visualizer::Visualizer() : rclcpp::Node("visualizer"),
-                            in_topics_{"uwb/local", "gps/local"}
+Visualizer::Visualizer() : rclcpp::Node("visualizer")
 {
     RCLCPP_DEBUG(get_logger(), "Creating");
-    // Add parameters - a maximum of 6 topics is allowed
-    in_topics_ = declare_parameter<std::vector<std::string>>("topics", in_topics_);
-    if (in_topics_.size() > 6)
-    {
-        RCLCPP_ERROR(get_logger(), "Visualizer can display a maximum of 6 topics.");
-        return;
-    }
+
+    declare_parameter("gnss_topic", rclcpp::ParameterValue("gnss/local"));
+    declare_parameter("uwb_pose_topic", rclcpp::ParameterValue("uwb/local"));
+    declare_parameter("uwb_marker_topic", rclcpp::ParameterValue("uwb/marker"));
+    declare_parameter("odom_topic", rclcpp::ParameterValue("odom"));
+
+    declare_parameter("marker_lifetime", rclcpp::ParameterValue(30));
+
+    get_parameter("marker_lifetime", marker_lifetime_);
 
     // Initialize parameters, pub/sub, services, etc.
     init_pub_sub();
-    is_map_published_ = false;
+
+    // init colors for visualization
+    status_colors[0] = create_color(135, 135, 135);
+    status_colors[1] = create_color(0  , 255, 255);
+    status_colors[2] = create_color(200, 0  , 0  );
+    status_colors[3] = create_color(255, 255, 0  );
+    status_colors[4] = create_color(0  , 200, 0  );
+    status_colors[5] = create_color(255, 135, 0  );
 }
 
 Visualizer::~Visualizer()
@@ -40,151 +48,98 @@ Visualizer::~Visualizer()
 }
 
 void
-Visualizer::pub_map_markers()
-{
-    // read *.nav file and display points
-    tinyxml2::XMLDocument doc;
-    doc.LoadFile("/home/pascal/dev_ws/src/ros2-sgd4.0/sgd_bringup/maps/lohmuehlenpark.nav");
-    // check error
-    if (doc.ErrorID())
-    {
-        std::cerr << doc.ErrorStr();
-        return;
-    }
-
-    if (doc.RootElement() == NULL)
-    {
-        std::cerr << "Error reading map file\n";
-        return;
-    }
-
-    // go through all nodes
-    visualization_msgs::msg::Marker marker;
-    marker.header.stamp = now();
-    marker.header.frame_id = "map";
-    marker.ns = "sgd";
-    marker.id = now().nanoseconds();
-    marker.type = visualization_msgs::msg::Marker::POINTS;
-    marker.action = visualization_msgs::msg::Marker::ADD;
-    marker.scale.x = 0.1;
-    marker.scale.y = 0.1;
-    //marker.scale.z = 10.05;
-    marker.lifetime.sec = 0;
-    std::bitset<3> b{4};
-    marker.color.a = 1.0;
-    marker.color.r = b[0];
-    marker.color.g = b[1];
-    marker.color.b = b[2];
-
-    sgd_util::LatLon origin(53.5532264, 10.0192452);
-    tinyxml2::XMLElement *next_node = doc.RootElement()->FirstChildElement("node");
-    while (next_node != NULL)
-    {
-        long next_id = strtol(next_node->Attribute("id"), NULL, 10);
-        sgd_util::LatLon latlon_(strtod(next_node->Attribute("lat"), NULL), strtod(next_node->Attribute("lon"), NULL));
-        // get local coordinates
-        auto xy = latlon_.to_local(origin);
-
-        geometry_msgs::msg::Point pnt;
-        pnt.x = xy.first;
-        pnt.y = xy.second;
-        pnt.z = 1.0;
-        marker.points.push_back(pnt);
-        marker.colors.push_back(marker.color);
-
-        next_node = next_node->NextSiblingElement();
-    }
-    RCLCPP_INFO(get_logger(), "Publish marker array with %d entries.", marker.points.size());
-    pub_map_marker->publish(marker);
-    return;
-}
-
-void
 Visualizer::init_pub_sub()
 {
-    publisher = this->create_publisher<visualization_msgs::msg::Marker>("pose_visualization", default_qos);
-    pub_map_marker = this->create_publisher<visualization_msgs::msg::Marker>("map_visualization", default_qos);
-
-    for (uint8_t i = 0; i < in_topics_.size(); i++)
+    std::string gnss_topic_ = get_parameter("gnss_topic").as_string();
+    if (!gnss_topic_.empty())
     {
-        std::function<void(std::shared_ptr<geometry_msgs::msg::PoseWithCovarianceStamped>)> fnc = std::bind(
-            &Visualizer::on_pose_received, this, std::placeholders::_1, (int)i+1);
+        sub_gnss_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(gnss_topic_, default_qos,
+                std::bind(&Visualizer::on_gnss_received, this, std::placeholders::_1));
+        pub_gnss_pose_ = create_publisher<visualization_msgs::msg::Marker>("visual/gnss", default_qos);
+    }
 
-        RCLCPP_INFO(get_logger(), "Create subscription for topic %s with sensor id %i", in_topics_.at(i).c_str(), i+1);
-        subscriber.push_back(this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(in_topics_.at(i), default_qos,
-                            fnc));
+    std::string uwb_topic_ = get_parameter("uwb_pose_topic").as_string();
+    if (!uwb_topic_.empty())
+    {
+        sub_uwb_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(uwb_topic_, default_qos,
+                std::bind(&Visualizer::on_uwb_received, this, std::placeholders::_1));
+        pub_uwb_pose_ = create_publisher<visualization_msgs::msg::Marker>("visual/uwb", default_qos);
+    }
+
+    std::string odom_topic_ = get_parameter("odom_topic").as_string();
+    if (!odom_topic_.empty())
+    {
+        sub_odom_ = create_subscription<nav_msgs::msg::Odometry>(odom_topic_, default_qos,
+                std::bind(&Visualizer::on_odom_received, this, std::placeholders::_1));
+        pub_odom_orientation_ = create_publisher<geometry_msgs::msg::PoseStamped>("visual/odom", default_qos);
     }
 }
 
 void
-Visualizer::on_pose_received(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg, uint8_t sensor)
+Visualizer::on_gnss_received(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
 {
-    if (!is_map_published_)
-    {
-        pub_map_markers();
-        is_map_published_ = true;
-    }
-
-    auto marker = createMarker();
+    // publish gnss pose
+    visualization_msgs::msg::Marker marker = create_marker();
     marker.header = msg->header;
     marker.pose = msg->pose.pose;
     
-    // set color depending on sensor
-    std::bitset<3> b{sensor};
-    marker.color.a = 1.0;
-    marker.color.r = b[0];
-    marker.color.g = b[1];
-    marker.color.b = b[2];
+    // TODO set color depending on status
+    int status = (int)std::round(msg->pose.covariance[0]);
+    if (status > 5 || status < 0)
+    {
+        status = 0;
+    }
+    marker.color = status_colors[status];
+    pub_gnss_pose_->publish(marker);
+}
 
-    publisher->publish(marker);
+void
+Visualizer::on_uwb_received(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
+{
+    // publish uwb pose
+    auto marker = create_marker(visualization_msgs::msg::Marker::CUBE);
+    marker.header = msg->header;
+    marker.pose = msg->pose.pose;
+
+    marker.color = create_color(0, 195, 255);
+    pub_uwb_pose_->publish(marker);
+}
+
+void
+Visualizer::on_odom_received(const nav_msgs::msg::Odometry::SharedPtr msg)
+{
+    // publish odom pose and orientation
+    geometry_msgs::msg::PoseStamped ps;
+    ps.pose = msg->pose.pose;
+    ps.header = msg->header;
+    pub_odom_orientation_->publish(ps);
 }
 
 visualization_msgs::msg::Marker
-Visualizer::createMarker()
+Visualizer::create_marker(int32_t marker_type)
 {
     visualization_msgs::msg::Marker marker;
     marker.ns = "sgd";
     marker.id = now().nanoseconds();
-    marker.type = visualization_msgs::msg::Marker::CYLINDER;
+    marker.type = marker_type;
     marker.action = visualization_msgs::msg::Marker::ADD;
     marker.scale.x = 0.1;
     marker.scale.y = 0.1;
     marker.scale.z = 0.05;
-    marker.lifetime.sec = 0;
+    marker.lifetime.sec = marker_lifetime_;
 
     return marker;
 }
 
-std::string
-Visualizer::time_to_string()
+std_msgs::msg::ColorRGBA
+Visualizer::create_color(int r, int g, int b)
 {
-  double t = now().nanoseconds() / 1.0E9; // - time_at_start_;
-  std::string ts = to_string(t);
-  return ts;
-}
-
-std::string
-Visualizer::pose_to_string(geometry_msgs::msg::Pose pose)
-{
-  std::string s;
-  s = std::to_string(pose.position.x) + ";" + std::to_string(pose.position.y) + ";" + std::to_string(pose.position.z);
-  return s;
-}
-
-std::string
-Visualizer::stamp_to_string(std_msgs::msg::Header header)
-{
-    double t = header.stamp.sec + header.stamp.nanosec / 1.0E9;
-    return to_string(t);
-}
-
-std::string
-Visualizer::to_string(double time_s, std::string format)
-{
-    int sz = std::snprintf(nullptr, 0, format.c_str(), time_s);
-    char buf[sz + 1]; // +1 for null terminator
-    std::snprintf(&buf[0], sz+1, format.c_str(), time_s);
-    return std::string(buf);
+    std_msgs::msg::ColorRGBA color;
+    color.r = (float)r/255;
+    color.g = (float)g/255;
+    color.b = (float)b/255;
+    color.a = 1.0;
+    return color;
 }
 
 }

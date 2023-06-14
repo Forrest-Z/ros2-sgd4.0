@@ -15,17 +15,12 @@
 #ifndef SGD_UTIL__VISUALIZER_HPP_
 #define SGD_UTIL__VISUALIZER_HPP_
 
-#include <chrono>
-#include <iostream>
-#include <fstream>
-#include <bitset>
-
 #include "rclcpp/rclcpp.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 #include "visualization_msgs/msg/marker.hpp"
-#include "sgd_util/geotools.hpp"
-
-#include "tinyxml2.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 namespace sgd_util
 {
@@ -34,37 +29,62 @@ class Visualizer : public rclcpp::Node
 {
 
 public:
-  Visualizer();
-  ~Visualizer();
+    Visualizer();
+    ~Visualizer();
 
 protected:
-  //! \brief Init parameters
-  // bool debug_;  // internal variable to check if debugging is enabled
-  // std::string debug_out_dir_;
-  // std::vector<std::string> debug_files_;
-  std::vector<std::string> in_topics_;
+    int marker_lifetime_;
+    std_msgs::msg::ColorRGBA status_colors[6];
 
-  //! \brief Init publisher and subscriber
-  void init_pub_sub();
-  rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr publisher;
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pub_map_marker;
-  std::vector<rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr> subscriber;
+    //! \brief Init publisher and subscriber
+    void init_pub_sub();
+    rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
 
-  // double time_at_start_;
+    // Publisher
+    rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pub_gnss_pose_;
+    rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pub_uwb_pose_;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_odom_orientation_;
 
-  bool is_map_published_;
-  void pub_map_markers();
+    // Subscriber
+    rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_gnss_;
+    rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_uwb_;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_;
 
-  void on_pose_received(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg, uint8_t sensor);
-  visualization_msgs::msg::Marker createMarker();
+    /**
+     * @brief Is called when a new gnss message is received
+     * @param msg the received message
+     */
+    void on_gnss_received(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
+    /**
+     * @brief Is called when a new uwb message is received.
+     * @param msg
+     */
+    void on_uwb_received(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
+    /**
+     * @brief Is called when a new odom message is received
+     * @param msg
+     */
+    void on_odom_received(const nav_msgs::msg::Odometry::SharedPtr msg);
 
-  std::string time_to_string();
-  std::string stamp_to_string(std_msgs::msg::Header header);
-  std::string to_string(double time_s, std::string format="%.3f");
-  std::string pose_to_string(geometry_msgs::msg::Pose pose);
+    /**
+     * @brief Create a marker message. The marker type is optional, standard value is a cylinder
+     * 
+     * @param marker_type the marker type
+     * @return visualization_msgs::msg::Marker 
+     */
+    visualization_msgs::msg::Marker create_marker(int32_t marker_type = visualization_msgs::msg::Marker::CYLINDER);
+
+    /**
+     * @brief Create a std_msgs::msg::ColorRGBA object
+     *
+     * @param r red value
+     * @param g green value
+     * @param b blue value
+     * @return std_msgs::msg::ColorRGBA
+     */
+    std_msgs::msg::ColorRGBA create_color(int r, int g, int b);
 };
 
-}   // namespace sgd_util
+} // namespace sgd_util
 
-#endif  // SGD_UTIL__VISUALIZER_HPP_
+#endif // SGD_UTIL__VISUALIZER_HPP_

@@ -237,6 +237,7 @@ Motorcontroller::on_odom_sim_received(const nav_msgs::msg::Odometry::SharedPtr m
         // set initial pose
         initial_pos_.first = msg->pose.pose.position.x;
         initial_pos_.second = msg->pose.pose.position.y;
+        PLOGD.printf("Set initial pose to %.3f, %.3f", initial_pos_.first, initial_pos_.second);
         is_relative_ = false;
     }
 

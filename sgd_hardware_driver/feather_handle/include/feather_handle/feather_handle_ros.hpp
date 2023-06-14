@@ -52,9 +52,17 @@ protected:
     rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::Twist>::SharedPtr laser_pub_;
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel_;
 
+    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_sim_;
+    rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PoseStamped>::SharedPtr vis_compass_pub_;
+    // rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PoseStamped>::SharedPtr vis_laser1d_pub_;
+
+    bool is_sim_;
     double cmd_laser_time_;
+    bool visualize_compass = false;
+    bool visualize_laser1d = false;
 
     void publish_imu();
+    void publish_imu_visual(sensor_msgs::msg::Imu::SharedPtr msg);
     void on_cmd_vel_received(geometry_msgs::msg::Twist::SharedPtr msg_);
 
     sgd_io::Serial serial;

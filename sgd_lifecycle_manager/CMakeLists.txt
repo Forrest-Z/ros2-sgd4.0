@@ -14,7 +14,6 @@ FetchContent_MakeAvailable(googletest)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
-find_package(sgd_util REQUIRED)
 find_package(tinyxml2_vendor REQUIRED)
 find_package(TinyXML2 REQUIRED)
 
@@ -24,7 +23,6 @@ set(executable_name lifecycle_manager)
 set(dependencies
   rclcpp
   lifecycle_msgs
-  sgd_util
   tinyxml2_vendor
   TinyXML2
 )

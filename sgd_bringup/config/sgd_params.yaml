@@ -200,9 +200,9 @@ local_costmap:
           inf_is_valid: False
           marking: True
           clearing: True
-          obstacle_max_range: 10.0
+          obstacle_max_range: 15.0
           obstacle_min_range: 0.5
-          raytrace_max_range: 6.0
+          raytrace_max_range: 15.0
           raytrace_min_range: 0.5
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
@@ -375,11 +375,16 @@ osm_planner:
     global_frame: "earth"
     map_frame: "map"
     robot_base_frame: "base_link"
+    visual_topic: "visual/map"
 
 visualizer:
   ros__parameters:
     use_sim_time: False
-    topics: ["uwb/local", "gps/local"]
+    gnss_topic: "gps/local"
+    uwb_pose_topic: "uwb/local"
+    uwb_marker_topic: "uwb/marker"
+    odom_topic: "odom/hardware"
+    marker_lifetime: 30
 
 ### Hardware parameters ###
 sick_scan2:
@@ -407,9 +412,9 @@ gnss_node:
     publish_local_pose: True
     publish_tf: False
     local_pose_topic: "gps/local"
-    gps_sim_topic: "gps/sim"
+    sim_topic: "gps/sim"
     utc_topic: "clock/utc"
-    gps_topic: "gps"
+    gnss_topic: "gps"
     transform_to_base_link: True
     base_link_frame_id: "base_link"
     odom_frame_id: "odom"
@@ -432,7 +437,7 @@ wh_fcruiser:
   ros__parameters:
     use_sim_time: False
     log_dir: ".ros/log/"
-    log_severity: "I"
+    log_severity: "D"
     gps_topic: "gps/local"
     imu_topic: "imu"
     pico_base_sub_topic: "pico_base_odom"

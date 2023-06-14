@@ -5,8 +5,6 @@
 #include <map>
 #include <iostream>
 
-#include "sgd_util/angle_utils.hpp"
-
 namespace sgd_ctrl
 {
 
@@ -28,6 +26,8 @@ struct Pos2D
 private:
     std::list<Pos2D> global_plan_;
     double last_dist = 10.0;    // last distance to next waypoint
+
+    double delta_angle(double x1, double y1, double x2, double y2, double x3, double y3);
 public:
     RouteAnalyzer(/* args */);
     ~RouteAnalyzer();
@@ -80,7 +80,7 @@ RouteAnalyzer::add_waypoints(std::vector<std::pair<double, double>> waypoints)
         pos.y = waypoints.at(i).second;
         
         // calculate angle
-        pos.angle = sgd_util::delta_angle(waypoints.at(i-1).first, waypoints.at(i-1).second,
+        pos.angle = delta_angle(waypoints.at(i-1).first, waypoints.at(i-1).second,
                                           waypoints.at(i).first  , waypoints.at(i).second,
                                           waypoints.at(i+1).first, waypoints.at(i+1).second) - M_PI;
         global_plan_.push_back(pos);
@@ -109,6 +109,28 @@ RouteAnalyzer::next_wp()
 {
     // remove first waypoint
     global_plan_.pop_front();
+}
+
+double
+RouteAnalyzer::delta_angle(double x1, double y1, double x2, double y2, double x3, double y3)
+{
+    auto ang1 = atan2(y1-y2, x1-x2);
+    auto ang2 = atan2(y3-y2, x3-x2);
+    
+    if (ang1 < 0)   ang1 = ang1+2*M_PI;
+    if (ang2 < 0)   ang2 = ang2+2*M_PI;    
+
+    double diff_ang = abs(ang2 - ang1);
+
+    std::cout << "Winkel 1: " << ang1 << ", Winkel 2: " << ang2 << std::endl;
+
+    if (diff_ang > M_PI)
+    {
+        return abs(ang2 - ang1 - 2*M_PI);
+    } else
+    {
+        return diff_ang;
+    }
 }
 
 } // namespace sgd_ctrl

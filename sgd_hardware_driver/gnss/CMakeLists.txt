@@ -21,6 +21,7 @@ find_package(rclcpp_lifecycle REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(sgd_msgs REQUIRED)
 find_package(sgd_util REQUIRED)
 find_package(sgd_io REQUIRED)
@@ -37,6 +38,8 @@ ament_target_dependencies(gnss_node
     rclcpp_lifecycle
     nav2_util
     sensor_msgs
+    geometry_msgs
+    visualization_msgs
     sgd_msgs
     sgd_util
     sgd_io

@@ -24,7 +24,8 @@ LF_Node_Factory::import_launch_file() {
 
     if (doc.ErrorID() != 0)
     {
-        throw sgd_util::XmlError(doc.ErrorStr());
+        std::cerr << doc.ErrorStr() << "\n";
+        return;
     }
 
     auto root = doc.RootElement();     // <launch>

@@ -36,13 +36,66 @@ Die Position wird im lokalen und im globalen WGS84 Koordinatensystem ausgegeben.
 
 Der Receiver kann RTCM Korrekturdaten verarbeiten. Um den Ntrip Client zu aktivieren, müssen in den Parametern ein Ntrip Server, Port, Mountpoint und die Authentifizierung angegeben werden.
 
-Für die Nutzung von SAPOS und anderen Ntrip Servern ist eine Authentifizierung notwendig. Der Nutzername und Passwort können mit dem Hilfsprogramm ntrip_auth in den benötigten Authentifizierungsstring umgewandelt werden. Eine direkte Eingabe von Nutzername und Passwort ist nicht vorgesehen, um Missbrauch vorzubeugen.
+Für die Nutzung von SAPOS und anderen Ntrip Servern ist eine Authentifizierung notwendig. Der Nutzername und Passwort können mit dem Hilfsprogramm ntrip_auth in den benötigten Authentifizierungsstring umgewandelt werden. Eine direkte Eingabe von Nutzername und Passwort ist nicht vorgesehen.
 
-| Topic | Message Type |
-| ----- | ------------ |
-| /gps  | sensor_msgs/NavSatFix |
-| /gps/local | geometry_msgs/PoseWithCovarianceStamped |
-| /clock/utc | builtin_interfaces/msg/Time |
+| Published Topic | Message Type |
+| --------------- | ------------ |
+| /gps            | sensor_msgs/NavSatFix |
+| /gps/local      | geometry_msgs/PoseWithCovarianceStamped |
+| /clock/utc      | builtin_interfaces/msg/Time |
+| /visualize/gnss | visualization_msgs/msg/Marker |
+
+
+### Parameters
+
+| Parameter Name  | Type           | Default Value    | Description    |
+| --------------- | -------------- | ---------------- | -------------- |
+| log_dir         | String         | ".ros/log/"      | PLOG log directory |
+| log_severity    | String         | "I"              | PLOG logging severity |
+| port            | String         | "/dev/novalue"   | Topic on which the computed global plan is published |
+| parser_file     | String         | ""               | Topic on which to subscribe to clicked point (from rviz) |
+| parser_type     | String         | "nmea"           | Service that provides map info |
+| publish_local_pose | Boolean     | true             | Service to calculate a new global plan |
+| publish_tf      | Boolean        | true             | Yaml to read information about the map from |
+| local_pose_topic | String        | "gps/local"      | Name of the global frame |
+| gps_sim_topic   | String         | "gps/sim"        | Name of the local (map) frame |
+| utc_topic       | String         | "clock/utc"      | Name of the robot base frame |
+| gps_topic       | String         | "gps"            | Name of the robot base frame |
+| visualize_gnss_topic | String    | "visualize/gnss" | Name of the robot base frame |
+| transform_to_base_link | Boolean | true             | Name of the robot base frame |
+| base_link_frame_id | String      | "base_link"      | Name of the robot base frame |
+| odom_frame_id   | String         | "odeom"          | Name of the robot base frame |
+| ntrip_server    | String         | ""               | See section 'How to use SAPOS' |
+| ntrip_port      | String         | ""               | See section 'How to use SAPOS' |
+| ntrip_mountpoint | String        | ""               | See section 'How to use SAPOS' |
+| ntrip_auth      | String         | ""               | See section 'How to use SAPOS' |
+| ntrip_send_nmea | String         | ""               | See section 'How to use SAPOS' |
+
+### How to use SAPOS
+
+
+| Parameter Name  | Type           | Default Value    | Description    |
+| --------------- | -------------- | ---------------- | -------------- |
+| ntrip_server    | String         | ""               | Name of the robot base frame |
+| ntrip_port      | String         | ""               | Name of the robot base frame |
+| ntrip_mountpoint | String        | ""               | Name of the robot base frame |
+| ntrip_auth      | String         | ""               | Name of the robot base frame |
+| ntrip_send_nmea | String         | ""               | Name of the robot base frame |
+
+### Visualisierung
+
+
+Color depends on gnss fix status:
+
+| value | name       | color  | hex     |
+| ----- | ----       | -----  | -----   |
+| 0     | not fixed  | grey   | #8a8a8a |
+| 1     | standalone | pink   | #00ffff |
+| 2     | DGPS       | red    | #c80000 |
+| 3     | GPS PPS    | yellow | #ffff00 |
+| 4     | RTK fixed  | green  | #00c800 |
+| 5     | RTK float  | orange | #ff8700 |
+
 
 ## IMU
 

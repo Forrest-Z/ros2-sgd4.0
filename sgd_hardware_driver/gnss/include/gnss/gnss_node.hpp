@@ -27,6 +27,7 @@
 
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
+#include "visualization_msgs/msg/marker.hpp"
 
 #include "sgd_util/geotools.hpp"
 #include "sgd_io/serial.hpp"
@@ -47,7 +48,7 @@ using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface
 class Gnss_Node : public rclcpp_lifecycle::LifecycleNode
 {
 
-public: 
+public:
     Gnss_Node();
     ~Gnss_Node();
 
@@ -65,9 +66,8 @@ protected:
     void init_parameters();
     bool is_sim_;
     std::string xml_file_, parser_type_;
-    bool is_pub_local_pose_, is_publish_tf_;
-    // topics
-    std::string local_pose_topic_, gnss_sim_topic_, utc_clock_topic_, gnss_topic_;
+    bool is_pub_local_pose_ = false;
+    bool is_publish_tf_ = false;
     // transforms
     bool is_tf_to_base_link_;
     std::string base_link_frame_id_, odom_frame_id_;
@@ -135,9 +135,6 @@ protected:
 
     std::unique_ptr<INMEA_Message> parser_;
     std::unique_ptr<Ntrip_Client> client;
-
-    // logging
-    // std::ofstream log_file;
 };
 
 } // namespace sgd_hardware_drivers

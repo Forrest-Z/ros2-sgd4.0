@@ -7,7 +7,7 @@
     <!--node name="amcl" /-->
 
 <!-- hardware nodes -->
-    <node name="feather_handle_ros" start="real" />
+    <node name="feather_handle_ros" start="both" />
     <node name="gnss_node" start="both" />
     <node name="uwb_node" start="real" />
     <!--node name="led_strip" start="both" /-->

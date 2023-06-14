@@ -17,12 +17,15 @@ Feather_Handle_ROS::Feather_Handle_ROS():
     declare_parameter("cmd_vel_topic", rclcpp::ParameterValue("cmd_vel"));
     declare_parameter("sgd_move_topic", rclcpp::ParameterValue("cmd_vel_laser"));
 
+    declare_parameter("visualize_compass_topic", rclcpp::ParameterValue("visual/compass"));
+    declare_parameter("visualize_laser_topic", rclcpp::ParameterValue("visual/vl53l1x"));
+
     // initialize logging
     std::string log_sev_ = get_parameter("log_severity").as_string();
     std::string log_file(get_parameter("log_dir").as_string() + "/feather_handle.csv");
     plog::init(plog::severityFromString(log_sev_.c_str()), log_file.c_str());
     PLOGI.printf("Created feather_handle node. PLOG logging severity is %s", log_sev_.c_str());
-    RCLCPP_INFO(get_logger(), "Created feather_handle node. Savo log file to %s", log_file.c_str());
+    RCLCPP_INFO(get_logger(), "Created feather_handle node. Save log file to %s", log_file.c_str());
 
     PLOGD << "millis; roll; pitch; yaw; gyro (x3);;; magneto (x3);;; accel (x3)";
 }
@@ -36,7 +39,10 @@ CallbackReturn
 Feather_Handle_ROS::on_configure(const rclcpp_lifecycle::State & state __attribute__((unused)))
 {
     PLOGD << "Configuring...";
+    get_parameter("use_sim_time", is_sim_);
 
+    if (is_sim_)    return CallbackReturn::SUCCESS;
+    
     bno055_ = std::make_unique<BNO055>();
     vl53l1x_ = std::make_unique<VL53L1X>();
 
@@ -96,25 +102,46 @@ Feather_Handle_ROS::on_shutdown(const rclcpp_lifecycle::State & state __attribut
 void
 Feather_Handle_ROS::init_pub_sub()
 {
+    // visualization
+    std::string imu_topic_ = get_parameter("imu_topic").as_string();
+    std::string vis_compass_topic_ = get_parameter("visualize_compass_topic").as_string();
+    if (!vis_compass_topic_.empty())
+    {
+        PLOGD.printf("Create publisher on topic %s", vis_compass_topic_.c_str());
+        vis_compass_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>(vis_compass_topic_, default_qos);
+        visualize_compass = true;
+        vis_compass_pub_->on_activate();
+
+        if (is_sim_)
+        {
+            // create subscriber for imu data
+            PLOGD.printf("Create subscription for topic %s", imu_topic_.c_str());
+            sub_imu_sim_ = this->create_subscription<sensor_msgs::msg::Imu>(imu_topic_, rclcpp::QoS(rclcpp::SensorDataQoS()),
+                std::bind(&Feather_Handle_ROS::publish_imu_visual, this, std::placeholders::_1));
+        }
+        return;
+    }
+
     // create timer
     timer_ = this->create_wall_timer(10ms, std::bind(&Feather_Handle_ROS::read_serial, this));
 
-    std::string imu_topic_ = get_parameter("imu_topic").as_string();
-    RCLCPP_DEBUG(get_logger(), "Create publisher on topic %s", imu_topic_.c_str());
+    PLOGD.printf("Create publisher on topic %s", imu_topic_.c_str());
     imu_pub_ = create_publisher<sensor_msgs::msg::Imu>(imu_topic_, default_qos);
 
     std::string imu_temp_topic_ = get_parameter("imu_temp_topic").as_string();
-    RCLCPP_DEBUG(get_logger(), "Create publisher on topic %s", imu_temp_topic_.c_str());
+    PLOGD.printf("Create publisher on topic %s", imu_temp_topic_.c_str());
     temp_pub_ = create_publisher<sensor_msgs::msg::Temperature>(imu_temp_topic_, default_qos);
 
     std::string cmd_vel_topic_ = get_parameter("cmd_vel_topic").as_string();
-    RCLCPP_DEBUG(get_logger(), "Create subscription for topic %s", cmd_vel_topic_.c_str());
+    PLOGD.printf("Create subscription for topic %s", cmd_vel_topic_.c_str());
     sub_cmd_vel_ = create_subscription<geometry_msgs::msg::Twist>(cmd_vel_topic_, default_qos,
             std::bind(&Feather_Handle_ROS::on_cmd_vel_received, this, std::placeholders::_1));
 
     std::string sgd_move_topic_ = get_parameter("sgd_move_topic").as_string();
-    RCLCPP_DEBUG(get_logger(), "Create publisher on topic %s", sgd_move_topic_.c_str());
+    PLOGD.printf("Create publisher on topic %s", sgd_move_topic_.c_str());
     laser_pub_ = create_publisher<geometry_msgs::msg::Twist>(sgd_move_topic_, default_qos);
+
+    // TODO visualization for Laser 1D
 
     imu_pub_->on_activate();
     temp_pub_->on_activate();
@@ -157,65 +184,79 @@ Feather_Handle_ROS::read_serial()
 void
 Feather_Handle_ROS::publish_imu()
 {
-    sensor_msgs::msg::Imu msg_;
-    msg_.header.stamp = now();
-    msg_.header.frame_id = "imu_link";
+    auto msg_ = std::make_shared<sensor_msgs::msg::Imu>();
+    // sensor_msgs::msg::Imu msg_;
+    msg_->header.stamp = now();
+    msg_->header.frame_id = "imu_link";
 
     // orientation
     auto o = bno055_->get_euler();
     tf2::Quaternion q;
     q.setRPY(o.data[0], o.data[1], o.data[2]);
-    msg_.orientation = tf2::toMsg(q);
+    msg_->orientation = tf2::toMsg(q);
 
     // acceleration
     auto a = bno055_->get_acc();
-    msg_.linear_acceleration.x = a.data[0];
-    msg_.linear_acceleration.y = a.data[1];
-    msg_.linear_acceleration.z = a.data[2];
+    msg_->linear_acceleration.x = a.data[0];
+    msg_->linear_acceleration.y = a.data[1];
+    msg_->linear_acceleration.z = a.data[2];
 
     // gyro
     auto g = bno055_->get_gyro();
-    msg_.angular_velocity.x = g.data[0];
-    msg_.angular_velocity.y = g.data[1];
-    msg_.angular_velocity.z = g.data[2];
+    msg_->angular_velocity.x = g.data[0];
+    msg_->angular_velocity.y = g.data[1];
+    msg_->angular_velocity.z = g.data[2];
 
     auto m = bno055_->get_magnet();
     // Covariance -> 3x3 matrix
     for (uint8_t i = 0; i < 9; i+=4)
     {
         // set diagonal to variance
-        msg_.orientation_covariance[i] = 0.05;
+        msg_->orientation_covariance[i] = 0.05;
     }
 
-    PLOGD << bno055_->get_millis() << ";" 
-          << std::to_string(o.data[0]) << ";" << std::to_string(o.data[1]) << ";" << std::to_string(o.data[2]) << ";"
-          << std::to_string(g.data[0]) << ";" << std::to_string(g.data[1]) << ";" << std::to_string(g.data[2]) << ";"
-          << std::to_string(m.data[0]) << ";" << std::to_string(m.data[1]) << ";" << std::to_string(m.data[2]) << ";"
-          << std::to_string(a.data[0]) << ";" << std::to_string(a.data[1]) << ";" << std::to_string(a.data[2]);
+    PLOGD.printf("%u; %.3f; %.3f; %.3f; %.3f; %.3f; %.3f; %.3f; %.3f; %.3f; %.3f; %.3f; %.3f", bno055_->get_millis(),
+        o.data[0], o.data[1], o.data[2], g.data[0], g.data[1], g.data[2],
+        m.data[0], m.data[1], m.data[2], a.data[0], a.data[1], a.data[2]);
 
-    imu_pub_->publish(msg_);
+    imu_pub_->publish(*msg_);
+
+    if (visualize_compass)
+    {
+        publish_imu_visual(msg_);
+    }
 }
 
 void
 Feather_Handle_ROS::on_cmd_vel_received(geometry_msgs::msg::Twist::SharedPtr msg_)
 {
     geometry_msgs::msg::Twist cmd_vel;
-    //PLOGD << "Received velocity command (vel_x, rot_z) " << cmd_vel.linear.x << ", " << cmd_vel.angular.z;
     if (vl53l1x_->get_vel_p() == 0)
     {
-        //RCLCPP_INFO(get_logger(), "Laser vel is 0");
         cmd_vel.angular.z = 0.0;
         cmd_vel.linear.x = 0.0;
-        //PLOGD << "Publish velocity command (vel_x, rot_z) " << cmd_vel.linear.x << ", " << cmd_vel.angular.z;
         laser_pub_->publish(cmd_vel);
     }
     else if ((now().seconds() - cmd_laser_time_) < 1)
     {
         cmd_vel.linear.x = msg_->linear.x * vl53l1x_->get_vel_p();
         cmd_vel.angular.z = msg_->angular.z * vl53l1x_->get_vel_p();
-        //PLOGD << "Publish velocity command (vel_x, rot_z) " << cmd_vel.linear.x << ", " << cmd_vel.angular.z;
         laser_pub_->publish(cmd_vel);
     }
+}
+
+void
+Feather_Handle_ROS::publish_imu_visual(sensor_msgs::msg::Imu::SharedPtr msg)
+{
+    // publish visualization message
+    geometry_msgs::msg::PoseStamped compass_;
+    compass_.header.frame_id = "imu_link";
+    compass_.header.stamp = now();
+    compass_.pose.orientation = msg->orientation;
+
+    // TODO: Drehung des Robos rausrechnen, sonst ist der Winkel falsch
+    
+    vis_compass_pub_->publish(compass_);
 }
 
 }   // namespace

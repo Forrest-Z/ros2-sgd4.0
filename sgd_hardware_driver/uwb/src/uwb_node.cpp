@@ -43,6 +43,7 @@ UWB_Node::UWB_Node():
     std::string log_file(get_parameter("log_dir").as_string() + "/uwb_node.csv");
     plog::init(plog::severityFromString(log_sev_.c_str()), log_file.c_str());
     PLOGI.printf("Created uwb node. PLOG logging severity is %s", log_sev_.c_str());
+    RCLCPP_INFO(get_logger(), "Created uwb node. Save log file to %s", log_file.c_str());
 }
 
 UWB_Node::~UWB_Node()

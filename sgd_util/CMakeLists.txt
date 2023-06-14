@@ -11,10 +11,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 # find dependencies
-find_package(tinyxml2_vendor REQUIRED)
-find_package(TinyXML2 REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -29,10 +28,6 @@ include_directories(include)
 set(library_name ${PROJECT_NAME}_core)
 set(CPP_FILES src/geotools.cpp)
 set(HPP_FILES
-    include/sgd_util/angle_utils.hpp
-    include/sgd_util/sensor_filter.hpp
-    include/sgd_util/ieee_754_conv.hpp
-    include/sgd_util/log_utils.hpp
     include/sgd_util/yaml_utils.hpp
 )
 set(dependencies
@@ -56,17 +51,9 @@ add_executable(visualizer src/visualizer.cpp src/geotools.cpp)
 ament_target_dependencies(visualizer
   rclcpp
   geometry_msgs
+  nav_msgs
   visualization_msgs
-  TinyXML2)
-
-add_executable(wgs_to_local src/wgs_to_local.cpp)
-ament_target_dependencies(wgs_to_local
-  rclcpp
-  tf2
-  tf2_ros
-  sensor_msgs
-  geometry_msgs)
-target_link_libraries(wgs_to_local ${library_name})
+  tf2_geometry_msgs)
 
 add_executable(scan_timer src/scan_timer.cpp)
 ament_target_dependencies(scan_timer
@@ -74,7 +61,7 @@ ament_target_dependencies(scan_timer
   sensor_msgs)
 
 install(
-  TARGETS visualizer wgs_to_local scan_timer
+  TARGETS visualizer scan_timer
   DESTINATION lib/${PROJECT_NAME})
 
 install(

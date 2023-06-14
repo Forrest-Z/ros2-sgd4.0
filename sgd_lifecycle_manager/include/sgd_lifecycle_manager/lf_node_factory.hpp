@@ -20,7 +20,6 @@
 #include <vector>
 #include <memory>
 
-#include "sgd_util/exception.hpp"
 #include "tinyxml2.h"
 
 namespace sgd_lifecycle

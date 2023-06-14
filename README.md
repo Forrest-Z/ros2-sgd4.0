@@ -37,6 +37,19 @@ Bei der Verwendung von Mikrocontrollern mit microROS muss der Micro-ROS Agent ge
 micro-ros-agent serial --dev /dev/serial/by-id/[serial-id] baudrate=115200
 ```
 
+## RVIZ
+
+Bei jedem Start von ROS wird RVIZ ebenfalls gestartet. In RVIZ ist es möglich, die Sensordaten zu visualisieren und die Navigation zu starten.
+
+![rviz after ros startup](/doc/rviz.png)
+
+In der Topleiste sind die Kamerasteuerung und die Werkzeuge zur Routenplanung zu finden. Auf der linken Seite werden die anzuzeigenden Topics eingestellt. Das Hauptfenster zeigt die Karte und den Shared Guide Dog 4.0.
+
+
+### Visualisierung
+
+Alle Topics, die ausschließlich zur Visualisierung dienen, starten mit dem Prefix */visual*. Jeder Knoten ist dabei für die Visualisierung, also das publishing der entsprechenden Messages, selbst verantwortlich.
+
 # preempt_rt Patch
 
 **Achtung:** Die Installation des preempt_rt Patches ist optional!
