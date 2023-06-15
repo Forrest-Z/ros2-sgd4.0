@@ -117,7 +117,7 @@ def generate_launch_description():
         'default_bt_xml_filename': default_bt_xml_filename,
         'map_subscribe_transient_local': 'true',
         'yaml_filename': map_yaml_file,
-        'tag_defs': os.path.join(bringup_dir, 'config', 'uwb_tag_defs.yaml'),
+        'tag_defs_file': os.path.join(bringup_dir, 'config', 'uwb_tag_defs.yaml'),
         'parser_file': os.path.join(bringup_dir, 'config', 'nmea.xml'),
         'voice_msgs_dir': os.path.join(bringup_dir, 'voice_msgs')}
 

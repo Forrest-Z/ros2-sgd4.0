@@ -9,7 +9,7 @@
 <!-- hardware nodes -->
     <node name="feather_handle_ros" start="both" />
     <node name="gnss_node" start="both" />
-    <node name="uwb_node" start="real" />
+    <node name="uwb_node" start="both" />
     <!--node name="led_strip" start="both" /-->
     <!--node name="frsky_rx8r" start="real" /-->
     <node name="wh_fcruiser" start="both" />

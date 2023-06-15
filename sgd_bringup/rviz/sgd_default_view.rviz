@@ -570,6 +570,18 @@ Visualization Manager:
           Reliability Policy: Reliable
           Value: /visual/gnss
         Value: true
+      - Class: rviz_default_plugins/Marker
+        Enabled: true
+        Name: UWB Position
+        Namespaces:
+          sgd: true
+        Topic:
+          Depth: 5
+          Durability Policy: Volatile
+          History Policy: Keep Last
+          Reliability Policy: Reliable
+          Value: /visual/uwb
+        Value: true
       - Class: rviz_default_plugins/Pose
         Color: 255; 25; 0
         Enabled: true

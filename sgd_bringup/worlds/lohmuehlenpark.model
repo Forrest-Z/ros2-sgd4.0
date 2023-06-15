@@ -60,6 +60,32 @@
 
       <link name="base_link">
         <pose>0 0 0 0 0 0</pose>
+        <sensor name="gps_ground_truth" type="gps">
+          <always_on>true</always_on>
+          <update_rate>10</update_rate>
+          <gps>
+            <position_sensing>
+              <horizontal>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>0.0</stddev>
+                </noise>
+              </horizontal>
+              <vertical>
+                <noise type="gaussian">
+                  <mean>0.0</mean>
+                  <stddev>0.0</stddev>
+                </noise>
+              </vertical>
+            </position_sensing>
+          </gps>
+          <plugin name="my_gps_plugin" filename="libgazebo_ros_gps_sensor.so">
+            <ros>
+              <remapping>~/out:=ground_truth</remapping>
+            </ros>
+            <frame_name>earth</frame_name>
+          </plugin>
+        </sensor>
       </link>
 
       <link name="base_frame">
@@ -96,7 +122,7 @@
               <size>0.7152 0.628 0.20</size>
             </box>
           </geometry>
-        </collision>        
+        </collision>
       </link>
 
       <link name="wheel_left_link">
@@ -551,6 +577,20 @@
         <odometry_frame>odom</odometry_frame>
         <robot_base_frame>base_link</robot_base_frame>
       </plugin>
+
+      <!--plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
+        <always_on>true</always_on>
+        <update_rate>10.0</update_rate>
+        <body_name>base_link</body_name>
+        <topic_name>ground_truth/state</topic_name>
+        <gaussian_noise>0.0</gaussian_noise>
+        <frame_name>map</frame_name>
+        <xyz_offset>70 76 0</xyz_offset>
+        <rpy_offset>0 0 0</rpy_offset>
+        <ros>
+          <remapping>/odom:=ground_truth</remapping>
+        </ros>
+      </plugin-->
     </model>
 
   </world>

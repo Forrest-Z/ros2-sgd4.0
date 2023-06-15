@@ -459,13 +459,13 @@ uwb_node:
     log_dir: ".ros/log/"
     log_severity: "I"
     port: "/dev/serial/by-id/usb-Raspberry_Pi_Pico_E6615CC1D32CB52F-if00"
-    tag_defs: "uwb_tag_defs.yaml"
+    tag_defs_file: "uwb_tag_defs.yaml"
     publish_wgs84_pose: False
     local_pose_topic: uwb/local
     marker_topic: uwb/tags
     distance_topic: uwb/distance
     global_pose_topic: uwb/global
-    odom_improved_topic: odom/improved
+    odom_improved_topic: odom/hardware
 
 feather_handle_ros:
   ros__parameters:

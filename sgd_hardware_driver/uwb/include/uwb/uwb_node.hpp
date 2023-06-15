@@ -15,15 +15,16 @@
 #ifndef SGD_HARDWARE__UWB_NODE_HPP_
 #define SGD_HARDWARE__UWB_NODE_HPP_
 
-#include <regex>
-#include <memory>
-#include <fstream>
-#include <charconv>
-#include <string_view>
-#include <iostream>
+// #include <regex>
+// #include <memory>
+// #include <fstream>
+// #include <charconv>
+// #include <string_view>
+// #include <iostream>
 #include <string>
-#include <sstream>
-#include <bitset>
+// #include <sstream>
+// #include <bitset>
+#include <random>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
@@ -32,6 +33,7 @@
 #include "tf2/utils.h"
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 #include "visualization_msgs/msg/marker.hpp"
 #include "sgd_io/serial.hpp"
 #include "sgd_util/geotools.hpp"
@@ -53,6 +55,17 @@ using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface
 
 class UWB_Node : public rclcpp_lifecycle::LifecycleNode
 {
+
+/**
+ * @brief Stores a point with x and y position 
+ */
+struct point
+{
+    double x;
+    double y;
+};
+
+
 public:
     UWB_Node();
     ~UWB_Node();
@@ -69,14 +82,16 @@ protected:
      * @brief Initialize parameters
      */
     void init_parameters();
-    /**
-     * @brief Regular expression to use to get values from received message.
-     */
-    std::regex regex_;
-    std::string tag_definitions_;
-    bool is_pub_wgs84_pose_;
-    bool is_pub_marker_;
-    int exp_frequ_;
+
+    // std::regex regex_;                  /// @brief regular expression to get values from received message
+    // std::string tag_defs_file_;     /// @brief file to read tag definitions from
+    bool is_pub_wgs84_pose_;        /// @brief set to true to publish pose in wgs84 coordinate frame
+    bool is_pub_visual_;            /// @brief set to true to publish visualization messages
+    // int exp_frequ_;
+
+    std::unordered_map<int, point> tags;    /// @brief map to hold all uwb tags with positions
+
+    bool is_sim_;                   /// @brief is true if simulation is active
     
     /**
      * @brief Initialize publisher and subscriber.
@@ -84,7 +99,7 @@ protected:
     void init_pub_sub();
 
     /**
-     * @brief Read the map yaml and parse parameters
+     * @brief Read and parse the file containing tag definitions
      */
     CallbackReturn init_yaml();
 
@@ -102,7 +117,8 @@ protected:
     rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::NavSatFix>::SharedPtr pub_wgs84_pose_;
     rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::Marker>::SharedPtr pub_tag_marker_;
     rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::Marker>::SharedPtr pub_dist_marker_;
-    rclcpp::Subscription<sgd_msgs::msg::OdomImproved>::SharedPtr sub_odom_impr;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_impr;
+    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr sub_ground_truth_;
 
     /**
      * @brief Initialize transforms if the local output is set.
@@ -125,23 +141,40 @@ protected:
      */
     void read_serial();
 
-    std::unique_ptr<IMultilateration> optimizer;
+    // std::unique_ptr<IMultilateration> optimizer;
 
     /**
-     * @brief 
+     * @brief Publish the tag position to visualize in rviz
      */
-    void publish_marker();
+    void publish_tag_position();
 
-    void publish_dist_marker(int tag_id, double dist);
+    /**
+     * @brief Publish a circle around the tag position to visualize the
+     * received distance in rviz.
+     * 
+     * @param tag_id the tag id
+     * @param dist the received distance
+     */
+    void publish_tag_radius(int tag_id, double dist);
 
-    uint num_tags;   // number of tags
+    // uint num_tags;   // number of tags
     //int num_ranges; // number of received measurements
-    bool is_last_estimate_valid;
-    double t_last_meas = 0.0;   // time of last received measurement
+    // bool is_last_estimate_valid;
+    // double t_last_meas = 0.0;   // time of last received measurement
 
     SGD_UWB_ParticleFilter uwb_pf;
 
-    void on_odom_impr_received(sgd_msgs::msg::OdomImproved::SharedPtr msg);
+    nav_msgs::msg::Odometry last_odom_;
+    void on_odom_impr_received(nav_msgs::msg::Odometry::SharedPtr msg);
+
+    std::default_random_engine generator;
+    std::normal_distribution<double> distribution;
+
+    /**
+     * @brief Is called when a odometry message from gazebo p3d plugin is received 
+     * @param msg 
+     */
+    void on_ground_truth_received(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
 };
 
 }

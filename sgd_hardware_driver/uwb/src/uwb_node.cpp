@@ -25,7 +25,7 @@ UWB_Node::UWB_Node():
     declare_parameter("log_severity", rclcpp::ParameterValue("I"));
 
     declare_parameter("port", rclcpp::ParameterValue("/dev/novalue"));
-    declare_parameter("tag_defs", rclcpp::ParameterValue("uwb_tag_defs.yaml"));
+    declare_parameter("tag_defs_file", rclcpp::ParameterValue("uwb_tag_defs.yaml"));
     declare_parameter("publish_wgs84_pose", rclcpp::ParameterValue(true));
     declare_parameter("publish_marker", rclcpp::ParameterValue(true));
     declare_parameter("exp_meas_frequ", rclcpp::ParameterValue(10));
@@ -36,7 +36,7 @@ UWB_Node::UWB_Node():
     declare_parameter("global_pose_topic", rclcpp::ParameterValue("uwb/global"));
     declare_parameter("odom_improved_topic", rclcpp::ParameterValue("odom/improved"));
 
-    optimizer = std::make_unique<LevMarq>();
+    // optimizer = std::make_unique<LevMarq>();
 
     // initialize logging
     std::string log_sev_ = get_parameter("log_severity").as_string();
@@ -57,6 +57,10 @@ UWB_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unus
     PLOGD << "Configuring...";
     // Initialize parameters, pub/sub, services, etc.
     init_parameters();
+    init_transforms();
+
+    if (is_sim_)    return CallbackReturn::SUCCESS;
+
     std::string port;
     get_parameter("port", port);
     try
@@ -74,9 +78,6 @@ UWB_Node::on_configure(const rclcpp_lifecycle::State & state __attribute__((unus
         return CallbackReturn::FAILURE;
     }
     
-    init_transforms();
-    is_last_estimate_valid = false;
-
     return CallbackReturn::SUCCESS;
 }
 
@@ -88,7 +89,7 @@ UWB_Node::on_activate(const rclcpp_lifecycle::State & state __attribute__((unuse
 
     pub_position_->on_activate();
     if (is_pub_wgs84_pose_) pub_wgs84_pose_->on_activate();
-    if (is_pub_marker_)
+    if (is_pub_visual_)
     {
         pub_tag_marker_->on_activate();
         pub_dist_marker_->on_activate();
@@ -124,10 +125,12 @@ UWB_Node::on_shutdown(const rclcpp_lifecycle::State & state __attribute__((unuse
 void
 UWB_Node::init_parameters()
 {
-    get_parameter("tag_defs", tag_definitions_);
+    get_parameter("use_sim_time", is_sim_);
+
+    // get_parameter("tag_defs_file", tag_defs_file_);
     get_parameter("publish_local_pose", is_pub_wgs84_pose_);
-    get_parameter("publish_marker", is_pub_marker_);
-    get_parameter("exp_meas_frequ", exp_frequ_);
+    get_parameter("publish_marker", is_pub_visual_);
+    // get_parameter("exp_meas_frequ", exp_frequ_);
 }
 
 void
@@ -139,18 +142,27 @@ UWB_Node::init_pub_sub()
 
     std::string odom_improved_topic_ = get_parameter("odom_improved_topic").as_string();
     PLOGD.printf("Create Publisher on topic '%s'", odom_improved_topic_.c_str());
-    sub_odom_impr = this->create_subscription<sgd_msgs::msg::OdomImproved>(odom_improved_topic_, default_qos,
+    sub_odom_impr = this->create_subscription<nav_msgs::msg::Odometry>(odom_improved_topic_, default_qos,
             std::bind(&UWB_Node::on_odom_impr_received, this, std::placeholders::_1));
 
-    if (is_pub_marker_)
+    if (is_pub_visual_)
     {
         std::string marker_topic_ = get_parameter("marker_topic").as_string();
         PLOGD.printf("Create Publisher on topic '%s'", marker_topic_.c_str());
-        pub_tag_marker_ = this->create_publisher<visualization_msgs::msg::Marker>(marker_topic_, default_qos);
+        pub_tag_marker_ = this->create_publisher<visualization_msgs::msg::Marker>(marker_topic_, rclcpp::QoS(rclcpp::ParametersQoS()));
 
         std::string distance_topic_ = get_parameter("distance_topic").as_string();
         PLOGD.printf("Create Publisher on topic '%s'", distance_topic_.c_str());
-        pub_dist_marker_ = this->create_publisher<visualization_msgs::msg::Marker>(distance_topic_, default_qos);
+        pub_dist_marker_ = this->create_publisher<visualization_msgs::msg::Marker>(distance_topic_, rclcpp::QoS(rclcpp::ParametersQoS()));
+
+        if (is_sim_)
+        {
+            // create subscriber for ground truth
+            sub_ground_truth_ = this->create_subscription<sensor_msgs::msg::NavSatFix>("ground_truth", default_qos,
+                    std::bind(&UWB_Node::on_ground_truth_received, this, std::placeholders::_1));
+
+            distribution = std::normal_distribution(0.0, 1.0);
+        }
     }
     
     if (is_pub_wgs84_pose_)
@@ -160,15 +172,17 @@ UWB_Node::init_pub_sub()
         pub_wgs84_pose_ = this->create_publisher<sensor_msgs::msg::NavSatFix>(global_pose_topic_, default_qos);
     }
 
-    timer_ = this->create_wall_timer(5ms, std::bind(&UWB_Node::read_serial, this));
-    timer_marker_ = this->create_wall_timer(30s, std::bind(&UWB_Node::publish_marker, this));
+    if (!is_sim_)
+    {
+        timer_ = this->create_wall_timer(5ms, std::bind(&UWB_Node::read_serial, this));
+    }
+    // timer_marker_ = this->create_wall_timer(30s, std::bind(&UWB_Node::publish_tag_position, this));
 }
 
 CallbackReturn
 UWB_Node::init_yaml()
 {
-    num_tags = 0;
-    YAML::Node doc = YAML::LoadFile(tag_definitions_);
+    YAML::Node doc = YAML::LoadFile(get_parameter("tag_defs_file").as_string());
     if (doc["anchors"])
     {
         for (std::size_t i = 0; i < doc["anchors"].size(); i++)
@@ -181,20 +195,20 @@ UWB_Node::init_yaml()
                     auto tag_id = nd["id"].as<SGD_UWB_BEACON_ID_TYPE>();
                     auto vec = nd["pos"].as<std::vector<double>>();
 
-                    // compute position in map frame
-                    auto ll = sgd_util::LatLon(vec[0], vec[1]);
-                    auto xy = ll.to_local(map_origin);
+                    // compute position in earth frame
+                    // auto ll = sgd_util::LatLon(vec[0], vec[1]);
+                    // auto xy = ll.to_local(map_origin);
                     
-                    // TODO : Remove to in order to switch to lat/long coordinates:
-                    xy.first = vec[0];
-                    xy.second = vec[1];
+                    // compute position in local coordinates
+                    point p;
+                    p.x = vec[0];
+                    p.y = vec[1];
 
-                    optimizer->tags.insert({tag_id, xy});
+                    tags.insert({tag_id, p});
 
-                    uwb_pf.registerBeacon(xy.first, xy.second, tag_id);
+                    uwb_pf.registerBeacon(p.x, p.y, tag_id);
                     
-                    PLOGI.printf("Insert tag with id %d at position %.3f, %.3f", tag_id, xy.first, xy.second);
-                    num_tags++;
+                    PLOGI.printf("Insert tag with id %d at position %.3f, %.3f", tag_id, p.x, p.y);
                 }
             }
             catch(const YAML::Exception& e)
@@ -203,35 +217,17 @@ UWB_Node::init_yaml()
                 PLOGE.printf("YAML parse error: %s", e.what());
             }
         }
-        publish_marker();
+        publish_tag_position();
     }
 
-    RCLCPP_INFO(get_logger(), "Read %i tag definitions.", optimizer->tags.size());
-    PLOGI.printf("Read %i tag definitions.", optimizer->tags.size());
-    return (num_tags > 0 ? CallbackReturn::SUCCESS : CallbackReturn::FAILURE);
+    RCLCPP_INFO(get_logger(), "Read %i tag definitions.", tags.size());
+    PLOGI.printf("Read %i tag definitions.", tags.size());
+    return (tags.size() > 0 ? CallbackReturn::SUCCESS : CallbackReturn::FAILURE);
 }
 
 void
 UWB_Node::read_serial()
 {
-    // compute condition for optimization
-    // get time since last received measurement
-    double t = now().nanoseconds() / 1.0E6; // current time in milliseconds
-    // if ((t - t_last_meas) > 2000.0/exp_frequ_)
-    // {
-    //     if (optimizer->measuredRanges.size() > 2)   // at least 3 measurements are required to calculate a position
-    //     {
-    //         // if the last measurement was received more than 1/frequ ago
-    //         auto pos = optimizer->estimatePose();
-    //         publish_pose(pos.first, pos.second);
-    //     }
-    //     else if (is_last_estimate_valid)    // print warning only once
-    //     {
-    //         RCLCPP_WARN(get_logger(), "Not enough range measurements to calculate position.");
-    //         is_last_estimate_valid = false;
-    //     }
-    // }
-
     while (serial.read_serial())
     {
         // json string parsing
@@ -260,18 +256,102 @@ UWB_Node::read_serial()
             tag_id = js["anch"].get<SGD_UWB_BEACON_ID_TYPE>();
             dist = js["dist"].get<int>();
 
-            //uwb_pf.updateUwbMeasurement(dist/1000.0, tag_id);
+            uwb_pf.updateUwbMeasurement(dist/1000.0, tag_id);
             PLOGD << tag_id << ";" << dist;
-            publish_dist_marker(tag_id, dist);
+            publish_tag_radius(tag_id, dist);
         }
-        t_last_meas = now().nanoseconds() / 1.0E6;
+        //t_last_meas = now().nanoseconds() / 1.0E6;
+    }
+}
+
+void
+UWB_Node::publish_tag_position()
+{
+    visualization_msgs::msg::Marker marker;
+    marker.header.frame_id = "map";
+    marker.ns = "sgd";
+    marker.id = 0;
+    marker.type = visualization_msgs::msg::Marker::POINTS;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.scale.x = 0.3;
+    marker.scale.y = 0.3;
+    marker.scale.z = 0.05;
+    marker.lifetime.sec = 0;
+    marker.color.a = 1.0;
+    marker.color.r = 0.0;
+    marker.color.g = 0.8;
+    marker.color.b = 0.0;
+
+    for (auto tag : tags)
+    {
+        geometry_msgs::msg::Point p;
+        p.x = tag.second.x;
+        p.y = tag.second.y;
+        marker.points.push_back(p);
+
+        std_msgs::msg::ColorRGBA rgba;
+        rgba.r = 0.0;
+        rgba.g = 0.8;
+        rgba.b = 0.0;
+        rgba.a = 1.0;
+        marker.colors.push_back(rgba);
+    }
+    pub_tag_marker_->publish(marker);
+}
+
+void
+UWB_Node::publish_tag_radius(int tag_id, double dist)
+{
+    visualization_msgs::msg::Marker marker;
+    marker.header.frame_id = "map";
+    marker.ns = "sgd";
+    marker.id = tag_id;
+    marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.scale.x = 0.05;
+    marker.lifetime.sec = 0.5;
+    marker.color.a = 1.0;
+    marker.color.r = 0.0;
+    marker.color.g = 0.765;
+    marker.color.b = 1.0;
+
+    // add points
+    if (tags.count(tag_id))
+    {
+        auto xy = tags.at(tag_id);
+        int num_pnts = 50;
+        for (int i = 0; i <= num_pnts; i++)
+        {
+            geometry_msgs::msg::Point pnt;
+            pnt.x = xy.x + sin(2*M_PI / num_pnts*i) * dist;
+            pnt.y = xy.y + cos(2*M_PI / num_pnts*i) * dist;
+            marker.points.push_back(pnt);
+        }
+
+        pub_dist_marker_->publish(marker);
+    }
+}
+
+void
+UWB_Node::on_odom_impr_received(nav_msgs::msg::Odometry::SharedPtr msg)
+{
+    // get last odometry message and calculate dx and dy
+    // double dx = last_odom_.pose.pose.position.x - msg->pose.pose.position.x;
+    // double dy = last_odom_.pose.pose.position.y - msg->pose.pose.position.y;
+    // last_odom_ = *msg;
+
+    uwb_pf.updateOdometry(msg->pose.pose.position.x, msg->pose.pose.position.y);
+    
+    if (uwb_pf.hasSolution())
+    {
+        publish_pose(uwb_pf.x(), uwb_pf.y());
     }
 }
 
 void
 UWB_Node::publish_pose(double x, double y)
 {
-    is_last_estimate_valid = true;
+    // is_last_estimate_valid = true;
     
     // publish position
     geometry_msgs::msg::PoseWithCovarianceStamped pose;
@@ -303,85 +383,6 @@ UWB_Node::publish_pose(double x, double y)
     }
     
     pub_position_->publish(pose);
-}
-
-void
-UWB_Node::publish_marker()
-{
-    visualization_msgs::msg::Marker marker;
-    marker.header.frame_id = "map";
-    marker.ns = "sgd";
-    marker.id = 0;
-    marker.type = visualization_msgs::msg::Marker::POINTS;
-    marker.action = visualization_msgs::msg::Marker::ADD;
-    marker.scale.x = 0.3;
-    marker.scale.y = 0.3;
-    marker.scale.z = 0.05;
-    marker.lifetime.sec = 30;
-    marker.color.a = 1.0;
-    marker.color.r = 0.0;
-    marker.color.g = 0.8;
-    marker.color.b = 0.0;
-
-    for (auto tag : optimizer->tags)
-    {
-        geometry_msgs::msg::Point p;
-        p.x = tag.second.first;
-        p.y = tag.second.second;
-        marker.points.push_back(p);
-
-        std_msgs::msg::ColorRGBA rgba;
-        rgba.r = 0.0;
-        rgba.g = 0.8;
-        rgba.b = 0.0;
-        rgba.a = 1.0;
-        marker.colors.push_back(rgba);
-    }
-    pub_tag_marker_->publish(marker);
-}
-
-void
-UWB_Node::publish_dist_marker(int tag_id, double dist)
-{
-    visualization_msgs::msg::Marker marker;
-    marker.header.frame_id = "map";
-    marker.ns = "sgd";
-    marker.id = tag_id;
-    marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
-    marker.action = visualization_msgs::msg::Marker::ADD;
-    marker.scale.x = 0.1;
-    marker.lifetime.sec = 1.0;
-    marker.color.a = 1.0;
-    marker.color.r = 0.0;
-    marker.color.g = 0.8;
-    marker.color.b = 0.0;
-
-    // add points
-    if (optimizer->tags.count(tag_id))
-    {
-        auto xy = optimizer->tags.at(tag_id);
-        int num_pnts = 50;
-        for (int i = 0; i <= num_pnts; i++)
-        {
-            geometry_msgs::msg::Point pnt;
-            pnt.x = xy.first + sin(2*M_PI / num_pnts*i) * dist;
-            pnt.y = xy.second + cos(2*M_PI / num_pnts*i) * dist;
-            marker.points.push_back(pnt);
-        }
-
-        pub_dist_marker_->publish(marker);
-    }
-}
-
-void
-UWB_Node::on_odom_impr_received(sgd_msgs::msg::OdomImproved::SharedPtr msg)
-{
-    uwb_pf.updateOdometry(msg->dx, msg->dy);
-    
-    if (uwb_pf.hasSolution())
-    {
-        publish_pose(uwb_pf.x(), uwb_pf.y());
-    }
 }
 
 void
@@ -426,6 +427,41 @@ UWB_Node::get_transform(std::string target_frame, std::string source_frame)
     // according to REP-105 the x-axis points east (lon) and the y-axis north (lat)
     auto tf_tmp_ = tf_buffer_->lookupTransform(target_frame, source_frame, rclcpp::Time(0), rclcpp::Duration(5,0));
     return tf_tmp_;
+}
+
+void
+UWB_Node::on_ground_truth_received(const sensor_msgs::msg::NavSatFix::SharedPtr msg)
+{
+    // if rate > 10 Hz -> skip message
+    sgd_util::LatLon pos(msg->latitude, msg->longitude);
+    auto local = pos.to_local(map_origin);
+    // define some variables
+    double max_distance_ = 50.0;
+    double random_mult_ = 100.0;
+    double random_add_ = 15.0;
+
+    // calculate distance from tags to robo -> publish markers
+    for (auto tag : tags)
+    {
+        // calculate euclidian distance from tag to robo
+        double distance = sqrt(pow(tag.second.x - local.first,2) + pow(tag.second.y - local.second,2));
+        if (distance > max_distance_)   continue;
+
+        // add some noise
+        double noise = distribution(generator);
+        double dist_noise = distance * (1 + noise / 100.0);
+
+        // generate random number -> if number is larger than distance, skip publishing
+        double random = (double)std::rand() / RAND_MAX;
+        random = random * random_mult_ + random_add_;
+        if (random > distance)
+        {
+            uwb_pf.updateUwbMeasurement(dist_noise, tag.first);
+            // publish distance markers
+            publish_tag_radius(tag.first, dist_noise);
+        }
+
+    }
 }
 
 }   // namespace sgd_hardware_drivers
