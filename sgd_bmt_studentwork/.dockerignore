@@ -1,0 +1,11 @@
+DS_Store
+.DS_Store
+
+build/
+node_modules
+README.md
+
+Dockerfile
+docker-compose.yaml
+# ,dockerignore
+.git

@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "ms-toolsai.jupyter",
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "visualstudioexptteam.vscodeintellicode",
+    "ms-vscode-remote.vscode-remote-extensionpack",
+    "ms-vscode.cpptools-extension-pack"
+  ]
+}

@@ -3,3 +3,5 @@ $ cat .gitignore
 # exclude build folders
 **/build/**
 !**/build/buildinfo.md
+.DS_Store
+.env
