@@ -40,7 +40,7 @@ Feather_Handle_ROS::on_configure(const rclcpp_lifecycle::State & state __attribu
 {
     PLOGD << "Configuring...";
     get_parameter("use_sim_time", is_sim_);
-
+    
     if (is_sim_)    return CallbackReturn::SUCCESS;
     
     bno055_ = std::make_unique<BNO055>();
@@ -118,8 +118,8 @@ Feather_Handle_ROS::init_pub_sub()
             PLOGD.printf("Create subscription for topic %s", imu_topic_.c_str());
             sub_imu_sim_ = this->create_subscription<sensor_msgs::msg::Imu>(imu_topic_, rclcpp::QoS(rclcpp::SensorDataQoS()),
                 std::bind(&Feather_Handle_ROS::publish_imu_visual, this, std::placeholders::_1));
+            return;
         }
-        return;
     }
 
     // create timer

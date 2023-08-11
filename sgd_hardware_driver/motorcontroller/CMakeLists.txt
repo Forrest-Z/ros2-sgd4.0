@@ -36,7 +36,7 @@ set(exe_name motorcontroller)
 add_executable(${exe_name}
                 src/motorcontroller_ros.cpp
                 src/sgd_odometry.cpp
-                src/wh_fcruiser.cpp)
+                src/tmcm1638.cpp)
 target_link_libraries(${exe_name} plog::plog)
 ament_target_dependencies(${exe_name}
   rclcpp

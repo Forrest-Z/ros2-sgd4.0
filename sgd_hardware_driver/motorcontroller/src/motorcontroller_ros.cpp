@@ -71,7 +71,7 @@ CallbackReturn
 Motorcontroller::on_activate(const rclcpp_lifecycle::State &state __attribute__((unused)))
 {
     PLOGD << "Acitvating...";
-    wh_fcruiser = std::make_unique<WH_FCruiser>(get_parameter("wheel_separation").as_double(),
+    tmcm1638 = std::make_unique<TMCM1638>(get_parameter("wheel_separation").as_double(),
                                                 get_parameter("wheel_circumference").as_double());
 
     init_pub_sub();
@@ -116,7 +116,6 @@ Motorcontroller::on_shutdown(const rclcpp_lifecycle::State &state __attribute__(
 void
 Motorcontroller::init_parameters()
 {
-    
     get_parameter("sim_battery_volt", sim_battery_voltage_);
 
     get_parameter("use_sim_time", is_sim_);
@@ -162,13 +161,14 @@ Motorcontroller::init_pub_sub()
         // receive motor data via microROS
         std::string pico_base_sub_topic_ = get_parameter("pico_base_sub_topic").as_string();
         PLOGI.printf("Subscribe to '%s'", pico_base_sub_topic_.c_str());
-        sub_motor_ = this->create_subscription<std_msgs::msg::UInt32>(pico_base_sub_topic_, default_qos,
+        sub_motor_ = this->create_subscription<geometry_msgs::msg::Twist>(pico_base_sub_topic_, default_qos,
                                         std::bind(&Motorcontroller::on_motor_received, this, std::placeholders::_1));
-
+    //}
         // publish motor commands via microROS
         std::string pico_base_pub_topic_ = get_parameter("pico_base_pub_topic").as_string();
         PLOGI.printf("Create publisher on topic '%s'", pico_base_pub_topic_.c_str());
-        pub_motor_ = this->create_publisher<std_msgs::msg::UInt32>(pico_base_pub_topic_, default_qos);
+        pub_motor_ = this->create_publisher<geometry_msgs::msg::Quaternion>(pico_base_pub_topic_, default_qos);
+        pub_motor_->on_activate();
 
         // Receive velocity command from local controller
         std::string sgd_move_topic_ = get_parameter("sgd_move_topic").as_string();
@@ -195,12 +195,12 @@ Motorcontroller::publish_battery_state()
     }
     else
     {
-        if (wh_fcruiser->get_batt_voltage() < 30.0)
+        if (tmcm1638->get_batt_voltage() < 30.0)
         {
             // TODO: put this to mcu
             RCLCPP_WARN(get_logger(), "Battery voltage low!");
         }
-        msg.voltage = wh_fcruiser->get_batt_voltage();
+        msg.voltage = tmcm1638->get_batt_voltage();
     }
     pub_battery_->publish(msg);
 }
@@ -211,7 +211,8 @@ Motorcontroller::on_sgd_move_received(const geometry_msgs::msg::Twist::SharedPtr
     cmd_vel_seconds_ = now().seconds();
     last_cmd_vel_ = *msg;
 
-    publish_motor_cmd();
+    // TODO: publish motor message
+    pub_motor_->publish(tmcm1638->cmd_vel(msg->linear.x, msg->angular.z));
 }
 
 void
@@ -255,9 +256,22 @@ Motorcontroller::on_odom_sim_received(const nav_msgs::msg::Odometry::SharedPtr m
 }
 
 void
-Motorcontroller::on_motor_received(const std_msgs::msg::UInt32::SharedPtr msg)
+Motorcontroller::on_motor_received(const geometry_msgs::msg::Twist::SharedPtr msg)
 {
-    wh_fcruiser->parse_msg(msg->data);
+    // subscriber to motor data
+    /*
+    Twist.msg
+    -linear
+    ---x  actual velocity motor left
+    ---y  actual torque   motor left
+    ---z  actual position motor left
+    -angular
+    ---x  actual velocity motor right
+    ---y  actual torque   motor right
+    ---z  actual position motor right
+    */
+
+    tmcm1638->parse_msg(msg);
 
     // Publish odom message
     nav_msgs::msg::Odometry odom;
@@ -269,7 +283,7 @@ Motorcontroller::on_motor_received(const std_msgs::msg::UInt32::SharedPtr msg)
     odom.twist.twist.angular.y = 0.0;
     // odom.twist.twist.angular.z = wh_fcruiser->get_angular_vel();
     odom.twist.twist.angular.z = odo_new.dphi;
-    odom.twist.twist.linear.x = wh_fcruiser->get_linear_vel();
+    odom.twist.twist.linear.x = tmcm1638->get_linear_vel();
     odom.twist.twist.linear.y = 0.0;
     odom.twist.twist.linear.z = 0.0;
 
@@ -291,10 +305,10 @@ Motorcontroller::on_motor_received(const std_msgs::msg::UInt32::SharedPtr msg)
 
     // Message: time; measured L/R; velocity lin/ang, position x/y
     PLOGD.printf("%.3f; %d; %d; %.3f; %.3f; %.3f; %.1f",
-                wh_fcruiser->meas_L, wh_fcruiser->meas_R,
-                wh_fcruiser->get_linear_vel(), wh_fcruiser->get_angular_vel(),
+                tmcm1638->meas_L, tmcm1638->meas_R,
+                tmcm1638->get_linear_vel(), tmcm1638->get_angular_vel(),
                 odo_new.x, odo_new.y,
-                wh_fcruiser->get_batt_voltage());
+                tmcm1638->get_batt_voltage());
 
     pub_odom_->publish(odom);
 }
@@ -310,7 +324,7 @@ Motorcontroller::publish_motor_cmd()
     }
     else
     {
-        msg = wh_fcruiser->cmd_vel(last_cmd_vel_.linear.x, last_cmd_vel_.angular.z);
+        msg = "tmcm1638->cmd_vel(last_cmd_vel_.linear.x, last_cmd_vel_.angular.z)";
     }
 }
 }   // namespace sgd_hardware_drivers

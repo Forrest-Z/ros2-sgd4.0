@@ -29,7 +29,7 @@ typedef int64_t llong;  // format used to store the ids
 class A_Star_Node
 {
 private:
-    llong id_;
+    llong id_, pid_;
     sgd_util::LatLon latlon_;
     
     bool is_blocked_;
@@ -70,6 +70,20 @@ public:
      * @return llong 
      */
     llong id();
+
+    /**
+     * @brief Set the parent id
+     * 
+     * @param pid 
+     */
+    void set_pid(llong pid);
+
+    /**
+     * @brief Return the parent id if it is set, otherwise the id
+     * 
+     * @return llong 
+     */
+    llong pid();
 
     std::vector<A_Star_Path> paths();
 

@@ -451,7 +451,7 @@ UWB_Node::on_ground_truth_received(const sensor_msgs::msg::NavSatFix::SharedPtr 
         double noise = distribution(generator);
         double dist_noise = distance * (1 + noise / 100.0);
 
-        // generate random number -> if number is larger than distance, skip publishing
+        // generate random number -> if number is smaller than distance, skip publishing
         double random = (double)std::rand() / RAND_MAX;
         random = random * random_mult_ + random_add_;
         if (random > distance)
@@ -460,7 +460,6 @@ UWB_Node::on_ground_truth_received(const sensor_msgs::msg::NavSatFix::SharedPtr 
             // publish distance markers
             publish_tag_radius(tag.first, dist_noise);
         }
-
     }
 }
 

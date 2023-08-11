@@ -14,6 +14,7 @@
   <depend>nav2_costmap_2d</depend>
   <depend>pluginlib</depend>
   <depend>sgd_msgs</depend>
+  <depend>sgd_rasterizer</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

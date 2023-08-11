@@ -27,7 +27,14 @@ namespace sgd_ctrl
         LocalPlanner() = default;
         ~LocalPlanner() = default;
 
-        // plugin configure
+        /**
+         * @brief Configure the plugin
+         * 
+         * @param parent parent node
+         * @param name name of this node
+         * @param tf 
+         * @param costmap_ros 
+         */
         void configure(
             rclcpp_lifecycle::LifecycleNode::SharedPtr parent,
             std::string name, std::shared_ptr<tf2_ros::Buffer> tf,
@@ -42,7 +49,13 @@ namespace sgd_ctrl
         // plugin deactivate
         void deactivate() override;
 
-        // This method creates path for given start and goal pose.
+        /**
+         * @brief This method creates path for given start and goal pose.
+         * 
+         * @param start 
+         * @param goal 
+         * @return nav_msgs::msg::Path 
+         */
         nav_msgs::msg::Path createPlan(
             const geometry_msgs::msg::PoseStamped &start,
             const geometry_msgs::msg::PoseStamped &goal) override;
@@ -75,11 +88,17 @@ namespace sgd_ctrl
         nav_msgs::msg::Path global_plan;
 
         rclcpp::QoS default_qos = rclcpp::QoS(rclcpp::SystemDefaultsQoS());
-        rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_global_plan;
+        rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_global_plan;           /// @brief subscription to global plan
+
+        /**
+         * @brief Function to call when a global plan is received
+         * 
+         * @param path 
+         */
         void on_global_plan_received(const nav_msgs::msg::Path::SharedPtr path);
 
-        rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr sub_goalpose_sgd;
-        void on_goalpose_sgd_received(const geometry_msgs::msg::PoseStamped::SharedPtr goalpose);
+        //rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr sub_goalpose_sgd;
+        //void on_goalpose_sgd_received(const geometry_msgs::msg::PoseStamped::SharedPtr goalpose);
 
         rclcpp::Duration route_update_timeout_{1, 0};
         rclcpp::Time last_route_update_;

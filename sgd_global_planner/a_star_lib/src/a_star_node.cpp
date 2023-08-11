@@ -28,6 +28,18 @@ A_Star_Node::id()
     return id_;
 }
 
+void
+A_Star_Node::set_pid(llong pid)
+{
+    pid_ = pid;
+}
+
+llong
+A_Star_Node::pid()
+{
+    return pid_ > 0 ? pid_ : id_;
+}
+
 std::vector<A_Star_Path>
 A_Star_Node::paths()
 {

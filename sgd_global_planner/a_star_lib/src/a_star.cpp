@@ -48,6 +48,10 @@ A_Star::load_map(std::string nav_filename)
 
         // create new node with the read id and position
         A_Star_Node n(id, sgd_util::LatLon(strtod(node->Attribute("lat"), NULL), strtod(node->Attribute("lon"), NULL)));
+        if (node->Attribute("pid") != NULL)
+        {
+            n.set_pid(strtoll(node->Attribute("pid"), NULL, 10));
+        }
         // insert into nodelist
         //PLOGD.printf("%lld", id);
         nodelist_.insert({id, n});
@@ -185,22 +189,37 @@ A_Star::compute_path(sgd_util::LatLon start, llong dest_node_id)
             if (closedList.count(path_dest_id_) < 1 && !path_dest_.is_blocked())
             {
                 double angle_factor = 1.0, next_bearing_ = 0.0, result_bearing_ = 0.0;
-                // if current node differs from start_node calculate angle at this node
-                if (current_node.id() != start_node_id)
-                {
-                    next_bearing_ = current_node.get_latlon().bearing(path_dest_.get_latlon());
+                double side_factor_ = 1.0;
+                double base_bearing = 0.0;
 
-                    // set angle to interval [-PI, PI]
-                    result_bearing_ = (pred_bearing_ - next_bearing_) 
-                                    + (pred_bearing_-next_bearing_ < -M_PI) * 2*M_PI 
-                                    - (pred_bearing_-next_bearing_ >  M_PI) * 2*M_PI;
-                    angle_factor = users_->angle_factor(result_bearing_);
+                next_bearing_ = current_node.get_latlon().bearing(path_dest_.get_latlon());
+
+                // get parent node -> bearing from parent node to next parent node
+                auto parentnode = nodelist_.at(current_node.pid());
+                auto dest_pid = nodelist_.at(path_dest_.pid());
+                base_bearing = (parentnode == dest_pid) ? next_bearing_ : parentnode.get_latlon().bearing(dest_pid.get_latlon());
+
+                // check if we are on the right side or left side of the way -> move to JOSM plugin
+                if (path_dest_id_ != path_dest_.pid() && current_node.id() != current_node.pid())
+                {
+                    // calculate angle from current node to next parent node
+                    double bear_id_pid = current_node.get_latlon().bearing(dest_pid.get_latlon());
+                    auto bear = (base_bearing - bear_id_pid)
+                                + (base_bearing - bear_id_pid < -M_PI) * 2*M_PI 
+                                - (base_bearing - bear_id_pid >  M_PI) * 2*M_PI;
+                    side_factor_ = (bear > 0) ? 0.85 : 1.15;
                 }
+
+                // set angle to interval [-PI, PI]
+                result_bearing_ = (base_bearing - next_bearing_)
+                                + (base_bearing - next_bearing_ < -M_PI) * 2*M_PI 
+                                - (base_bearing - next_bearing_ >  M_PI) * 2*M_PI;
+                angle_factor = users_->angle_factor(result_bearing_);
 
                 // set distance to destination as heuristic
                 path_dest_.set_h(path_dest_.get_latlon().distance_to(dest_ll));
                 // set current node as predecessor for next node
-                auto g = path_dest_.set_predecessor(current_node, p.cost(users_), angle_factor);    // angle_factor
+                auto g = path_dest_.set_predecessor(current_node, p.cost(users_)*side_factor_, angle_factor);    // angle_factor
 
                 PLOGD.printf("Push to openList; %lld; %.3f; %.3f; %.3f; %.3f; %.3f; %.3f; %.3f; %.3f",
                         path_dest_id_, pred_bearing_, next_bearing_, result_bearing_, angle_factor,

@@ -6,7 +6,7 @@ from datetime import datetime
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription, EmitEvent, RegisterEventHandler, SetEnvironmentVariable
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription, EmitEvent, RegisterEventHandler, SetEnvironmentVariable, LogInfo
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
 from launch.events import Shutdown
@@ -156,10 +156,12 @@ def generate_launch_description():
         arguments=['-d', rviz_config_file],
         output={'both': 'log'})
 
-    exit_event_handler = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=start_rviz_cmd,
-            on_exit=EmitEvent(event=Shutdown(reason='rviz exited'))))
+    # exit_event_handler = RegisterEventHandler(
+    #     event_handler=OnProcessExit(
+    #         target_action=None,
+    #         on_exit=LogInfo(msg='process exited')))
+
+    ## on_exit=EmitEvent(event=Shutdown(reason='rviz exited'))
 
     ## start nodes
     slam_cmd = IncludeLaunchDescription(

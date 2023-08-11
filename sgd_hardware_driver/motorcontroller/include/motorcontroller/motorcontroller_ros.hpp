@@ -19,7 +19,7 @@
 #include <plog/Log.h>
 #include "plog/Initializers/RollingFileInitializer.h"
 
-#include "wh_fcruiser.hpp"
+#include "tmcm1638.hpp"
 #include "sgd_odometry.h"
 
 namespace sgd_hardware_drivers
@@ -56,15 +56,15 @@ protected:
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;                 /// @brief odometry publisher
     rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::BatteryState>::SharedPtr pub_battery_;       /// @brief battery state publisher
-    rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::UInt32>::SharedPtr pub_motor_;                  /// @brief publisher for motorcontroller hardware
+    rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::Quaternion>::SharedPtr pub_motor_;         /// @brief publisher for motorcontroller hardware
 
-    rclcpp::Subscription<std_msgs::msg::UInt32>::SharedPtr sub_motor_;                                  /// @brief subscription to motorcontroller hardware
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_motor_;                              /// @brief subscription to motorcontroller hardware
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_sim_;                             /// @brief subscription to simulated odometry data
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel_;                            /// @brief subscription to move commands from ros system
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;                                    /// @brief subscription to imu data
     rclcpp::Subscription<geometry_msgs::msg::PoseWithCovariance>::SharedPtr sub_gps_;                   /// @brief subscription to gps position information
 
-    std::unique_ptr<WH_FCruiser> wh_fcruiser;
+    std::unique_ptr<TMCM1638> tmcm1638;
     SGD_Odometry odo_new;
 
     /**
@@ -107,7 +107,7 @@ protected:
      *
      * @param msg
      */
-    void on_motor_received(const std_msgs::msg::UInt32::SharedPtr msg);
+    void on_motor_received(const geometry_msgs::msg::Twist::SharedPtr msg);
     double cmd_vel_seconds_;
     geometry_msgs::msg::Twist last_cmd_vel_;
 

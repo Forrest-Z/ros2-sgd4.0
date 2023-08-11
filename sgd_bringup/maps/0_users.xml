@@ -2,9 +2,9 @@
 <users>
     <user>
         <angle>
-            <a>0.6</a>
-            <b>1.1</b>
-            <c>0.15</c>
+            <a>0.2</a>
+            <b>1.5</b>
+            <c>0.1</c>
         </angle>
         <surface>
             <asphalt>0.8</asphalt>
@@ -18,11 +18,12 @@
             <default>10.0</default>
         </surface>
         <highway>
-            <footway>0.8</footway>
-            <service>1.0</service>
-            <living_street>1.2</living_street>
-            <residential>1.5</residential>
-            <unclassified>5.0</unclassified>
+            <footway>0.7</footway>
+            <path>0.8</path>
+            <service>2.5</service>
+            <living_street>5.0</living_street>
+            <residential>8.0</residential>
+            <unclassified>10.0</unclassified>
             <steps>1e6</steps>
             <default>10.0</default>
         </highway>

@@ -87,6 +87,8 @@ Master_Control_Unit::on_goalpose_received(const geometry_msgs::msg::Point::Share
     goalpose_ = *msg;   // set goalpose of global plan
     next_wp_ = 0;
 
+    // check battery state
+
     // send first point from global plan to action server
     if (global_plan.poses.size() > 0)
     {
@@ -142,7 +144,9 @@ void
 Master_Control_Unit::feedback_callback(Nav2Pose_GoalHandle::SharedPtr,
                                         const std::shared_ptr<const nav2_msgs::action::NavigateToPose_Feedback> feedback)
 {
-    
+    // Was kann ich hier tun?
+//     RCLCPP_INFO(get_logger(), "Distance remaining: %.2f, navigation time: %d",
+//             feedback->distance_remaining, feedback->navigation_time.sec);
 }
 
 void
@@ -198,9 +202,7 @@ int main(int argc, char const *argv[])
 {
     rclcpp::init(argc, argv);
     std::shared_ptr<rclcpp::Node> node = std::make_shared<sgd_ctrl::Master_Control_Unit>();
-
     rclcpp::spin(node->get_node_base_interface());
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Master control unit controller startup completed.");
     rclcpp::shutdown();
     return 0;
 }

@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?> 
 <launch>
+<!--
+    set start="real" to start nodes if simulation is not used
+    set start="sim" to start node if simulation is used
+    set start="both" or omit it to always start the node
+ -->
 <!-- localization nodes -->
-    <!--node name="map_server" /-->
     <node name="sgd_map_server" />
-    <!--node name="obstacle_detector" start="both" /-->
-    <!--node name="amcl" /-->
+    <!-- node name="amcl" /-->
 
 <!-- hardware nodes -->
     <node name="feather_handle_ros" start="both" />
     <node name="gnss_node" start="both" />
-    <node name="uwb_node" start="both" />
+    <!--node name="uwb_node" start="both" /-->
     <!--node name="led_strip" start="both" /-->
     <!--node name="frsky_rx8r" start="real" /-->
     <node name="wh_fcruiser" start="both" />
@@ -26,3 +29,6 @@
     <!--node name="ros2_depthCamera_obstacle_checker" start="real" /-->
 
 </launch>
+
+
+

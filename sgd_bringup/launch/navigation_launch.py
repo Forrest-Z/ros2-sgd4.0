@@ -17,7 +17,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable
+from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable, LogInfo
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from nav2_common.launch import RewrittenYaml
@@ -94,6 +94,10 @@ def generate_launch_description():
         name='bt_navigator',
         output='screen',
         emulate_tty=True,
+        on_exit=Node(
+            package='sgd_lifecycle_manager',
+            executable='exit_publisher',
+            parameters=[{'ndname': 'bt_navigator'}]),
         parameters=[params])
 
     start_waypoint_follower_cmd = Node(
