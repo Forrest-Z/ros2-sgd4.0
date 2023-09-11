@@ -28,6 +28,12 @@ Lifecycle_Manager::Lifecycle_Manager():
     LF_Node_Factory lf(launch_file, is_sim_);
     lf.import_launch_file();
 
+    // init subscriber to node_exit publisher
+    std::function<void(std::shared_ptr<lifecycle_msgs::msg::TransitionEvent>)> fnc1 = std::bind(
+            &Lifecycle_Manager::on_node_transition_received, this, std::placeholders::_1, (std::string)"#");
+    sub_node_transition.push_back(this->create_subscription<lifecycle_msgs::msg::TransitionEvent>("node_exit",
+                rclcpp::QoS(rclcpp::SystemDefaultsQoS()), fnc1));
+
     // change node state to configure
     lifecycle_node * nd;
     while ((nd = lf.next_node()) != nullptr)
@@ -38,11 +44,22 @@ Lifecycle_Manager::Lifecycle_Manager():
             this->create_client<lifecycle_msgs::srv::ChangeState>(nd->get_node_name() + "/change_state")
         });
 
+        // create subscription
+        std::function<void(std::shared_ptr<lifecycle_msgs::msg::TransitionEvent>)> fnc = std::bind(
+            &Lifecycle_Manager::on_node_transition_received, this, std::placeholders::_1, (std::string)nd->get_node_name());
+
+        sub_node_transition.push_back(this->create_subscription<lifecycle_msgs::msg::TransitionEvent>(nd->get_node_name() + "/transition_event",
+                    rclcpp::QoS(rclcpp::SystemDefaultsQoS()), fnc));
+
+        RCLCPP_INFO(get_logger(), "Configure node %s", nd->get_node_name().c_str());
         if(change_state(Transition::TRANSITION_CONFIGURE, nd->get_node_name()))
         {
             nd->state = Transition::TRANSITION_CONFIGURE;
         }
     }
+
+    int num_nodes = service_clients_.size();
+    int node = 1;
 
     int retries = 0;
     rclcpp::WallRate loop_rate(10);
@@ -56,7 +73,7 @@ Lifecycle_Manager::Lifecycle_Manager():
             {
                 continue;
             }
-
+            RCLCPP_INFO(get_logger(), "Activate node %d/%d: %s", node++, num_nodes, nd->get_node_name().c_str());
             if(change_state(Transition::TRANSITION_ACTIVATE, nd->get_node_name()))
             {
                 nd->state = Transition::TRANSITION_ACTIVATE;
@@ -76,7 +93,8 @@ Lifecycle_Manager::Lifecycle_Manager():
 
     RCLCPP_INFO(get_logger(), "All nodes active.");
 
-    // TODO: create timer and check node state every 5? seconds
+    // create timer and check node state every 5? seconds
+    // timer_ = this->create_wall_timer(10ms, std::bind(&Lifecycle_Manager::check_state, this));
 }
 
 Lifecycle_Manager::~Lifecycle_Manager()
@@ -87,7 +105,6 @@ Lifecycle_Manager::~Lifecycle_Manager()
 bool
 Lifecycle_Manager::change_state(uint8_t transition_id, std::string node_name)
 {
-    RCLCPP_INFO(get_logger(), "Change state for node %s", node_name.c_str());
     auto request = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
     request->transition.id = transition_id;
 
@@ -123,6 +140,27 @@ Lifecycle_Manager::change_state(uint8_t transition_id, std::string node_name)
     }
 
     return false;
+}
+
+void
+Lifecycle_Manager::on_node_transition_received(const lifecycle_msgs::msg::TransitionEvent::SharedPtr msg, std::string node_name)
+{
+    // register node transition event
+    // get current state from unordered_map and compare to received state
+    // if received state > current state -> alles gut
+    // if received state < current state -> schlecht
+
+    if (node_name == "#")
+    {
+        // process of node has died
+        RCLCPP_INFO(get_logger(), "Received transition: node %s from %d to %d", msg->transition.label, msg->start_state.id, msg->goal_state.id);    
+    }
+    else
+    {
+        RCLCPP_INFO(get_logger(), "Received transition: node %s from %d to %d", node_name.c_str(), msg->start_state.id, msg->goal_state.id);
+    }
+    lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE;
+    lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE;
 }
 
 }   // namespace sgd_lifecycle

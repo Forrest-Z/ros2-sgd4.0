@@ -32,8 +32,11 @@ add_executable(${executable_name} src/lifecycle_manager.cpp src/lf_node_factory.
 ament_target_dependencies(lifecycle_manager ${dependencies})
 #target_link_libraries(${executable_name} ${library_name})
 
+add_executable(exit_publisher src/exit_publisher.cpp)
+ament_target_dependencies(exit_publisher ${dependencies})
+
 install(
-  TARGETS ${executable_name}
+  TARGETS ${executable_name} exit_publisher
   DESTINATION lib/${PROJECT_NAME})
 
 install(

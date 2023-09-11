@@ -24,3 +24,10 @@
 | wheel_circumference | Double    | 0.68             |  |
 | sim_battery_volt | Double       | 37.0             | Battery voltage used in simulation mode |
 | relative       | Boolean        | True             |  |
+
+
+## Manual Mode
+
+ros2 topic pub <topic_name> <msg_type> '<args>'
+
+ros2 topic pub motor_desired_values geometry_msgs/msg/Quaternion "{x: 20, y: 20}"

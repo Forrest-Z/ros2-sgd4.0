@@ -25,7 +25,7 @@ private:
     double wheel_sep_;      // wheel separation
 
 public:
-    int16_t meas_L = 0, meas_R = 0;
+    double meas_L = 0, meas_R = 0;
 
     /**
      * @brief Construct a new wh fcruiser object

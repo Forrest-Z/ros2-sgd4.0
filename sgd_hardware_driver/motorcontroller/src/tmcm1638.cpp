@@ -15,11 +15,11 @@ TMCM1638::parse_msg(geometry_msgs::msg::Twist::SharedPtr msg)
     // msg->linear.x = velocity (rpm) of left motor
     // msg->angular.x = velocity (rpm) of right motor
     // convert rpm to m/s
-    double r = msg->angular.x * wheel_circ_ / 60.0;
-    double l = msg->linear.x * wheel_circ_ / 60.0;
+    meas_R = -msg->angular.x * wheel_circ_ / 60.0;
+    meas_L = -msg->linear.x * wheel_circ_ / 60.0;
 
-    vel_lin_x_ = (r + l) / 2;
-    vel_ang_z_ = (r - l) / wheel_sep_;
+    vel_lin_x_ = (meas_R + meas_L) / 2;
+    vel_ang_z_ = (meas_R - meas_L) / wheel_sep_;
     
     // set orientation
     // ori_z_ += vel_ang_z_ * (tmp_time_ - millis_) / 1000.0;

@@ -71,10 +71,13 @@ CallbackReturn
 Motorcontroller::on_activate(const rclcpp_lifecycle::State &state __attribute__((unused)))
 {
     PLOGD << "Acitvating...";
-    tmcm1638 = std::make_unique<TMCM1638>(get_parameter("wheel_separation").as_double(),
-                                                get_parameter("wheel_circumference").as_double());
+    tmcm1638 = std::make_unique<TMCM1638>(get_parameter("wheel_circumference").as_double(),
+                                            get_parameter("wheel_separation").as_double());
 
     init_pub_sub();
+
+    // init timer
+    timer_ = this->create_wall_timer(100ms, std::bind(&Motorcontroller::publish_motor_cmd, this));
 
     odo_new.init(0, 0, 0);
     odo_new.setCompassGain(get_parameter("compass_gain").as_double());
@@ -120,6 +123,8 @@ Motorcontroller::init_parameters()
 
     get_parameter("use_sim_time", is_sim_);
     get_parameter("relative", is_relative_);
+
+    is_sim_ = false;
 }
 
 void
@@ -212,7 +217,9 @@ Motorcontroller::on_sgd_move_received(const geometry_msgs::msg::Twist::SharedPtr
     last_cmd_vel_ = *msg;
 
     // TODO: publish motor message
-    pub_motor_->publish(tmcm1638->cmd_vel(msg->linear.x, msg->angular.z));
+    // auto m = tmcm1638->cmd_vel(msg->linear.x, msg->angular.z);
+    // PLOGD.printf("%.3f; %.3f; r: %.3f; l: %.3f", msg->linear.x, msg->angular.x, m.y, m.x);
+    // pub_motor_->publish(m);
 }
 
 void
@@ -304,8 +311,8 @@ Motorcontroller::on_motor_received(const geometry_msgs::msg::Twist::SharedPtr ms
     odom.pose.pose.orientation = tf2::toMsg(q);
 
     // Message: time; measured L/R; velocity lin/ang, position x/y
-    PLOGD.printf("%.3f; %d; %d; %.3f; %.3f; %.3f; %.1f",
-                tmcm1638->meas_L, tmcm1638->meas_R,
+    PLOGD.printf("%.3f; %.3f; %.3f; %.3f; %.3f; %.3f; %.1f",
+                msg->angular.x, msg->linear.x,
                 tmcm1638->get_linear_vel(), tmcm1638->get_angular_vel(),
                 odo_new.x, odo_new.y,
                 tmcm1638->get_batt_voltage());
@@ -318,14 +325,17 @@ Motorcontroller::publish_motor_cmd()
 {
     std::string msg;
 
+    geometry_msgs::msg::Quaternion m;
     if ((now().seconds() - cmd_vel_seconds_) > 1)
     {
-        msg = "0,0";
+        m = tmcm1638->cmd_vel(0.0, 0.0);
     }
     else
     {
-        msg = "tmcm1638->cmd_vel(last_cmd_vel_.linear.x, last_cmd_vel_.angular.z)";
+        m = tmcm1638->cmd_vel(last_cmd_vel_.linear.x, last_cmd_vel_.angular.z);
     }
+    PLOGD.printf("%.3f; %.3f; r: %.3f; l: %.3f", last_cmd_vel_.linear.x, last_cmd_vel_.angular.x, m.y, m.x);
+    pub_motor_->publish(m);
 }
 }   // namespace sgd_hardware_drivers
 

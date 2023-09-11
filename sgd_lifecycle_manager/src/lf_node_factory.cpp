@@ -44,7 +44,7 @@ LF_Node_Factory::get_lowest_state() {
     uint8_t lowest_state_ = 0;
     for (auto n : nodelist_)
     {
-        lowest_state_ = lowest_state_ < n.state ? lowest_state_ : n.state;
+        lowest_state_ = std::min(lowest_state_, n.state);
     }
     return lowest_state_;
 }
@@ -55,16 +55,7 @@ LF_Node_Factory::cmp_node_state(std::string node_name, uint8_t state) {
     {
         if (n.get_node_name() == node_name)
         {
-            if (n.state < state)
-            {
-                return -1;
-            } else if (n.state > state)
-            {
-                return n.state;
-            } else
-            {
-                return 0;
-            }
+            return (n.state > state) ? n.state : (n.state < state) ? -1 : 0;
         }
     }
     return -1;

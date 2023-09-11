@@ -40,7 +40,7 @@ Scan_Timer::on_scan_received(sensor_msgs::msg::LaserScan::SharedPtr msg)
     laser.header.stamp = now();
     for (int i = 0; i < laser.ranges.size(); i++)
     {
-        if (laser.ranges.at(i) < 0.3)   laser.ranges.at(i) = laser.range_max;
+        if (laser.ranges.at(i) < 0.7)   laser.ranges.at(i) = laser.range_max;
     }
 
     pub_scan_->publish(laser);

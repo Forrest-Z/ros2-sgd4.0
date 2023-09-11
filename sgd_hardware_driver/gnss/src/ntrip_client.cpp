@@ -24,10 +24,10 @@ Ntrip_Client::Ntrip_Client(ntrip_opts options)
 
 Ntrip_Client::~Ntrip_Client()
 {
-    std::cout << "Close connection\n";
+    PLOGI << "Close connection\n";
     pthread_cancel(thread_handle);
     int ret = close(sockfd);
-    std::cout << "Close returned " << ret << std::endl;
+    PLOGI << "Close returned " << ret << std::endl;
 }
 
 void
@@ -62,7 +62,7 @@ void Ntrip_Client::update()
         }
         else if (!(se = getservbyname(options_.port.c_str(), 0)))
         {
-            std::cout << "Can't resolve port '" << options_.port << "'.\n";
+            PLOGE << "Can't resolve port '" << options_.port << "'.\n";
             err_ |= 0x01;
         }
         else
@@ -257,7 +257,7 @@ void Ntrip_Client::update()
                     {
                         // save rtcm message
                         totalbytes += numbytes_;
-                        std::cout << "Save RTCM message\n";
+                        PLOGD << "Save RTCM message\n";
                         rtcmMutex.lock();
                         std::memcpy(rtcm, buf, numbytes_);
                         numbytes = numbytes_;

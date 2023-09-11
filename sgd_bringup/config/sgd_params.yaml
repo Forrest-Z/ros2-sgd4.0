@@ -110,8 +110,8 @@ controller_server:
       # robot configuration
       footprint_model.type: "circular"
       footprint_model.radius: 0.1
-      max_vel_x: 0.26
-      max_vel_x_backwards: 0.12
+      max_vel_x: 0.45
+      max_vel_x_backwards: 0.26
       max_vel_y: 0.0
       max_vel_theta: 0.4
       acc_lim_x: 0.3
@@ -201,10 +201,8 @@ local_costmap:
           inf_is_valid: False
           marking: True
           clearing: True
-          obstacle_max_range: 15.0
-          obstacle_min_range: 0.5
-          raytrace_max_range: 15.0
-          raytrace_min_range: 0.5
+          obstacle_range: 5.0
+          raytrace_range: 6.0
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         enabled: true
@@ -441,11 +439,11 @@ wh_fcruiser:
     log_severity: "D"
     gps_topic: "gps/local"
     imu_topic: "imu"
-    pico_base_sub_topic: "pico_base_odom"
+    pico_base_sub_topic: "motor_actual_values"
     odom_sim_topic: "odom"
     sgd_move_topic: "sgd_move_base"
     odom_topic: "odom/hardware"
-    pico_base_pub_topic: "pico_base_motor"
+    pico_base_pub_topic: "motor_desired_values"
     battery_state_topic: "battery"
     wheel_separation: 0.74
     wheel_circumference: 0.80

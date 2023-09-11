@@ -36,6 +36,9 @@
 #include <memory>
 #include <thread>
 
+#include <plog/Log.h>
+#include "plog/Initializers/RollingFileInitializer.h"
+
 #define MAXDATASIZE 1000 /* max number of bytes we can get at once */
 
 namespace sgd_hardware_drivers
