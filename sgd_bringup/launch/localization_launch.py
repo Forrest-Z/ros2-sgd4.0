@@ -98,6 +98,14 @@ def generate_launch_description():
         emulate_tty=True,
         parameters=[params])
 
+    start_scan_matcher_cmd = Node(
+        package='sgd_localization',
+        executable='scan_matcher',
+        name='scan_matcher',
+        output='screen',
+        emulate_tty=True,
+        parameters=[params])
+
     # Visualizer for debugging
     start_visualizer_cmd = Node(
         package='sgd_util',
@@ -123,6 +131,7 @@ def generate_launch_description():
     ld.add_action(start_sgd_map_server_cmd)
     ld.add_action(start_amcl_cmd)
     ld.add_action(start_uwb_cmd)
+    ld.add_action(start_scan_matcher_cmd)
     ld.add_action(start_visualizer_cmd)
 
     return ld

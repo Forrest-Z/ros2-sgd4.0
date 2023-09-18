@@ -1,5 +1,5 @@
-#ifndef SGD_CONTROLLER__DUBINS_PLANNER_HPP_
-#define SGD_CONTROLLER__DUBINS_PLANNER_HPP_
+#ifndef SGD_CONTROLLER__SGD_LOCAL_PLANNER_HPP_
+#define SGD_CONTROLLER__SGD_LOCAL_PLANNER_HPP_
 
 // C++ includes
 #include <string>
@@ -14,6 +14,8 @@
 
 // other includes
 #include "nav2_core/global_planner.hpp"
+#include "nav2_util/robot_utils.hpp"
+#include "nav2_util/lifecycle_node.hpp"
 #include "nav2_costmap_2d/costmap_2d_ros.hpp"
 #include "sgd_msgs/msg/route_info.hpp"
 #include "route_analyzer.hpp"
@@ -57,8 +59,8 @@ namespace sgd_ctrl
          * @return nav_msgs::msg::Path 
          */
         nav_msgs::msg::Path createPlan(
-            const geometry_msgs::msg::PoseStamped &start,
-            const geometry_msgs::msg::PoseStamped &goal) override;
+            const geometry_msgs::msg::PoseStamped & start,
+            const geometry_msgs::msg::PoseStamped & goal) override;
 
     private:
         // TF buffer
@@ -68,20 +70,21 @@ namespace sgd_ctrl
         rclcpp_lifecycle::LifecycleNode::SharedPtr node_;
 
         // Global Costmap
-        nav2_costmap_2d::Costmap2D *costmap_;
+        // nav2_costmap_2d::Costmap2D *costmap_;
 
         // The global frame of the costmap
-        std::string global_frame_, name_;
+        // std::string global_frame_;
+        std::string name_;
 
         // parameters
         double interpolation_resolution_;
         double radius_;
         std::string global_plan_topic_;
-        nav_msgs::msg::Path global_path;
-        std::string goalpose_sgd_topic_;
+        // nav_msgs::msg::Path global_path;
+        // std::string goalpose_sgd_topic_;
 
         // Path smoothing
-        std::unique_ptr<PathSmoothing> path_smoothing;
+        // std::unique_ptr<PathSmoothing> path_smoothing;
 
         // global plan from osm planner
         ulong next_wp_; // next waypoint from global plan
@@ -100,10 +103,10 @@ namespace sgd_ctrl
         //rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr sub_goalpose_sgd;
         //void on_goalpose_sgd_received(const geometry_msgs::msg::PoseStamped::SharedPtr goalpose);
 
-        rclcpp::Duration route_update_timeout_{1, 0};
-        rclcpp::Time last_route_update_;
-        rclcpp_lifecycle::LifecyclePublisher<sgd_msgs::msg::RouteInfo>::SharedPtr pub_route_info;
-        std::unique_ptr<RouteAnalyzer> route_analyzer;
+        // rclcpp::Duration route_update_timeout_{1, 0};
+        // rclcpp::Time last_route_update_;
+        //rclcpp_lifecycle::LifecyclePublisher<sgd_msgs::msg::RouteInfo>::SharedPtr pub_route_info;
+        //std::unique_ptr<RouteAnalyzer> route_analyzer;
 
         /**
          * @brief 
@@ -112,12 +115,12 @@ namespace sgd_ctrl
          * @param pos2 
          * @return double 
          */
-        inline double distance(const geometry_msgs::msg::PoseStamped pos1, const geometry_msgs::msg::PoseStamped pos2)
+        inline double distance(const geometry_msgs::msg::Pose pos1, const geometry_msgs::msg::Pose pos2)
         {
-            return std::hypot(pos1.pose.position.x - pos2.pose.position.x, pos1.pose.position.y - pos2.pose.position.y);
+            return std::hypot(pos1.position.x - pos2.position.x, pos1.position.y - pos2.position.y);
         }
     };
 
 } // namespace sgd_ctrl
 
-#endif // SGD_CONTROLLER__DUBINS_PLANNER_HPP_
+#endif // SGD_CONTROLLER__SGD_LOCAL_PLANNER_HPP_

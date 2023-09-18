@@ -72,6 +72,9 @@ StaticVectorLayer::onInitialize()
         map_topic_, map_qos,
         std::bind(&StaticVectorLayer::incomingMap, this, std::placeholders::_1));
 
+    pub_local_map_ = node_->create_publisher<sgd_msgs::msg::VecObstacleArray>("/local_map", rclcpp::QoS(rclcpp::SystemDefaultsQoS()));
+    pub_local_map_->on_activate();
+
     // create rasterizer
     rr = std::make_unique<sgd_rasterizer::RayRasterizer>(layered_costmap_->getCostmap()->getSizeInCellsX(),
                                                          layered_costmap_->getCostmap()->getSizeInCellsY());
@@ -324,6 +327,9 @@ StaticVectorLayer::updateCosts(
     uint origin_cell_y = (int)round(w_min_j/resolution);    /// @brief origin of the costmap in global costmap
     PLOGD.printf("Set origin to %u, %u", origin_cell_x, origin_cell_y);
 
+    // list with obstacles currently visible on the local costmap
+    sgd_msgs::msg::VecObstacleArray obst_array;
+
     PLOGD.printf("Create RayRasterizer with size %u X %u", master_grid.getSizeInCellsX(), master_grid.getSizeInCellsY());
     //sgd_rasterizer::RayRasterizer rr(master_grid.getSizeInCellsX(), master_grid.getSizeInCellsY());
     int k = 0;  /// @brief counter for obstacles
@@ -347,8 +353,11 @@ StaticVectorLayer::updateCosts(
                     // add vertices to vector -> required for rasterization
                     coords.push_back(vert.x / resolution - origin_cell_x);
                     coords.push_back(vert.y / resolution - origin_cell_y);
+
                     PLOGD.printf("%.3f, %.3f", coords[coords.size()-2], coords[coords.size()-1]);
                 }
+                // add obstacle to obstacle array message
+                obst_array.obstacles.push_back(box_outlines[i].obstacle);
 
                 rr->add_object(coords, 254U);
                 PLOGD << "Polygon rasterization done.";
@@ -374,6 +383,10 @@ StaticVectorLayer::updateCosts(
     {
         master_array[j] = std::max(rr->data[j], master_array[j]);
     }
+
+    // publish vector with obstacles in local costmap
+    pub_local_map_->publish(obst_array);
+
     PLOGI.printf("Found %d obstacles inside frame %.3f, %.3f, %.3f, %.3f",
             k, w_min_i, w_min_j, w_max_i, w_max_j);
 }

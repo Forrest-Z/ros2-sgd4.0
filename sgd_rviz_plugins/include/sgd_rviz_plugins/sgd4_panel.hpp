@@ -47,6 +47,7 @@ private:
 
     std::shared_ptr<rclcpp::Publisher<geometry_msgs::msg::Point>> start_pub_;
     std::shared_ptr<rclcpp::Subscription<nav_msgs::msg::Path>> sub_global_path_;
+    nav_msgs::msg::Path global_plan_;
 
     void on_plan_received(nav_msgs::msg::Path::SharedPtr msg);
 

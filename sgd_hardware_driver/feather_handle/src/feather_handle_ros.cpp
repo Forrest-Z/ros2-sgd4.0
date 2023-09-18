@@ -16,6 +16,7 @@ Feather_Handle_ROS::Feather_Handle_ROS():
     
     declare_parameter("cmd_vel_topic", rclcpp::ParameterValue("cmd_vel"));
     declare_parameter("sgd_move_topic", rclcpp::ParameterValue("cmd_vel_laser"));
+    declare_parameter("scan_orientation_topic", rclcpp::ParameterValue("scan_orientation"));
 
     declare_parameter("visualize_compass_topic", rclcpp::ParameterValue("visual/compass"));
     declare_parameter("visualize_laser_topic", rclcpp::ParameterValue("visual/vl53l1x"));
@@ -141,6 +142,11 @@ Feather_Handle_ROS::init_pub_sub()
     PLOGD.printf("Create publisher on topic %s", sgd_move_topic_.c_str());
     laser_pub_ = create_publisher<geometry_msgs::msg::Twist>(sgd_move_topic_, default_qos);
 
+    std::string scan_orientation_topic_ = get_parameter("scan_orientation_topic").as_string();
+    PLOGD.printf("Create publisher on topic %s", scan_orientation_topic_.c_str());
+    sub_scan_orientation_ = create_subscription<geometry_msgs::msg::Quaternion>(scan_orientation_topic_,
+            default_qos, std::bind(&Feather_Handle_ROS::on_scan_orient_received, this, std::placeholders::_1));
+
     // TODO visualization for Laser 1D
 
     imu_pub_->on_activate();
@@ -192,7 +198,7 @@ Feather_Handle_ROS::publish_imu()
     // orientation
     auto o = bno055_->get_euler();
     tf2::Quaternion q;
-    q.setRPY(o.data[0], o.data[1], o.data[2]);
+    q.setRPY(o.data[0], o.data[1], o.data[2]+scan_yaw_diff_);
     msg_->orientation = tf2::toMsg(q);
 
     // acceleration
@@ -243,6 +249,12 @@ Feather_Handle_ROS::on_cmd_vel_received(geometry_msgs::msg::Twist::SharedPtr msg
         cmd_vel.angular.z = msg_->angular.z * vl53l1x_->get_vel_p();
         laser_pub_->publish(cmd_vel);
     }
+}
+
+void
+Feather_Handle_ROS::on_scan_orient_received(geometry_msgs::msg::Quaternion::SharedPtr msg_)
+{
+    scan_yaw_diff_ = tf2::getYaw(*msg_);
 }
 
 void

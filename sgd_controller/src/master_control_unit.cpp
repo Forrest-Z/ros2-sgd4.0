@@ -84,7 +84,7 @@ Master_Control_Unit::on_goalpose_received(const geometry_msgs::msg::Point::Share
 {
     RCLCPP_INFO(get_logger(), "Goalpose received.");
     
-    goalpose_ = *msg;   // set goalpose of global plan
+    goalpose_.position = *msg;   // set goalpose of global plan
     next_wp_ = 0;
 
     // check battery state
@@ -92,7 +92,7 @@ Master_Control_Unit::on_goalpose_received(const geometry_msgs::msg::Point::Share
     // send first point from global plan to action server
     if (global_plan.poses.size() > 0)
     {
-        send_goal_action(global_plan.poses.at(next_wp_).pose.position);
+        send_goal_action(global_plan.poses.at(next_wp_).pose);
     }
     else
     {
@@ -101,7 +101,7 @@ Master_Control_Unit::on_goalpose_received(const geometry_msgs::msg::Point::Share
 }
 
 void
-Master_Control_Unit::send_goal_action(const geometry_msgs::msg::Point pnt)
+Master_Control_Unit::send_goal_action(const geometry_msgs::msg::Pose pose)
 {
     auto is_action_server_ready =
         nav_to_pose_action_client_->wait_for_action_server(std::chrono::seconds(5));
@@ -112,7 +112,7 @@ Master_Control_Unit::send_goal_action(const geometry_msgs::msg::Point pnt)
     }
 
     // fill action data
-    nav_to_pose_goal_.pose.pose.position = pnt;
+    nav_to_pose_goal_.pose.pose = pose;
     nav_to_pose_goal_.pose.header.frame_id = "map";
 
     // define callbacks and send goal to action server
@@ -130,14 +130,14 @@ void
 Master_Control_Unit::goal_response_callback(std::shared_future<Nav2Pose_GoalHandle::SharedPtr> future)
 {
     auto goal_handle = future.get();
-    if (!goal_handle)
-    {
-        RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
-    }
-    else
-    {
+    // if (!goal_handle)
+    // {
+    //     RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
+    // }
+    // else
+    // {
         RCLCPP_INFO(this->get_logger(), "Goal accepted by server, waiting for result");
-    }
+    // }
 }
 
 void
@@ -155,7 +155,7 @@ Master_Control_Unit::result_callback(const Nav2Pose_GoalHandle::WrappedResult &r
     if (next_wp_+1 < global_plan.poses.size())
     {
         RCLCPP_INFO(this->get_logger(), "Send new goal to action server");
-        send_goal_action(global_plan.poses.at(++next_wp_).pose.position);
+        send_goal_action(global_plan.poses.at(++next_wp_).pose);
     }
 
     switch (result.code)

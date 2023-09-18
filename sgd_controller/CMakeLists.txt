@@ -72,8 +72,6 @@ target_compile_definitions(sgd_progress_checker PUBLIC "PLUGINLIB__DISABLE_BOOST
 
 add_library(sgd_local_planner SHARED
   plugins/sgd_local_planner.cpp
-  plugins/path_smoothing.cpp
-  include/sgd_controller/plugins/route_analyzer.hpp
 )
 
 ament_target_dependencies(sgd_local_planner
@@ -92,7 +90,6 @@ ament_target_dependencies(sgd_local_planner
   nav2_core
   pluginlib
   sgd_msgs
-  sgd_util
 )
 
 # prevent pluginlib from using boost

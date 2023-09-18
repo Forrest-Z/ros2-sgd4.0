@@ -74,10 +74,10 @@ def generate_launch_description():
     #ld.add_action(declare_params_file_cmd)
 
     # Add the actions to launch all of the navigation nodes
-    ld.add_action(start_sick_lidar_cmd)
+    #ld.add_action(start_sick_lidar_cmd)
     ld.add_action(start_led_strip_cmd)
     ld.add_action(start_motorcontroller_cmd)
     ld.add_action(start_feather_handle_cmd)
-    ld.add_action(start_scan_timer_cmd)
+    #ld.add_action(start_scan_timer_cmd)
 
     return ld

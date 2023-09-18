@@ -280,7 +280,7 @@ A_Star::trace_path(std::unordered_map<llong, A_Star_Node> closedList, A_Star_Nod
 
     while (id > 0)
     {
-        PLOGD.printf("Push node at position %s to path", closedList.at(id).get_latlon().to_string().c_str());
+        //PLOGD.printf("Push node at position %s to path", closedList.at(id).get_latlon().to_string().c_str());
         path.push(closedList.at(id).get_latlon());
         id = closedList.at(id).predecessor_id();
     }

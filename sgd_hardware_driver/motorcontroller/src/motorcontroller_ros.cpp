@@ -70,14 +70,15 @@ Motorcontroller::on_configure(const rclcpp_lifecycle::State &state __attribute__
 CallbackReturn
 Motorcontroller::on_activate(const rclcpp_lifecycle::State &state __attribute__((unused)))
 {
-    PLOGD << "Acitvating...";
-    tmcm1638 = std::make_unique<TMCM1638>(get_parameter("wheel_circumference").as_double(),
+    PLOGD << "Activating...";
+    
+    if (!is_sim_)
+    {
+        tmcm1638 = std::make_unique<TMCM1638>(get_parameter("wheel_circumference").as_double(),
                                             get_parameter("wheel_separation").as_double());
+    }
 
     init_pub_sub();
-
-    // init timer
-    timer_ = this->create_wall_timer(100ms, std::bind(&Motorcontroller::publish_motor_cmd, this));
 
     odo_new.init(0, 0, 0);
     odo_new.setCompassGain(get_parameter("compass_gain").as_double());
@@ -123,8 +124,6 @@ Motorcontroller::init_parameters()
 
     get_parameter("use_sim_time", is_sim_);
     get_parameter("relative", is_relative_);
-
-    is_sim_ = false;
 }
 
 void
@@ -180,8 +179,9 @@ Motorcontroller::init_pub_sub()
         PLOGI.printf("Subscribe to '%s'", sgd_move_topic_.c_str());
         sub_cmd_vel_ = this->create_subscription<geometry_msgs::msg::Twist>(sgd_move_topic_, default_qos,
                                         std::bind(&Motorcontroller::on_sgd_move_received, this, std::placeholders::_1));
-
-        //timer_ = this->create_wall_timer(100ms, std::bind(&Motorcontroller::publish_motor_cmd, this));
+        
+        // init timer
+        timer_ = this->create_wall_timer(100ms, std::bind(&Motorcontroller::publish_motor_cmd, this));
     }
 }
 
@@ -334,6 +334,7 @@ Motorcontroller::publish_motor_cmd()
     {
         m = tmcm1638->cmd_vel(last_cmd_vel_.linear.x, last_cmd_vel_.angular.z);
     }
+    
     PLOGD.printf("%.3f; %.3f; r: %.3f; l: %.3f", last_cmd_vel_.linear.x, last_cmd_vel_.angular.x, m.y, m.x);
     pub_motor_->publish(m);
 }

@@ -27,6 +27,7 @@
     <node name="osm_planner" />
     <!--node name="ros2_obstacle_checker" /-->
     <!--node name="ros2_depthCamera_obstacle_checker" start="real" /-->
+    <node name="scan_matcher" />
 
 </launch>
 

@@ -212,7 +212,7 @@ def generate_launch_description():
 
     # start websocket
     start_rosbridge_websocket_cmd = ExecuteProcess(
-        condition=IfCondition(sim),
+        #condition=IfCondition(sim),
         cmd=['ros2', 'launch', 'rosbridge_server', 'rosbridge_websocket_launch.xml'],
         cwd=[launch_dir], output={'both': 'log'})
 

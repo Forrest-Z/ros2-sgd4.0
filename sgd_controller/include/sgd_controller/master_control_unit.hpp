@@ -59,7 +59,7 @@ protected:
     // action
     std::chrono::milliseconds server_timeout_;
     rclcpp::Node::SharedPtr client_node_;
-    geometry_msgs::msg::Point goalpose_;
+    geometry_msgs::msg::Pose goalpose_;
     int next_wp_;   // number of next waypoint in global plan
     rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SharedPtr nav_to_pose_action_client_;
     nav2_msgs::action::NavigateToPose::Goal nav_to_pose_goal_;
@@ -75,7 +75,7 @@ protected:
      * @param msg 
      */
     void on_goalpose_received(const geometry_msgs::msg::Point::SharedPtr msg);
-    void send_goal_action(const geometry_msgs::msg::Point pnt);
+    void send_goal_action(const geometry_msgs::msg::Pose pose);
 
     void goal_response_callback(std::shared_future<Nav2Pose_GoalHandle::SharedPtr> future);
     void feedback_callback(Nav2Pose_GoalHandle::SharedPtr,

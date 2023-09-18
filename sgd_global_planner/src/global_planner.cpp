@@ -311,7 +311,7 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
         RCLCPP_INFO(get_logger(), "Compute path from %s to node %d", position.to_string().c_str(), dest_id);
         try
         {
-            RCLCPP_INFO(get_logger(), "Start path computation");
+            PLOGI.printf("Start path computation");
             auto route = a_star->compute_path(position, dest_id);
             //auto route = a_star->compute_path();
             if (route.waypoints.size() > 2 && route.cost < best_route_.cost)
@@ -322,6 +322,7 @@ Global_Planner_OSM::computePath(const std::shared_ptr<sgd_msgs::srv::GetGlobalPl
         catch(const std::exception& e)
         {
             RCLCPP_WARN(get_logger(), "Path computation error: %s", e.what());
+            PLOGW.printf("Path computation error: %s", e.what());
         }
     }
 
@@ -475,6 +476,8 @@ Global_Planner_OSM::create_poses_from_waypoints(std::vector<sgd_util::LatLon> wa
         pose.orientation = tf2::toMsg(q);
 
         poses_list.push_back(pose);
+        PLOGI.printf("Add node at position %.3f, %.3f with orientation %.2f to path",
+                pose.position.x, pose.position.y, ang);
         last_wp = xy;
     }
     return poses_list;

@@ -33,7 +33,7 @@ SGD4Panel::SGD4Panel(QWidget * parent)
 
     // subscriber for computed path
     sub_global_path_ = client_node_->create_subscription<nav_msgs::msg::Path>(
-        "/global_plan", rclcpp::QoS(1).transient_local(),
+        "/global_plan_sgd", rclcpp::QoS(1).transient_local(),
         std::bind(&SGD4Panel::on_plan_received, this, std::placeholders::_1));
 }
 
@@ -48,9 +48,13 @@ SGD4Panel::onInitialize()
 void
 SGD4Panel::onStartClicked()
 {
+    if (global_plan_.poses.empty())
+    {
+        std::cout << "No global plan received";
+    }
     geometry_msgs::msg::Point p;
-    p.x = 10.123;
-    p.y = 1.234;
+    p.x = 10.234;
+    p.y = 1.123;
 
     start_pub_->publish(p);
 }
@@ -60,6 +64,7 @@ SGD4Panel::on_plan_received(nav_msgs::msg::Path::SharedPtr msg)
 {
     // save received position
     std::cout << "Received position: " << msg->poses.back().pose.position.x << ", " << msg->poses.back().pose.position.y << "\n";
+    global_plan_ = *msg;
 }
 
 } // namespace sgd_rviz_plugins

@@ -25,6 +25,7 @@
 #include "nav2_costmap_2d/costmap_layer.hpp"
 #include "nav2_costmap_2d/layered_costmap.hpp"
 #include "rclcpp/rclcpp.hpp"
+// #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
 #include "nav2_costmap_2d/costmap_math.hpp"
 #include "tf2/convert.h"
@@ -188,6 +189,7 @@ private:
     std::vector<box_outline> box_outlines; /// @brief contains outlines of the obstacles to check whether the obstacle should be displayed in the costmap or not
 
     rclcpp::Subscription<sgd_msgs::msg::VecObstacleArray>::SharedPtr map_sub_;  /// @brief subscriber for map topic
+    rclcpp_lifecycle::LifecyclePublisher<sgd_msgs::msg::VecObstacleArray>::SharedPtr pub_local_map_;
     // rclcpp::Subscription<sgd_msgs::msg::VecObstacleArray>::SharedPtr map_update_sub_;
 
     // Parameters
